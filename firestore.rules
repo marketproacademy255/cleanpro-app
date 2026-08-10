@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// Security model: the browser only ever talks to Firestore directly for
+// PUBLIC, non-sensitive catalog data (active services/addons/cleaners -
+// see src/pages/Services.tsx, src/pages/Booking.tsx). Everything else
+// (profiles, bookings, payments) goes exclusively through the Netlify
+// Functions backend (netlify/functions/*), which uses the Firebase Admin
+// SDK and therefore bypasses these rules entirely - it does its own
+// ownership/admin checks in code (netlify/functions/_lib/auth.ts).
+// That's why profiles/bookings/payments below simply deny all client
+// access: nothing should ever read/write them except the backend.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /serviceTypes/{id} {
+      allow read: if resource.data.is_active == true;
+      allow write: if false;
+    }
+    match /addons/{id} {
+      allow read: if resource.data.is_active == true;
+      allow write: if false;
+    }
+    match /cleaners/{id} {
+      allow read: if resource.data.is_active == true;
+      allow write: if false;
+    }
+    match /profiles/{id} {
+      allow read, write: if false;
+    }
+    match /bookings/{id} {
+      allow read, write: if false;
+    }
+    match /payments/{id} {
+      allow read, write: if false;
+    }
+  }
+}
