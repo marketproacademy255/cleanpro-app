@@ -11,9 +11,10 @@ export type BookingStatus =
   | 'cancelled'
 export type BookingFrequency = 'once' | 'weekly' | 'biweekly' | 'monthly'
 export type PropertyType = 'home' | 'office'
-export type PaymentProvider = 'payme' | 'click'
+export type PaymentProvider = 'payme' | 'click' | 'manual'
 export type PaymentStatus = 'pending' | 'paid' | 'cancelled' | 'failed'
 export type PricingUnit = 'per_room' | 'per_sqm' | 'flat'
+export type BookingTier = 'standard' | 'premium' | 'elite'
 
 export interface Profile {
   id: string
@@ -76,6 +77,7 @@ export interface Booking {
   scheduled_date: string
   scheduled_time: string
   frequency: BookingFrequency
+  tier: BookingTier
   addon_codes: string[]
   contact_name: string | null
   contact_phone: string
@@ -100,6 +102,7 @@ export interface Payment {
   amount: number
   state: string | null
   status: PaymentStatus
+  receipt_url: string | null
   raw_payload: unknown
   created_at: string
   updated_at: string

@@ -32,6 +32,11 @@ export default function AdminBookings() {
     load()
   }
 
+  async function markPaymentStatus(paymentId: string, status: 'paid' | 'failed') {
+    await apiFetch(`payments?id=${paymentId}`, { method: 'PATCH', body: JSON.stringify({ status }) })
+    load()
+  }
+
   if (loading) return <div className="text-gray-400">Yuklanmoqda…</div>
 
   return (
@@ -46,6 +51,7 @@ export default function AdminBookings() {
               <th className="px-4 py-3">Sana</th>
               <th className="px-4 py-3">Summa</th>
               <th className="px-4 py-3">To'lov</th>
+              <th className="px-4 py-3">Chek</th>
               <th className="px-4 py-3">Xizmatchi</th>
               <th className="px-4 py-3">Holat</th>
             </tr>
@@ -53,6 +59,7 @@ export default function AdminBookings() {
           <tbody className="divide-y divide-gray-100">
             {bookings.map((b) => {
               const paid = b.payments?.some((p) => p.status === 'paid')
+              const manualPending = b.payments?.find((p) => p.provider === 'manual' && p.status === 'pending' && p.receipt_url)
               return (
                 <tr key={b.id}>
                   <td className="px-4 py-3">
@@ -66,6 +73,33 @@ export default function AdminBookings() {
                     <span className={`rounded-full px-2 py-1 text-xs font-semibold ${paid ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
                       {paid ? "To'landi" : 'Kutilmoqda'}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {manualPending ? (
+                      <div className="flex flex-col items-start gap-1">
+                        <a href={manualPending.receipt_url!} target="_blank" rel="noreferrer" className="text-xs font-medium text-brand-700 underline">
+                          Chekni ko'rish
+                        </a>
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => markPaymentStatus(manualPending.id, 'paid')}
+                            className="rounded-md bg-brand-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-brand-700"
+                          >
+                            Tasdiqlash
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => markPaymentStatus(manualPending.id, 'failed')}
+                            className="rounded-md border border-gray-200 px-2 py-1 text-[11px] font-semibold text-gray-500 hover:bg-gray-50"
+                          >
+                            Rad etish
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-300">-</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <select className="input py-1.5 text-xs" value={b.cleaner_id ?? ''} onChange={(e) => assignCleaner(b.id, e.target.value)}>

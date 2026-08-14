@@ -61,6 +61,32 @@ export function formatBookingCreatedMessage(params: {
   ].join('\n')
 }
 
+export function formatReceiptUploadedMessage(params: {
+  contactName: string
+  contactPhone: string
+  address: string
+  amountUZS: number
+  bookingId: string
+  receiptUrl: string
+}): string {
+  const amount = new Intl.NumberFormat('uz-UZ').format(Math.round(params.amountUZS))
+  // Receipts are stored as data: URLs (no Storage bucket on this project),
+  // which can be hundreds of KB - far too long for a Telegram message, so
+  // we point admins at the admin panel instead of inlining the link.
+  const receiptLine = params.receiptUrl.startsWith('data:')
+    ? "Chek: admin panel -> Buyurtmalar jadvalida ko'ring"
+    : `Chek: ${esc(params.receiptUrl)}`
+  return [
+    "🧾 <b>To'lov cheki yuklandi</b>",
+    `Mijoz: ${esc(params.contactName)} (${esc(params.contactPhone)})`,
+    `Manzil: ${esc(params.address)}`,
+    `Summa: ${amount} so'm`,
+    `Buyurtma ID: ${esc(params.bookingId)}`,
+    receiptLine,
+    'Admin panelda tekshirib tasdiqlang.',
+  ].join('\n')
+}
+
 export function formatPaymentConfirmedMessage(params: {
   provider: 'payme' | 'click'
   contactName: string

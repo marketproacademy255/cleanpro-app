@@ -10,6 +10,12 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   color: #1a2e22;
   background-color: #fafdfb;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+html.dark body {
+  color: #e7f3ec;
+  background-color: #0a120f;
 }
 
 @layer components {
@@ -17,10 +23,10 @@ body {
     @apply inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-3 font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-brand-600 px-5 py-3 font-semibold text-brand-700 transition hover:bg-brand-50;
+    @apply inline-flex items-center justify-center rounded-lg border border-brand-600 px-5 py-3 font-semibold text-brand-700 transition hover:bg-brand-50 dark:hover:bg-brand-950/40;
   }
   .input {
-    @apply w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+    @apply w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-transparent dark:text-gray-100 dark:focus:ring-brand-900;
   }
   .label {
     @apply mb-1.5 block text-sm font-medium text-gray-700;
@@ -31,4 +37,101 @@ body {
   .section {
     @apply mx-auto max-w-6xl px-4 sm:px-6 lg:px-8;
   }
+}
+
+/*
+ * App-wide dark theme.
+ *
+ * Most pages use plain Tailwind gray/white/brand utility classes directly
+ * (text-gray-900, bg-white, border-gray-100, ...) rather than the shared
+ * .card/.input component classes above. Rather than hand-editing every
+ * page to add a `dark:` variant next to each one, we remap the handful of
+ * utility classes actually used across the app (see src for the full
+ * list) here, scoped under `html.dark`. This keeps the whole app themed
+ * from one place and stays in sync automatically as new pages reuse the
+ * same Tailwind classes.
+ */
+html.dark .bg-white {
+  background-color: #101c17 !important;
+}
+html.dark .bg-gray-50 {
+  background-color: #0d1613 !important;
+}
+html.dark .bg-gray-100 {
+  background-color: #16221d !important;
+}
+html.dark .text-gray-900 {
+  color: #f1f8f4 !important;
+}
+html.dark .text-gray-700 {
+  color: #d6e5dc !important;
+}
+html.dark .text-gray-600 {
+  color: #bfd2c7 !important;
+}
+html.dark .text-gray-500 {
+  color: #94ab9f !important;
+}
+html.dark .text-gray-400 {
+  color: #718a7c !important;
+}
+html.dark .text-gray-300 {
+  color: #56695e !important;
+}
+html.dark .border-gray-100 {
+  border-color: #1c2b24 !important;
+}
+html.dark .border-gray-200 {
+  border-color: #26382f !important;
+}
+html.dark .border-gray-300 {
+  border-color: #324638 !important;
+}
+html.dark .bg-brand-50 {
+  background-color: #102a1d !important;
+}
+html.dark .bg-brand-100 {
+  background-color: #123420 !important;
+}
+html.dark .text-brand-50 {
+  color: #d6f5e3 !important;
+}
+html.dark .text-brand-600 {
+  color: #45c084 !important;
+}
+html.dark .text-brand-700 {
+  color: #5fd89a !important;
+}
+html.dark .border-brand-200 {
+  border-color: #1c4a34 !important;
+}
+html.dark .border-brand-300 {
+  border-color: #226643 !important;
+}
+html.dark .border-brand-500,
+html.dark .border-brand-600 {
+  border-color: #45c084 !important;
+}
+html.dark .bg-amber-50 {
+  background-color: #2b220f !important;
+}
+html.dark .text-amber-500,
+html.dark .text-amber-600,
+html.dark .text-amber-700 {
+  color: #f3c368 !important;
+}
+html.dark .bg-red-50 {
+  background-color: #2c1414 !important;
+}
+html.dark .text-red-600 {
+  color: #ff9494 !important;
+}
+html.dark .bg-green-50 {
+  background-color: #10281d !important;
+}
+html.dark .text-green-700 {
+  color: #7be3ab !important;
+}
+html.dark ::placeholder {
+  color: #5f7768;
 }

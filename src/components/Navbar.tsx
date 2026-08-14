@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { useTheme } from '@/context/ThemeContext'
 
 const links = [
   { to: '/', label: 'Bosh sahifa' },
@@ -11,6 +12,7 @@ const links = [
 
 export default function Navbar() {
   const { user, profile, isAdmin, signOut } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
 
@@ -68,13 +70,23 @@ export default function Navbar() {
           )}
         </div>
 
-        <button
-          className="grid h-10 w-10 place-items-center rounded-lg border border-gray-200 md:hidden"
-          onClick={() => setOpen((v) => !v)}
-          aria-label="Menyu"
-        >
-          <span className="text-xl">{open ? '✕' : '☰'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            className="grid h-10 w-10 place-items-center rounded-lg border border-gray-200 text-gray-500 transition hover:text-brand-700"
+            onClick={toggleTheme}
+            aria-label="Mavzuni almashtirish"
+            title="Mavzuni almashtirish"
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+          <button
+            className="grid h-10 w-10 place-items-center rounded-lg border border-gray-200 md:hidden"
+            onClick={() => setOpen((v) => !v)}
+            aria-label="Menyu"
+          >
+            <span className="text-xl">{open ? '✕' : '☰'}</span>
+          </button>
+        </div>
       </div>
 
       {open && (

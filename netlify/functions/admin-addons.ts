@@ -3,13 +3,13 @@ import { authenticate, isAdmin } from './_lib/auth'
 import { getDb } from './_lib/firebaseAdmin'
 import { queryData } from './_lib/firestoreUtil'
 import { badRequest, forbidden, json, notFound, serverError, unauthorized } from './_lib/respond'
-import type { ServiceType } from '../../src/lib/types'
+import type { Addon } from '../../src/lib/types'
 
 /**
- * Admin-only CRUD for serviceTypes (pricing). Public read of active
- * services still happens client-side via Firestore
- * (src/pages/Services.tsx, Booking.tsx) - this endpoint is only for the
- * admin panel, which also needs to see inactive services and edit prices.
+ * Admin-only CRUD for addons (extra services). Public read of active
+ * addons still happens client-side via Firestore (src/pages/Booking.tsx) -
+ * this endpoint is only for the admin panel, which also needs to see
+ * inactive addons and add/edit them.
  */
 const handler: Handler = async (event) => {
   try {
@@ -28,40 +28,29 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
   const db = getDb()
 
   if (event.httpMethod === 'GET') {
-    const snap = await db.collection('serviceTypes').get()
-    const rows = queryData<ServiceType>(snap)
+    const snap = await db.collection('addons').get()
+    const rows = queryData<Addon>(snap)
     rows.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     return json(200, rows)
   }
 
   if (event.httpMethod === 'POST') {
-    let body: Partial<ServiceType>
+    let body: Partial<Addon>
     try {
       body = JSON.parse(event.body ?? '{}')
     } catch {
       return badRequest("Noto'g'ri so'rov.")
     }
-    if (!body.code || !body.name_uz || !body.property_type || !body.pricing_unit) {
-      return badRequest("code, name_uz, property_type, pricing_unit majburiy.")
-    }
+    if (!body.code || !body.name_uz) return badRequest('code va name_uz majburiy.')
 
-    const now = new Date().toISOString()
     const doc = {
       code: body.code,
       name_uz: body.name_uz,
-      name_en: body.name_en ?? null,
-      description_uz: body.description_uz ?? null,
-      property_type: body.property_type,
-      pricing_unit: body.pricing_unit,
-      base_price: Number(body.base_price) || 0,
-      extra_unit_price: Number(body.extra_unit_price) || 0,
-      min_price: Number(body.min_price) || 0,
-      multiplier: Number(body.multiplier) || 1,
+      price: Number(body.price) || 0,
       is_active: body.is_active ?? true,
       sort_order: Number(body.sort_order) || 0,
-      created_at: now,
     }
-    const ref = await db.collection('serviceTypes').add(doc)
+    const ref = await db.collection('addons').add(doc)
     const created = await ref.get()
     return json(201, { id: ref.id, ...created.data() })
   }
@@ -77,22 +66,12 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       return badRequest("Noto'g'ri so'rov.")
     }
 
-    const allowed = [
-      'name_uz',
-      'name_en',
-      'description_uz',
-      'base_price',
-      'extra_unit_price',
-      'min_price',
-      'multiplier',
-      'is_active',
-      'sort_order',
-    ] as const
+    const allowed = ['name_uz', 'price', 'is_active', 'sort_order'] as const
     const patch: Record<string, unknown> = {}
     for (const key of allowed) if (key in body) patch[key] = body[key]
     if (Object.keys(patch).length === 0) return badRequest("O'zgartiriladigan maydon yo'q.")
 
-    const ref = db.collection('serviceTypes').doc(id)
+    const ref = db.collection('addons').doc(id)
     const snap = await ref.get()
     if (!snap.exists) return notFound()
 

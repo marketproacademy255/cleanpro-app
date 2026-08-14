@@ -1,8 +1,9 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
-import { apiFetch } from '@/lib/api'
-import { formatUZS } from '@/lib/pricing'
+import { apiFetch, ApiError } from '@/lib/api'
+import { formatUZS, TIER_LABEL_UZ } from '@/lib/pricing'
 import { buildClickCheckoutUrl, buildPaymeCheckoutUrl, paymentGatewaysConfigured } from '@/lib/payments'
+import { fileToReceiptDataUrl } from '@/lib/receiptFile'
 import type { Booking } from '@/lib/types'
 
 export default function BookingDetail() {
@@ -10,19 +11,62 @@ export default function BookingDetail() {
   const [booking, setBooking] = useState<Booking | null>(null)
   const [loading, setLoading] = useState(true)
   const [redirecting, setRedirecting] = useState<'payme' | 'click' | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function reload() {
+    if (!id) return
+    const data = await apiFetch<Booking>(`bookings?id=${id}`).catch(() => null)
+    setBooking(data)
+  }
 
   useEffect(() => {
     async function load() {
-      if (!id) return
-      const data = await apiFetch<Booking>(`bookings?id=${id}`).catch(() => null)
-      setBooking(data)
-      setLoading(false)
+      if (!id) return setLoading(false)
+      try {
+        await reload()
+      } finally {
+        setLoading(false)
+      }
     }
     load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   const gateways = paymentGatewaysConfigured()
   const isPaid = booking?.payments?.some((p) => p.status === 'paid')
+  const manualPayment = booking?.payments
+    ?.filter((p) => p.provider === 'manual')
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0]
+
+  async function uploadReceipt(file: File) {
+    if (!booking) return
+    setUploadError(null)
+    setUploading(true)
+    try {
+      // No Firebase Storage bucket on this project (it now requires the
+      // paid Blaze plan) - the receipt is downscaled/compressed and stored
+      // as a data: URL directly on the payment doc instead. See
+      // src/lib/receiptFile.ts.
+      const receiptUrl = await fileToReceiptDataUrl(file)
+
+      await apiFetch('payments', {
+        method: 'POST',
+        body: JSON.stringify({ booking_id: booking.id, provider: 'manual', receipt_url: receiptUrl }),
+      })
+      await reload()
+    } catch (err) {
+      setUploadError(
+        err instanceof ApiError || err instanceof Error
+          ? err.message
+          : "Chekni yuklab bo'lmadi. Qaytadan urinib ko'ring.",
+      )
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   async function pay(provider: 'payme' | 'click') {
     if (!booking) return
@@ -53,6 +97,7 @@ export default function BookingDetail() {
 
       <div className="card mt-6 space-y-2 text-sm">
         <Row label="Xizmat" value={booking.service_types?.name_uz ?? '-'} />
+        <Row label="Tarif" value={TIER_LABEL_UZ[booking.tier] ?? TIER_LABEL_UZ.standard} />
         <Row label="Manzil" value={`${booking.address}, ${booking.city}`} />
         <Row label="Sana / vaqt" value={`${booking.scheduled_date} ${booking.scheduled_time}`} />
         <Row label="Aloqa" value={`${booking.contact_name} · ${booking.contact_phone}`} />
@@ -79,6 +124,50 @@ export default function BookingDetail() {
             </button>
             <button onClick={() => pay('click')} disabled={redirecting !== null} className="btn-secondary">
               {redirecting === 'click' ? "Yo'naltirilmoqda…" : "Click orqali to'lash"}
+            </button>
+          </div>
+
+          <hr className="my-5" />
+
+          <h4 className="text-sm font-semibold text-gray-900">Yoki to'lov chekini yuklang</h4>
+          <p className="mt-1 text-xs text-gray-500">
+            Bank orqali to'g'ridan-to'g'ri to'lov qilgan bo'lsangiz, chek rasmini (yoki PDF) yuklang — administrator
+            tekshirib, buyurtmani tasdiqlaydi.
+          </p>
+
+          {manualPayment?.status === 'pending' && manualPayment.receipt_url ? (
+            <div className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
+              Chek yuborildi, tekshirilmoqda. {' '}
+              <a href={manualPayment.receipt_url} target="_blank" rel="noreferrer" className="underline">
+                Yuklangan faylni ko'rish
+              </a>
+            </div>
+          ) : manualPayment?.status === 'failed' ? (
+            <div className="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-600">
+              Oldingi chek rad etildi. Iltimos, to'g'ri chekni qaytadan yuklang.
+            </div>
+          ) : null}
+
+          {uploadError && <p className="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-600">{uploadError}</p>}
+
+          <div className="mt-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,application/pdf"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) uploadReceipt(file)
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="btn-secondary"
+            >
+              {uploading ? 'Yuklanmoqda…' : "Chekni yuklash"}
             </button>
           </div>
         </div>

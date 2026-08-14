@@ -9,13 +9,19 @@ export default function Services() {
   const [services, setServices] = useState<ServiceType[]>([])
   const [cleaners, setCleaners] = useState<Cleaner[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
-      const [svc, staff] = await Promise.all([fetchActiveServiceTypes(), fetchActiveCleaners()])
-      setServices(svc)
-      setCleaners(staff)
-      setLoading(false)
+      try {
+        const [svc, staff] = await Promise.all([fetchActiveServiceTypes(), fetchActiveCleaners()])
+        setServices(svc)
+        setCleaners(staff)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Ma'lumotlarni yuklab bo'lmadi.")
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [])
@@ -31,6 +37,8 @@ export default function Services() {
 
       {loading ? (
         <div className="mt-10 text-gray-400">Yuklanmoqda…</div>
+      ) : error ? (
+        <div className="mt-10 rounded-lg bg-red-50 p-4 text-sm text-red-600">{error}</div>
       ) : (
         <div className="mt-10 grid gap-6 md:grid-cols-2">
           {services.map((s) => (

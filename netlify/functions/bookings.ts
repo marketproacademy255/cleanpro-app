@@ -5,7 +5,9 @@ import { docData, queryData } from './_lib/firestoreUtil'
 import { badRequest, forbidden, json, notFound, serverError, unauthorized } from './_lib/respond'
 import { formatBookingCreatedMessage, notifyTelegram } from './_lib/telegram'
 import { calculatePrice } from '../../src/lib/pricing'
-import type { Addon, Booking, BookingFrequency, Cleaner, ServiceType } from '../../src/lib/types'
+import type { Addon, Booking, BookingFrequency, BookingTier, Cleaner, ServiceType } from '../../src/lib/types'
+
+const VALID_TIERS: BookingTier[] = ['standard', 'premium', 'elite']
 
 interface CreateBookingBody {
   serviceId: string
@@ -16,6 +18,7 @@ interface CreateBookingBody {
   date: string
   time: string
   frequency: BookingFrequency
+  tier?: BookingTier
   addonCodes: string[]
   contactName: string
   contactPhone: string
@@ -101,6 +104,8 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     const allAddons = queryData<Addon>(addonsSnap)
     const selectedAddons = allAddons.filter((a) => (body.addonCodes ?? []).includes(a.code))
 
+    const tier: BookingTier = VALID_TIERS.includes(body.tier as BookingTier) ? (body.tier as BookingTier) : 'standard'
+
     // Never trust client-sent prices - recompute from the source of truth.
     const price = calculatePrice({
       service,
@@ -108,6 +113,7 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       areaSqm: body.areaSqm ? Number(body.areaSqm) : null,
       selectedAddons,
       frequency: body.frequency ?? 'once',
+      tier,
     })
 
     const now = new Date().toISOString()
@@ -123,6 +129,7 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       scheduled_date: body.date,
       scheduled_time: body.time,
       frequency: body.frequency ?? 'once',
+      tier,
       addon_codes: body.addonCodes ?? [],
       contact_name: body.contactName || req.profile?.full_name || null,
       contact_phone: body.contactPhone,

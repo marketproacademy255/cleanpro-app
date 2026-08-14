@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { fetchActiveAddons, fetchActiveServiceTypes } from '@/lib/publicData'
 import { apiFetch, ApiError } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import { calculatePrice, formatUZS, FREQUENCY_LABEL_UZ } from '@/lib/pricing'
-import type { Addon, Booking as BookingRow, BookingFrequency, ServiceType } from '@/lib/types'
+import { calculatePrice, formatUZS, FREQUENCY_LABEL_UZ, TIER_LABEL_UZ, TIER_MULTIPLIER, TIER_PERKS_UZ } from '@/lib/pricing'
+import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, ServiceType } from '@/lib/types'
+
+const TIERS: BookingTier[] = ['standard', 'premium', 'elite']
 
 const DRAFT_KEY = 'cleanpro_booking_draft'
 
@@ -17,6 +19,7 @@ interface DraftForm {
   date: string
   time: string
   frequency: BookingFrequency
+  tier: BookingTier
   addonCodes: string[]
   contactName: string
   contactPhone: string
@@ -32,6 +35,7 @@ const emptyForm: DraftForm = {
   date: '',
   time: '10:00',
   frequency: 'once',
+  tier: 'standard',
   addonCodes: [],
   contactName: '',
   contactPhone: '',
@@ -51,18 +55,23 @@ export default function Booking() {
 
   useEffect(() => {
     async function load() {
-      const [serviceList, ad] = await Promise.all([fetchActiveServiceTypes(), fetchActiveAddons()])
-      setServices(serviceList)
-      setAddons(ad)
+      try {
+        const [serviceList, ad] = await Promise.all([fetchActiveServiceTypes(), fetchActiveAddons()])
+        setServices(serviceList)
+        setAddons(ad)
 
-      const draftRaw = sessionStorage.getItem(DRAFT_KEY)
-      if (draftRaw) {
-        setForm(JSON.parse(draftRaw))
-        sessionStorage.removeItem(DRAFT_KEY)
-      } else if (serviceList[0]) {
-        setForm((f) => ({ ...f, serviceId: serviceList[0].id }))
+        const draftRaw = sessionStorage.getItem(DRAFT_KEY)
+        if (draftRaw) {
+          setForm(JSON.parse(draftRaw))
+          sessionStorage.removeItem(DRAFT_KEY)
+        } else if (serviceList[0]) {
+          setForm((f) => ({ ...f, serviceId: serviceList[0].id }))
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Ma'lumotlarni yuklab bo'lmadi. Qaytadan urinib ko'ring.")
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     load()
   }, [])
@@ -85,8 +94,9 @@ export default function Booking() {
       areaSqm: form.areaSqm ? Number(form.areaSqm) : null,
       selectedAddons,
       frequency: form.frequency,
+      tier: form.tier,
     })
-  }, [selectedService, form.rooms, form.areaSqm, selectedAddons, form.frequency])
+  }, [selectedService, form.rooms, form.areaSqm, selectedAddons, form.frequency, form.tier])
 
   function updateField<K extends keyof DraftForm>(key: K, value: DraftForm[K]) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -133,6 +143,7 @@ export default function Booking() {
           date: form.date,
           time: form.time,
           frequency: form.frequency,
+          tier: form.tier,
           addonCodes: form.addonCodes,
           contactName: form.contactName,
           contactPhone: form.contactPhone,
@@ -240,6 +251,36 @@ export default function Booking() {
           </div>
 
           <div className="card">
+            <label className="label">Tarif</label>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {TIERS.map((t) => (
+                <button
+                  type="button"
+                  key={t}
+                  onClick={() => updateField('tier', t)}
+                  className={`rounded-xl border p-4 text-left transition ${
+                    form.tier === t ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-brand-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-900">{TIER_LABEL_UZ[t]}</span>
+                    {t !== 'standard' && (
+                      <span className="rounded-full bg-brand-600 px-2 py-0.5 text-[11px] font-semibold text-white">
+                        +{Math.round((TIER_MULTIPLIER[t] - 1) * 100)}%
+                      </span>
+                    )}
+                  </div>
+                  <ul className="mt-2 space-y-1 text-xs text-gray-500">
+                    {TIER_PERKS_UZ[t].map((perk) => (
+                      <li key={perk}>• {perk}</li>
+                    ))}
+                  </ul>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="card">
             <label className="label">Qo'shimcha xizmatlar</label>
             <div className="grid gap-2 sm:grid-cols-2">
               {addons.map((a) => (
@@ -279,6 +320,12 @@ export default function Booking() {
                   <span>Asosiy narx</span>
                   <span>{formatUZS(priceBreakdown.baseAmount)}</span>
                 </div>
+                {priceBreakdown.tierAmount > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>{TIER_LABEL_UZ[form.tier]} tarifi</span>
+                    <span>+{formatUZS(priceBreakdown.tierAmount)}</span>
+                  </div>
+                )}
                 {priceBreakdown.addonsAmount > 0 && (
                   <div className="flex justify-between text-gray-600">
                     <span>Qo'shimcha xizmatlar</span>

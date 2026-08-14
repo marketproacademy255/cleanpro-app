@@ -1,4 +1,4 @@
-import type { Addon, BookingFrequency, ServiceType } from './types'
+import type { Addon, BookingFrequency, BookingTier, ServiceType } from './types'
 
 export const FREQUENCY_DISCOUNT: Record<BookingFrequency, number> = {
   once: 0,
@@ -14,8 +14,44 @@ export const FREQUENCY_LABEL_UZ: Record<BookingFrequency, string> = {
   monthly: 'Oyiga bir marta (-10%)',
 }
 
+/**
+ * Service tariffs (tiers). These sit on top of the chosen service type and
+ * scale its price with a multiplier - they don't change what gets cleaned,
+ * they change how the visit is delivered (staff seniority, extra QA pass,
+ * priority scheduling, etc). Selected once per booking on the Booking page.
+ */
+export const TIER_MULTIPLIER: Record<BookingTier, number> = {
+  standard: 1,
+  premium: 1.3,
+  elite: 1.65,
+}
+
+export const TIER_LABEL_UZ: Record<BookingTier, string> = {
+  standard: 'Standart',
+  premium: 'Premium',
+  elite: 'Elite',
+}
+
+export const TIER_PERKS_UZ: Record<BookingTier, string[]> = {
+  standard: ["Tajribali xizmatchi", "Standart tozalash vositalari", "Belgilangan kunda tashrif"],
+  premium: [
+    "Katta tajribaga ega xizmatchi",
+    "Premium ekologik vositalar",
+    "Qo'shimcha sifat nazorati",
+    "Vaqtni tanlashda ustuvorlik",
+  ],
+  elite: [
+    "Eng yuqori reytingli jamoa boshlig'i",
+    "Premium vositalar + zararsizlantirish",
+    "2 bosqichli sifat nazorati",
+    "Bir soatlik aniq vaqt oynasi",
+    "24/7 ustuvor mijozlarni qo'llab-quvvatlash",
+  ],
+}
+
 export interface PriceBreakdown {
   baseAmount: number
+  tierAmount: number
   addonsAmount: number
   subtotal: number
   discountAmount: number
@@ -37,8 +73,9 @@ export function calculatePrice(params: {
   areaSqm?: number | null
   selectedAddons: Addon[]
   frequency: BookingFrequency
+  tier?: BookingTier
 }): PriceBreakdown {
-  const { service, rooms, areaSqm, selectedAddons, frequency } = params
+  const { service, rooms, areaSqm, selectedAddons, frequency, tier = 'standard' } = params
 
   let base = 0
   if (service.pricing_unit === 'per_room') {
@@ -54,14 +91,19 @@ export function calculatePrice(params: {
   base = base * service.multiplier
   base = Math.max(base, service.min_price)
 
+  const tierMultiplier = TIER_MULTIPLIER[tier] ?? 1
+  const tierAmount = base * (tierMultiplier - 1)
+  const baseWithTier = base + tierAmount
+
   const addonsAmount = selectedAddons.reduce((sum, a) => sum + a.price, 0)
-  const subtotal = base + addonsAmount
+  const subtotal = baseWithTier + addonsAmount
   const discountRate = FREQUENCY_DISCOUNT[frequency] ?? 0
   const discountAmount = Math.round(subtotal * discountRate)
   const totalAmount = subtotal - discountAmount
 
   return {
     baseAmount: Math.round(base),
+    tierAmount: Math.round(tierAmount),
     addonsAmount: Math.round(addonsAmount),
     subtotal: Math.round(subtotal),
     discountAmount,
