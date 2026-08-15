@@ -136,13 +136,25 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     const ref = db.collection('payments').doc(id)
     const snap = await ref.get()
     if (!snap.exists) return notFound()
+    const payment = snap.data()!
 
     const now = new Date().toISOString()
     await ref.update({
       status: body.status,
       updated_at: now,
-      performed_at: body.status === 'paid' ? now : snap.data()?.performed_at ?? null,
+      performed_at: body.status === 'paid' ? now : payment.performed_at ?? null,
     })
+
+    // Mirror what the Payme/Click webhooks do automatically: confirming a
+    // manually-reviewed payment also moves the booking out of "pending".
+    if (body.status === 'paid' && payment.booking_id) {
+      const bookingRef = db.collection('bookings').doc(payment.booking_id)
+      const bookingSnap = await bookingRef.get()
+      if (bookingSnap.exists && bookingSnap.data()?.status === 'pending') {
+        await bookingRef.update({ status: 'confirmed', updated_at: now })
+      }
+    }
+
     const updated = await ref.get()
     return json(200, { id: updated.id, ...updated.data() })
   }

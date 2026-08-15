@@ -1,11 +1,26 @@
 import { useState, type FormEvent } from 'react'
+import { apiFetch, ApiError } from '@/lib/api'
 
 export default function Contact() {
   const [sent, setSent] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [name, setName] = useState('')
+  const [contact, setContact] = useState('')
+  const [message, setMessage] = useState('')
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setSent(true)
+    setError(null)
+    setSending(true)
+    try {
+      await apiFetch('contact', { method: 'POST', body: JSON.stringify({ name, contact, message }) })
+      setSent(true)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Xabar yuborilmadi. Qaytadan urinib ko'ring.")
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -25,17 +40,20 @@ export default function Contact() {
         <form onSubmit={handleSubmit} className="card mt-6 space-y-4">
           <div>
             <label className="label">Ism</label>
-            <input className="input" required />
+            <input className="input" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <div>
             <label className="label">Telefon yoki email</label>
-            <input className="input" required />
+            <input className="input" value={contact} onChange={(e) => setContact(e.target.value)} required />
           </div>
           <div>
             <label className="label">Xabar</label>
-            <textarea className="input" rows={4} required />
+            <textarea className="input" rows={4} value={message} onChange={(e) => setMessage(e.target.value)} required />
           </div>
-          <button type="submit" className="btn-primary w-full">Yuborish</button>
+          {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+          <button type="submit" disabled={sending} className="btn-primary w-full">
+            {sending ? 'Yuborilmoqda…' : 'Yuborish'}
+          </button>
         </form>
       )}
     </div>

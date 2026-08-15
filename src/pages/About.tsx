@@ -9,16 +9,19 @@ export default function About() {
       </p>
       <div className="mt-8 grid gap-6 sm:grid-cols-3">
         <div className="card text-center">
-          <div className="text-3xl font-extrabold text-brand-700">2,400+</div>
-          <div className="mt-1 text-sm text-gray-500">Bajarilgan buyurtma</div>
+          <div className="text-3xl">🛡️</div>
+          <div className="mt-2 text-sm font-semibold text-gray-900">Tekshirilgan xizmatchilar</div>
+          <div className="mt-1 text-xs text-gray-500">Har bir xizmatchi shaxsan tanishtiriladi</div>
         </div>
         <div className="card text-center">
-          <div className="text-3xl font-extrabold text-brand-700">30+</div>
-          <div className="mt-1 text-sm text-gray-500">Tajribali xizmatchi</div>
+          <div className="text-3xl">💳</div>
+          <div className="mt-2 text-sm font-semibold text-gray-900">Xavfsiz to'lov</div>
+          <div className="mt-1 text-xs text-gray-500">Payme, Click yoki chek orqali</div>
         </div>
         <div className="card text-center">
-          <div className="text-3xl font-extrabold text-brand-700">4.9/5</div>
-          <div className="mt-1 text-sm text-gray-500">O'rtacha reyting</div>
+          <div className="text-3xl">🌿</div>
+          <div className="mt-2 text-sm font-semibold text-gray-900">Ekologik vositalar</div>
+          <div className="mt-1 text-xs text-gray-500">Sog'liq uchun xavfsiz</div>
         </div>
       </div>
       <h2 className="mt-12 text-xl font-bold text-gray-900">Nega aynan biz?</h2>

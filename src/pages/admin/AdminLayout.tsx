@@ -5,6 +5,7 @@ const links = [
   { to: '/admin/buyurtmalar', label: 'Buyurtmalar' },
   { to: '/admin/xizmatchilar', label: 'Xizmatchilar' },
   { to: '/admin/xizmatlar', label: "Xizmatlar va narxlar" },
+  { to: '/admin/qoshimchalar', label: "Qo'shimcha xizmatlar" },
 ]
 
 export default function AdminLayout() {

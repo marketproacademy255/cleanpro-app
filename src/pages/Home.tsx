@@ -36,10 +36,10 @@ export default function Home() {
               Narxlarni ko'rish
             </Link>
           </div>
-          <div className="mt-8 flex gap-8 text-sm text-gray-500">
-            <div><span className="block text-2xl font-bold text-gray-900">2,400+</span>bajarilgan buyurtma</div>
-            <div><span className="block text-2xl font-bold text-gray-900">4.9/5</span>mijozlar reytingi</div>
-            <div><span className="block text-2xl font-bold text-gray-900">30+</span>tajribali xizmatchi</div>
+          <div className="mt-8 flex flex-wrap gap-6 text-sm text-gray-500">
+            <div className="flex items-center gap-2"><span className="text-lg">🛡️</span>Tekshirilgan xizmatchilar</div>
+            <div className="flex items-center gap-2"><span className="text-lg">💳</span>Xavfsiz onlayn to'lov</div>
+            <div className="flex items-center gap-2"><span className="text-lg">⚡</span>Tez javob beramiz</div>
           </div>
         </div>
         <div className="card bg-gradient-to-br from-brand-50 to-white">

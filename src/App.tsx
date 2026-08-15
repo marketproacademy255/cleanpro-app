@@ -20,6 +20,7 @@ import AdminOverview from '@/pages/admin/AdminOverview'
 import AdminBookings from '@/pages/admin/AdminBookings'
 import AdminStaff from '@/pages/admin/AdminStaff'
 import AdminServices from '@/pages/admin/AdminServices'
+import AdminAddons from '@/pages/admin/AdminAddons'
 
 export default function App() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="buyurtmalar" element={<AdminBookings />} />
             <Route path="xizmatchilar" element={<AdminStaff />} />
             <Route path="xizmatlar" element={<AdminServices />} />
+            <Route path="qoshimchalar" element={<AdminAddons />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

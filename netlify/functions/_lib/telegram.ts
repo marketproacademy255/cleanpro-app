@@ -87,6 +87,19 @@ export function formatReceiptUploadedMessage(params: {
   ].join('\n')
 }
 
+export function formatContactMessage(params: {
+  name: string
+  contact: string
+  message: string
+}): string {
+  return [
+    '✉️ <b>Yangi xabar (Aloqa sahifasi)</b>',
+    `Ism: ${esc(params.name)}`,
+    `Aloqa: ${esc(params.contact)}`,
+    `Xabar: ${esc(params.message)}`,
+  ].join('\n')
+}
+
 export function formatPaymentConfirmedMessage(params: {
   provider: 'payme' | 'click'
   contactName: string
