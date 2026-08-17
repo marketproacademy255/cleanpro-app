@@ -32,5 +32,14 @@ service cloud.firestore {
     match /payments/{id} {
       allow read, write: if false;
     }
+    // Telegram phone+password login system (see netlify/functions/telegram-*
+    // and the standalone Python registration bot). Written/read only by the
+    // Admin SDK (backend + bot) - never directly by the browser.
+    match /telegramAuth/{phone} {
+      allow read, write: if false;
+    }
+    match /telegramLoginCodes/{phone} {
+      allow read, write: if false;
+    }
   }
 }

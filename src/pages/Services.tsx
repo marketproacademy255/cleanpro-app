@@ -45,7 +45,7 @@ export default function Services() {
             <div key={s.id} className="card">
               <div className="flex items-start justify-between">
                 <h3 className="text-xl font-semibold text-gray-900">{s.name_uz}</h3>
-                <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
+                <span className="tag bg-brand-50 text-brand-700">
                   {s.property_type === 'home' ? 'Uy' : 'Ofis'}
                 </span>
               </div>

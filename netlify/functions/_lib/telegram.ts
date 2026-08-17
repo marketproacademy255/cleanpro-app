@@ -33,6 +33,39 @@ export async function notifyTelegram(text: string): Promise<void> {
   }
 }
 
+/**
+ * Sends a message via the separate "auth" Telegram bot (the one customers
+ * register through - see the standalone Python bot). Distinct from
+ * notifyTelegram() above, which posts to the fixed admin chat using the
+ * business's own notification bot. Set TELEGRAM_AUTH_BOT_TOKEN in Netlify
+ * env vars (never VITE_-prefixed).
+ */
+export async function sendTelegramDirectMessage(chatId: string | number, text: string): Promise<boolean> {
+  const token = process.env.TELEGRAM_AUTH_BOT_TOKEN
+  if (!token) {
+    // eslint-disable-next-line no-console
+    console.error('TELEGRAM_AUTH_BOT_TOKEN sozlanmagan, login kodi yuborilmadi.')
+    return false
+  }
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+    })
+    if (!res.ok) {
+      // eslint-disable-next-line no-console
+      console.error('Telegram auth-bot sendMessage failed', res.status, await res.text())
+      return false
+    }
+    return true
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Telegram auth-bot sendMessage error', err)
+    return false
+  }
+}
+
 function esc(value: unknown): string {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }

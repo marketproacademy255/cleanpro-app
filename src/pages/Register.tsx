@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { TELEGRAM_BOT_USERNAME } from '@/lib/config'
 
 export default function Register() {
   const { signUp } = useAuth()
@@ -60,6 +61,18 @@ export default function Register() {
             </button>
           </form>
         )}
+
+        {TELEGRAM_BOT_USERNAME && !done && (
+          <a
+            href={`https://t.me/${TELEGRAM_BOT_USERNAME}?start=signup`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-brand-200 bg-brand-50 py-2.5 text-sm font-medium text-brand-700 transition hover:bg-brand-100"
+          >
+            Telegram orqali ro'yxatdan o'tish
+          </a>
+        )}
+
         <p className="mt-6 text-center text-sm text-gray-500">
           Hisobingiz bormi?{' '}
           <Link to="/kirish" className="font-medium text-brand-700">

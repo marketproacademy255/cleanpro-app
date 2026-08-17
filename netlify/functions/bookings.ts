@@ -134,7 +134,7 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       contact_name: body.contactName || req.profile?.full_name || null,
       contact_phone: body.contactPhone,
       notes: body.notes ?? null,
-      base_amount: price.baseAmount + price.addonsAmount,
+      base_amount: price.subtotal,
       discount_amount: price.discountAmount,
       total_amount: price.totalAmount,
       currency: 'UZS',

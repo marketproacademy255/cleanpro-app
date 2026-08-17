@@ -177,7 +177,7 @@ export default function Booking() {
                   type="button"
                   key={s.id}
                   onClick={() => updateField('serviceId', s.id)}
-                  className={`rounded-xl border p-4 text-left transition ${
+                  className={`rounded-md border p-4 text-left transition ${
                     form.serviceId === s.id ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-brand-300'
                   }`}
                 >
@@ -258,14 +258,14 @@ export default function Booking() {
                   type="button"
                   key={t}
                   onClick={() => updateField('tier', t)}
-                  className={`rounded-xl border p-4 text-left transition ${
+                  className={`rounded-md border p-4 text-left transition ${
                     form.tier === t ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-brand-300'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-gray-900">{TIER_LABEL_UZ[t]}</span>
                     {t !== 'standard' && (
-                      <span className="rounded-full bg-brand-600 px-2 py-0.5 text-[11px] font-semibold text-white">
+                      <span className="tag bg-brand-600 px-2 py-0.5 text-[11px] text-white">
                         +{Math.round((TIER_MULTIPLIER[t] - 1) * 100)}%
                       </span>
                     )}

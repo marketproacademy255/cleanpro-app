@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Menu, Moon, Sun, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useTheme } from '@/context/ThemeContext'
+import { IS_DEMO } from '@/lib/config'
 
 const links = [
   { to: '/', label: 'Bosh sahifa' },
@@ -24,9 +26,14 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/90 backdrop-blur">
       <div className="section flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 text-xl font-extrabold text-brand-700">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-600 text-white">CP</span>
+        <Link to="/" className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-brand-700">
+          <span className="grid h-9 w-9 place-items-center rounded-md bg-brand-600 text-white">CP</span>
           CleanPro
+          {IS_DEMO && (
+            <span className="tag bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700">
+              Demo
+            </span>
+          )}
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
@@ -72,19 +79,19 @@ export default function Navbar() {
 
         <div className="flex items-center gap-2">
           <button
-            className="grid h-10 w-10 place-items-center rounded-lg border border-gray-200 text-gray-500 transition hover:text-brand-700"
+            className="grid h-10 w-10 place-items-center rounded-md border border-gray-200 text-gray-500 transition hover:border-brand-600 hover:text-brand-700"
             onClick={toggleTheme}
             aria-label="Mavzuni almashtirish"
             title="Mavzuni almashtirish"
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
           <button
-            className="grid h-10 w-10 place-items-center rounded-lg border border-gray-200 md:hidden"
+            className="grid h-10 w-10 place-items-center rounded-md border border-gray-200 text-gray-500 md:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Menyu"
           >
-            <span className="text-xl">{open ? '✕' : '☰'}</span>
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>

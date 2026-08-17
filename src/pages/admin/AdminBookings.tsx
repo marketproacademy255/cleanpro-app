@@ -42,7 +42,7 @@ export default function AdminBookings() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900">Buyurtmalar</h1>
-      <div className="mt-6 overflow-x-auto rounded-xl border border-gray-100">
+      <div className="mt-6 overflow-x-auto rounded-lg border border-gray-100">
         <table className="w-full min-w-[900px] text-sm">
           <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
             <tr>

@@ -39,6 +39,14 @@ export function getDb() {
   return getFirestore()
 }
 
+/** Used to mint custom auth tokens for the Telegram phone+password login
+ * flow (see telegram-login-verify.ts) - lets us hand the client a real
+ * Firebase Auth session without ever handling Firebase email/password. */
+export function getAdminAuth() {
+  ensureInitialized()
+  return getAuth()
+}
+
 /**
  * Verifies the Firebase ID token sent in the Authorization: Bearer header.
  * Returns the decoded token (contains uid, email, ...) or null if missing

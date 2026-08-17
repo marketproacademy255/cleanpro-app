@@ -95,6 +95,7 @@ faylida ham hammasi izohlangan.
 | `VITE_PAYME_MERCHANT_ID` | business.payme.uz |
 | `VITE_CLICK_MERCHANT_ID`, `VITE_CLICK_SERVICE_ID` | merchant.click.uz |
 | `VITE_APP_URL` | production domeningiz, masalan `https://cleanpro.uz` |
+| `VITE_TELEGRAM_BOT_USERNAME` | Telegram ro'yxatdan o'tish botining username'i (`@` siz), masalan `cleanpro_uz_bot` — `telegram-auth-bot/` papkasiga qarang |
 
 **Faqat serverga (Netlify Functions) — HECH QACHON `VITE_` prefiksi bilan yozmang, aks holda
 brauzer bundle'iga tushib, hamma ko'radi:**
@@ -108,6 +109,7 @@ brauzer bundle'iga tushib, hamma ko'radi:**
 | `CLICK_SECRET_KEY` | merchant.click.uz kabinetidagi Secret Key |
 | `TELEGRAM_BOT_TOKEN` | @BotFather |
 | `TELEGRAM_CHAT_ID` | pastga qarang |
+| `TELEGRAM_AUTH_BOT_TOKEN` | Telegram orqali telefon+parol bilan kirish/ro'yxatdan o'tish tizimi uchun bot tokeni — `telegram-auth-bot/` papkasidagi standalone bot bilan bir xil token (yoki alohida bot yaratsangiz, o'shaning tokeni) |
 
 ### Telegram bot va chat ID qanday olinadi
 
@@ -120,6 +122,31 @@ brauzer bundle'iga tushib, hamma ko'radi:**
 > ⚠️ **Xavfsizlik eslatmasi:** agar bot tokeningiz biror joyda (chat, skrinshot, kod repozitoriysi)
 > oshkor bo'lgan bo'lsa, uni @BotFather orqali `/revoke` qilib darhol yangilang — eski token
 > zaharlangan hisoblanadi va uni kim topsa, o'sha nomdan xabar yubora oladi.
+
+## Telegram orqali ro'yxatdan o'tish va kirish (SMS o'rniga)
+
+SMS orqali tasdiqlash kodi yuborish pullik va murakkab bo'lgani uchun, saytda SMS o'rniga
+Telegram orqali ishlaydigan alohida tizim qo'shildi:
+
+1. **Ro'yxatdan o'tish** — foydalanuvchi standalone Node.js botga (`telegram-auth-bot/` papkasiga
+   qarang, alohida serveringizda ishga tushirasiz) o'tib, telefon raqami + to'liq ism + parol
+   bilan "hisob" yaratadi. Bot bu ma'lumotni to'g'ridan-to'g'ri Firestore'ga yozadi
+   (`telegramAuth/{telefon}` va `profiles/{uid}` collection'lariga).
+2. **Kirish** — sayt (`/kirish`, "Telegram" tab) shu telefon+parolni
+   `netlify/functions/telegram-login-request.ts` orqali tekshiradi, to'g'ri bo'lsa foydalanuvchining
+   Telegram chatiga 6 xonali kod yuboradi (`TELEGRAM_AUTH_BOT_TOKEN` orqali). Foydalanuvchi kodni
+   kiritgach, `netlify/functions/telegram-login-verify.ts` uni tekshirib, Firebase custom token
+   qaytaradi — sayt shu token bilan oddiy Firebase Auth sessiyasini ochadi.
+
+Ishga tushirish uchun:
+- `telegram-auth-bot/README.md` bo'yicha botni serveringizda ishga tushiring.
+- Netlify env'ga `TELEGRAM_AUTH_BOT_TOKEN` qo'shing (bot bilan bir xil token bo'lishi mumkin).
+- Bot username'ini `VITE_TELEGRAM_BOT_USERNAME` sifatida Netlify env'ga qo'shing — shunda sayt
+  "Ro'yxatdan o'tish"/"Kirish" sahifalarida botga o'tuvchi tugma ko'rsatadi.
+
+> ⚠️ Hozircha berilgan bot tokeni (`8862054310:...`) demo tezkorligi uchun `telegram-auth-bot/bot.js`
+> ichiga ham yozib qo'yilgan. Production'ga chiqishda uni koddan olib tashlab, faqat muhit
+> o'zgaruvchilari orqali berish tavsiya etiladi.
 
 ## Payme va Click — real to'lovlarni yoqish
 

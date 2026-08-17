@@ -19,20 +19,30 @@ html.dark body {
 }
 
 @layer components {
+  /*
+   * Design language: small, consistent border-radius (rounded-md/rounded-lg,
+   * never rounded-2xl/rounded-full for structural elements) and flat,
+   * bordered surfaces instead of oversized soft shadows/pastel gradients.
+   * This matches established American B2B SaaS sites (Paycor, Stripe,
+   * Gusto) rather than the "bubbly" look common in AI-generated UIs.
+   */
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-lg bg-brand-600 px-5 py-3 font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-brand-600 px-5 py-3 font-semibold tracking-tight text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-brand-600 px-5 py-3 font-semibold text-brand-700 transition hover:bg-brand-50 dark:hover:bg-brand-950/40;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 px-5 py-3 font-semibold tracking-tight text-gray-800 transition hover:border-brand-600 hover:text-brand-700 dark:border-gray-600 dark:text-gray-100 dark:hover:bg-brand-950/40;
   }
   .input {
-    @apply w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-transparent dark:text-gray-100 dark:focus:ring-brand-900;
+    @apply w-full rounded-md border border-gray-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-transparent dark:text-gray-100 dark:focus:ring-brand-900;
   }
   .label {
     @apply mb-1.5 block text-sm font-medium text-gray-700;
   }
   .card {
-    @apply rounded-2xl border border-gray-100 bg-white p-6 shadow-sm;
+    @apply rounded-lg border border-gray-200 bg-white p-6 shadow-sm;
+  }
+  .tag {
+    @apply inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold tracking-wide;
   }
   .section {
     @apply mx-auto max-w-6xl px-4 sm:px-6 lg:px-8;

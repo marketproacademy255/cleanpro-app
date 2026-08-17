@@ -1,0 +1,16 @@
+{
+  "name": "cleanpro-telegram-auth-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CleanPro uchun standalone Telegram ro'yxatdan o'tish boti (Node.js / Telegraf)",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "firebase-admin": "^12.1.0",
+    "telegraf": "^4.16.3"
+  }
+}
