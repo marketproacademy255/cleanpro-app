@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { CheckCircle2, Clock } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import type { Booking } from '@/lib/types'
 
@@ -47,13 +48,17 @@ export default function PaymentResult() {
         <p className="text-gray-400">To'lov holati tekshirilmoqda…</p>
       ) : isPaid ? (
         <>
-          <div className="text-5xl">✅</div>
+          <span className="grid h-16 w-16 place-items-center rounded-full bg-brand-50 text-brand-600">
+            <CheckCircle2 className="h-9 w-9" />
+          </span>
           <h1 className="mt-4 text-2xl font-bold text-gray-900">To'lov muvaffaqiyatli!</h1>
           <p className="mt-2 text-gray-500">Buyurtmangiz tasdiqlandi. Xizmatchimiz belgilangan vaqtda tashrif buyuradi.</p>
         </>
       ) : (
         <>
-          <div className="text-5xl">⏳</div>
+          <span className="grid h-16 w-16 place-items-center rounded-full bg-amber-50 text-amber-600">
+            <Clock className="h-9 w-9" />
+          </span>
           <h1 className="mt-4 text-2xl font-bold text-gray-900">To'lov kutilmoqda</h1>
           <p className="mt-2 text-gray-500">
             To'lovingiz hali tasdiqlanmadi. Agar to'lov jarayonini yakunlagan bo'lsangiz, bir necha daqiqada holat

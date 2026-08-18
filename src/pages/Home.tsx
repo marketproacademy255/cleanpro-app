@@ -1,5 +1,13 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, CheckCircle2, CreditCard, ShieldCheck, Zap } from 'lucide-react'
+import {
+  ArrowRight,
+  CheckCircle2,
+  CreditCard,
+  MessageCircleQuestion,
+  ShieldCheck,
+  Sparkles,
+  Zap,
+} from 'lucide-react'
 
 const steps = [
   { title: '1. Xizmatni tanlang', desc: "Uy yoki ofis, tozalash turi va qo'shimcha xizmatlarni belgilang." },
@@ -7,19 +15,52 @@ const steps = [
   { title: '3. Onlayn to\'lang', desc: "Payme yoki Click orqali xavfsiz to'lov qiling, xizmatchi tayinlanadi." },
 ]
 
+const trustPoints = [
+  { icon: ShieldCheck, label: 'Tekshirilgan xizmatchilar', desc: 'Har biri shaxsan suhbatdan o\'tgan' },
+  { icon: CreditCard, label: 'Xavfsiz onlayn to\'lov', desc: "Payme va Click orqali" },
+  { icon: Zap, label: 'Tez javob', desc: "So'rovga bir necha daqiqada javob" },
+  { icon: Sparkles, label: 'Shaffof narx', desc: "Yashirin to'lovlarsiz, oldindan aniq" },
+]
+
+const whyUs = [
+  "Har bir xizmatchi ro'yxatga olinishdan oldin shaxsan suhbatdan o'tadi va tajribasi tekshiriladi",
+  "Narx band qilishdan oldin aniq hisoblanadi — xona soni yoki maydonga qarab, yashirin qo'shimchalarsiz",
+  "To'lov faqat tasdiqlangan xavfsiz kanallar — Payme va Click orqali amalga oshiriladi",
+  "Har bir buyurtma holati shaxsiy kabinetingizda real vaqtda kuzatiladi",
+]
+
+const faqs = [
+  {
+    q: 'Xizmatchilar qanday tekshiriladi?',
+    a: "Har bir xizmatchi ishga qabul qilinishdan oldin shaxsan suhbatdan o'tadi, tajribasi va tavsiyalari tekshiriladi. Profilida tajriba yili va mijozlar bahosi ko'rsatiladi.",
+  },
+  {
+    q: "To'lovni qachon amalga oshiraman?",
+    a: "Buyurtmani tasdiqlaganingizdan so'ng, Payme yoki Click orqali onlayn to'lov qilasiz. To'lov xizmatchi tayinlangandan keyin, xizmat ko'rsatilishidan oldin amalga oshiriladi.",
+  },
+  {
+    q: "Agar natijadan qoniqmasam nima qilishim kerak?",
+    a: "Aloqa sahifasi orqali yoki telefon raqamimiz bilan biz bilan bog'laning — muammoni tezkor hal qilishga harakat qilamiz.",
+  },
+  {
+    q: 'Buyurtmani bekor qilish yoki ko\'chirish mumkinmi?',
+    a: "Ha, shaxsiy kabinetingizdan buyurtma sanasini bekor qilish yoki o'zgartirish so'rovini yuborishingiz mumkin.",
+  },
+]
+
 export default function Home() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-800 via-brand-700 to-brand-600">
-        <div
-          className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/5 blur-3xl"
-          aria-hidden="true"
-        />
-        <div
-          className="pointer-events-none absolute -bottom-32 left-1/4 h-80 w-80 rounded-full bg-white/5 blur-3xl"
-          aria-hidden="true"
-        />
+      <section className="relative overflow-hidden bg-brand-900">
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1647381518264-97ff1835026f?auto=format&fit=crop&w=1800&q=80"
+            alt="Xizmatchi uyni tozalamoqda"
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-900 via-brand-900/85 to-brand-900/50" />
+        </div>
 
         <div className="section relative grid items-center gap-12 py-20 md:grid-cols-2 md:py-28">
           <div>
@@ -65,11 +106,8 @@ export default function Home() {
 
           <div className="relative">
             <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xl">
-              <div className="flex items-center gap-1.5 border-b border-gray-100 pb-3">
-                <span className="h-2.5 w-2.5 rounded-full bg-gray-200" />
-                <span className="h-2.5 w-2.5 rounded-full bg-gray-200" />
-                <span className="h-2.5 w-2.5 rounded-full bg-gray-200" />
-                <span className="ml-2 text-xs font-medium text-gray-400">Buyurtma xulosasi</span>
+              <div className="border-b border-gray-100 pb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                Buyurtma xulosasi
               </div>
               <div className="mt-4 space-y-3 text-sm">
                 <div className="flex items-center justify-between">
@@ -111,8 +149,25 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Trust bar */}
+      <section className="border-b border-gray-100 bg-white py-10">
+        <div className="section grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {trustPoints.map((t) => (
+            <div key={t.label} className="flex items-start gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-brand-50 text-brand-700">
+                <t.icon className="h-5 w-5" />
+              </span>
+              <div>
+                <div className="font-semibold text-gray-900">{t.label}</div>
+                <div className="mt-0.5 text-sm text-gray-500">{t.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* How it works */}
-      <section className="bg-white py-16">
+      <section className="bg-gray-50 py-16">
         <div className="section">
           <h2 className="text-center text-3xl font-bold text-gray-900">Qanday ishlaydi</h2>
           <p className="mx-auto mt-2 max-w-xl text-center text-gray-500">
@@ -124,6 +179,54 @@ export default function Home() {
                 <h3 className="text-lg font-semibold text-gray-900">{s.title}</h3>
                 <p className="mt-2 text-sm text-gray-500">{s.desc}</p>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why us */}
+      <section className="bg-white py-16">
+        <div className="section grid items-center gap-12 md:grid-cols-2">
+          <div className="overflow-hidden rounded-lg border border-gray-200">
+            <img
+              src="https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=1200&q=80"
+              alt="Tozalangan yorug' xona"
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+          <div>
+            <span className="tag bg-brand-50 text-brand-700">Nega CleanPro</span>
+            <h2 className="mt-3 text-3xl font-bold text-gray-900">Ishonchli, shaffof va qulay</h2>
+            <ul className="mt-6 space-y-4">
+              {whyUs.map((item) => (
+                <li key={item} className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
+                  <span className="text-gray-600">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="bg-gray-50 py-16">
+        <div className="section max-w-3xl">
+          <div className="flex items-center justify-center gap-2 text-brand-700">
+            <MessageCircleQuestion className="h-5 w-5" />
+            <span className="text-sm font-semibold uppercase tracking-wide">Savol-javob</span>
+          </div>
+          <h2 className="mt-2 text-center text-3xl font-bold text-gray-900">Ko'p so'raladigan savollar</h2>
+          <div className="mt-8 space-y-3">
+            {faqs.map((f) => (
+              <details key={f.q} className="card group cursor-pointer">
+                <summary className="flex list-none items-center justify-between font-semibold text-gray-900 marker:content-none">
+                  {f.q}
+                  <span className="ml-4 shrink-0 text-brand-600 transition group-open:rotate-45">+</span>
+                </summary>
+                <p className="mt-3 text-sm text-gray-500">{f.a}</p>
+              </details>
             ))}
           </div>
         </div>

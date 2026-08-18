@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Mail, MapPin, Phone } from 'lucide-react'
 import { apiFetch, ApiError } from '@/lib/api'
 
 export default function Contact() {
@@ -28,10 +29,19 @@ export default function Contact() {
       <h1 className="text-3xl font-bold text-gray-900">Aloqa</h1>
       <p className="mt-2 text-gray-500">Savollaringiz bo'lsa, biz bilan bog'laning.</p>
 
-      <div className="card mt-6 space-y-2 text-sm text-gray-600">
-        <div>📞 +998 90 111 22 33</div>
-        <div>✉️ info@cleanpro.uz</div>
-        <div>📍 Toshkent, O'zbekiston</div>
+      <div className="card mt-6 space-y-3 text-sm text-gray-600">
+        <div className="flex items-center gap-2.5">
+          <Phone className="h-4 w-4 shrink-0 text-brand-600" />
+          +998 90 111 22 33
+        </div>
+        <div className="flex items-center gap-2.5">
+          <Mail className="h-4 w-4 shrink-0 text-brand-600" />
+          info@cleanpro.uz
+        </div>
+        <div className="flex items-center gap-2.5">
+          <MapPin className="h-4 w-4 shrink-0 text-brand-600" />
+          Toshkent, O'zbekiston
+        </div>
       </div>
 
       {sent ? (
