@@ -27,15 +27,25 @@ export default function Services() {
   }, [])
 
   return (
-    <div className="section py-14">
-      <h1 className="text-3xl font-bold text-gray-900">Xizmatlar va narxlar</h1>
-      <p className="mt-2 max-w-2xl text-gray-500">
-        Narxlarimiz AQSHdagi yetakchi tozalash platformalari (Merry Maids, Molly Maid, MaidPro) tuzilmasi asosida
-        shakllantirilgan va O'zbekiston bozoriga moslashtirilgan. Aniq narx xona soni yoki maydonga qarab
-        band qilish sahifasida avtomatik hisoblanadi.
-      </p>
+    <div>
+      <div className="relative h-48 overflow-hidden sm:h-64">
+        <img
+          src="https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=1800&q=80"
+          alt="Tozalangan zamonaviy oshxona"
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-900/70 via-brand-900/20 to-transparent" />
+      </div>
 
-      {loading ? (
+      <div className="section py-14">
+        <h1 className="text-3xl font-bold text-gray-900">Xizmatlar va narxlar</h1>
+        <p className="mt-2 max-w-2xl text-gray-500">
+          Narxlarimiz AQSHdagi yetakchi tozalash platformalari (Merry Maids, Molly Maid, MaidPro) tuzilmasi asosida
+          shakllantirilgan va O'zbekiston bozoriga moslashtirilgan. Aniq narx xona soni yoki maydonga qarab
+          band qilish sahifasida avtomatik hisoblanadi.
+        </p>
+
+        {loading ? (
         <div className="mt-10 text-gray-400">Yuklanmoqda…</div>
       ) : error ? (
         <div className="mt-10 rounded-lg bg-red-50 p-4 text-sm text-red-600">{error}</div>
@@ -87,6 +97,7 @@ export default function Services() {
             <div className="mt-2 text-xs text-gray-500">{c.years_experience} yil tajriba</div>
           </div>
         ))}
+        </div>
       </div>
     </div>
   )

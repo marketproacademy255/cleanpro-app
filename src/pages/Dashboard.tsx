@@ -31,7 +31,7 @@ export default function Dashboard() {
 
   return (
     <div className="section py-14">
-      <h1 className="text-3xl font-bold text-gray-900">Salom, {profile?.full_name || 'mijoz'} 👋</h1>
+      <h1 className="text-3xl font-bold text-gray-900">Salom, {profile?.full_name || 'mijoz'}</h1>
       <p className="mt-2 text-gray-500">Buyurtmalaringiz tarixi va joriy holati.</p>
 
       <div className="mt-8 flex items-center justify-between">

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Mail, MapPin, Phone } from 'lucide-react'
 
 export default function Footer() {
   return (
@@ -37,9 +38,18 @@ export default function Footer() {
         <div>
           <h4 className="mb-3 text-sm font-semibold text-gray-900">Aloqa</h4>
           <ul className="space-y-2 text-sm text-gray-500">
-            <li>+998 90 111 22 33</li>
-            <li>info@cleanpro.uz</li>
-            <li>Toshkent, O'zbekiston</li>
+            <li className="flex items-center gap-2">
+              <Phone className="h-3.5 w-3.5 shrink-0 text-brand-600" />
+              +998 90 111 22 33
+            </li>
+            <li className="flex items-center gap-2">
+              <Mail className="h-3.5 w-3.5 shrink-0 text-brand-600" />
+              info@cleanpro.uz
+            </li>
+            <li className="flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-brand-600" />
+              Toshkent, O'zbekiston
+            </li>
           </ul>
           <div className="mt-3 flex gap-2">
             <span className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-500">Payme</span>

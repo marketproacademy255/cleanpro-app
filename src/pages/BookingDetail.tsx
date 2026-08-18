@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
+import { CheckCircle2 } from 'lucide-react'
 import { apiFetch, ApiError } from '@/lib/api'
 import { formatUZS, TIER_LABEL_UZ } from '@/lib/pricing'
 import { buildClickCheckoutUrl, buildPaymeCheckoutUrl, paymentGatewaysConfigured } from '@/lib/payments'
@@ -106,8 +107,9 @@ export default function BookingDetail() {
       </div>
 
       {isPaid ? (
-        <div className="card mt-6 border-brand-200 bg-brand-50 text-brand-700">
-          ✅ To'lov muvaffaqiyatli amalga oshirildi. Xizmatchimiz belgilangan vaqtda tashrif buyuradi.
+        <div className="card mt-6 flex items-start gap-2.5 border-brand-200 bg-brand-50 text-brand-700">
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+          To'lov muvaffaqiyatli amalga oshirildi. Xizmatchimiz belgilangan vaqtda tashrif buyuradi.
         </div>
       ) : (
         <div className="card mt-6">

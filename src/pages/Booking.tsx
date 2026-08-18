@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Check } from 'lucide-react'
 import { fetchActiveAddons, fetchActiveServiceTypes } from '@/lib/publicData'
 import { apiFetch, ApiError } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -272,7 +273,10 @@ export default function Booking() {
                   </div>
                   <ul className="mt-2 space-y-1 text-xs text-gray-500">
                     {TIER_PERKS_UZ[t].map((perk) => (
-                      <li key={perk}>• {perk}</li>
+                      <li key={perk} className="flex items-start gap-1.5">
+                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
+                        {perk}
+                      </li>
                     ))}
                   </ul>
                 </button>
