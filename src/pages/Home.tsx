@@ -29,6 +29,24 @@ const whyUs = [
   "Har bir buyurtma holati shaxsiy kabinetingizda real vaqtda kuzatiladi",
 ]
 
+const serviceTiles = [
+  {
+    title: 'Standart tozalash',
+    desc: "Kundalik tozalik — chang tozalash, sanuzel va oshxona.",
+    img: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    title: 'Chuqur tozalash',
+    desc: "Ko'chishdan oldin/keyin yoki mavsumiy chuqur tozalash.",
+    img: 'https://images.unsplash.com/photo-1742483359033-13315b247c74?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    title: 'Ofis tozalash',
+    desc: "Ish joyingiz uchun muntazam yoki bir martalik tozalash.",
+    img: 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=800&q=80',
+  },
+]
+
 const faqs = [
   {
     q: 'Xizmatchilar qanday tekshiriladi?',
@@ -179,6 +197,42 @@ export default function Home() {
                 <h3 className="text-lg font-semibold text-gray-900">{s.title}</h3>
                 <p className="mt-2 text-sm text-gray-500">{s.desc}</p>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Service tiles */}
+      <section className="bg-white py-16">
+        <div className="section">
+          <h2 className="text-center text-3xl font-bold text-gray-900">Xizmatlarimiz</h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-gray-500">
+            Ehtiyojingizga mos xizmat turini tanlang — narx band qilishda avtomatik hisoblanadi.
+          </p>
+          <div className="mt-10 grid gap-6 sm:grid-cols-3">
+            {serviceTiles.map((tile) => (
+              <Link
+                key={tile.title}
+                to="/xizmatlar"
+                className="group overflow-hidden rounded-lg border border-gray-200 transition hover:border-brand-300 hover:shadow-md"
+              >
+                <div className="h-40 overflow-hidden">
+                  <img
+                    src={tile.img}
+                    alt={tile.title}
+                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="p-4">
+                  <div className="font-semibold text-gray-900">{tile.title}</div>
+                  <p className="mt-1 text-sm text-gray-500">{tile.desc}</p>
+                  <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-700">
+                    Batafsil
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
