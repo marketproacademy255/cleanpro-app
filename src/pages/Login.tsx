@@ -72,7 +72,22 @@ export default function Login() {
   }
 
   return (
-    <div className="section flex min-h-[70vh] items-center justify-center py-14">
+    <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-2">
+      <div className="relative hidden lg:block">
+        <img
+          src="https://images.unsplash.com/photo-1647381518264-97ff1835026f?auto=format&fit=crop&w=1200&q=80"
+          alt="Xizmatchi uyni tozalamoqda"
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-brand-900/10" />
+        <div className="absolute bottom-10 left-10 right-10 text-white">
+          <p className="text-2xl font-semibold leading-snug">
+            Onlayn band qiling, xavfsiz to'lang — tekshirilgan xizmatchimiz eshigingizga keladi.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center px-4 py-14 sm:px-6">
       <div className="card w-full max-w-md">
         <h1 className="text-2xl font-bold text-gray-900">Tizimga kirish</h1>
         {location.state?.message && (
@@ -162,6 +177,7 @@ export default function Login() {
             Ro'yxatdan o'ting
           </Link>
         </p>
+      </div>
       </div>
     </div>
   )

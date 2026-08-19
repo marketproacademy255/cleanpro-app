@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { Menu, Moon, Sun, X } from 'lucide-react'
+import { Menu, Moon, Phone, Sun, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useTheme } from '@/context/ThemeContext'
 import { IS_DEMO } from '@/lib/config'
@@ -51,6 +51,14 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
+          <a
+            href="tel:+998901112233"
+            className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-brand-700"
+          >
+            <Phone className="h-3.5 w-3.5" />
+            +998 90 111 22 33
+          </a>
+          <span className="h-4 w-px bg-gray-200" aria-hidden="true" />
           {user ? (
             <>
               {isAdmin && (
