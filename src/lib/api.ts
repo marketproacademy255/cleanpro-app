@@ -9,8 +9,10 @@ import { auth } from './firebaseClient'
  * API call goes through this instead.
  */
 function getCurrentUser(): Promise<User | null> {
+  const currentAuth = auth
+  if (!currentAuth) return Promise.resolve(null)
   return new Promise((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(currentAuth, (user) => {
       unsubscribe()
       resolve(user)
     })

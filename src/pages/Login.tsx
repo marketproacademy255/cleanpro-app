@@ -58,6 +58,7 @@ export default function Login() {
     setError(null)
     setLoading(true)
     try {
+      if (!auth) throw new Error("Xizmat hozircha mavjud emas.")
       const { token } = await apiFetch<{ token: string }>('telegram-login-verify', {
         method: 'POST',
         body: JSON.stringify({ phone: tgPhone, code: tgCode }),
@@ -65,7 +66,13 @@ export default function Login() {
       await signInWithCustomToken(auth, token)
       navigate(location.state?.from ?? '/kabinet')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Tasdiqlanmadi. Qaytadan urinib ko'ring.")
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error && err.message
+            ? err.message
+            : "Tasdiqlanmadi. Qaytadan urinib ko'ring.",
+      )
     } finally {
       setLoading(false)
     }

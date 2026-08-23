@@ -58,6 +58,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    if (!auth) {
+      // No Firebase config - nothing to subscribe to, but the rest of the
+      // app (Home, About, Contact, Services, Booking form) should still
+      // render normally with user/profile left as null.
+      setLoading(false)
+      return
+    }
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser)
       if (firebaseUser) {
@@ -71,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   async function signUp(email: string, password: string, fullName: string, phone: string) {
+    if (!auth) return { error: "Xizmat hozircha mavjud emas. Birozdan so'ng qayta urinib ko'ring." }
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password)
       if (fullName) {
@@ -92,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signIn(email: string, password: string) {
+    if (!auth) return { error: "Xizmat hozircha mavjud emas. Birozdan so'ng qayta urinib ko'ring." }
     try {
       await signInWithEmailAndPassword(auth, email, password)
       return { error: null }
@@ -102,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    if (!auth) return
     await firebaseSignOut(auth)
   }
 

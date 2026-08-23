@@ -6,8 +6,14 @@ import type { Addon, Cleaner, ServiceType } from './types'
  * Public, non-sensitive catalog reads straight from Firestore (allowed by
  * firestore.rules for documents where is_active == true). No auth needed -
  * anyone browsing the site can see active services/addons/cleaners.
+ *
+ * `db` is null when Firebase isn't configured - return an empty list
+ * instead of throwing so pages that show a catalog (Services, Booking)
+ * still render normally (just with an empty/loading state) instead of
+ * crashing when there's no backend available.
  */
 async function fetchActive<T>(collectionName: string): Promise<(T & { id: string })[]> {
+  if (!db) return []
   const snap = await getDocs(query(collection(db, collectionName), where('is_active', '==', true)))
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as T) }))
 }

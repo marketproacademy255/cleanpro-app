@@ -1,5 +1,5 @@
-import { initializeApp, getApps } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
+import { initializeApp, getApps, type FirebaseApp } from 'firebase/app'
+import { getAuth, type Auth } from 'firebase/auth'
 
 /**
  * Firebase config values are meant to be public (they identify your
@@ -22,13 +22,34 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+/**
+ * True only when the app has enough config to actually talk to Firebase.
+ * The rest of the app treats `auth` as possibly null and degrades
+ * gracefully (no crash, just "kirish" disabled) so that pages that don't
+ * need auth or backend data - Home, About, Contact, Services listing,
+ * Booking form - still render normally even with no .env / no backend
+ * configured (e.g. a fresh local checkout or a broken deploy).
+ */
+export const firebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId)
+
+if (!firebaseConfigured) {
   // eslint-disable-next-line no-console
   console.error(
-    "Firebase muhit o'zgaruvchilari topilmadi. .env faylida VITE_FIREBASE_* qiymatlarini tekshiring.",
+    "Firebase muhit o'zgaruvchilari topilmadi. .env faylida VITE_FIREBASE_* qiymatlarini tekshiring. " +
+      "Sahifalar baribir ochiladi, lekin kirish/ro'yxatdan o'tish va ma'lumotlar ishlamaydi.",
   )
 }
 
-export const app = getApps().length ? getApps()[0]! : initializeApp(firebaseConfig)
+let app: FirebaseApp | null = null
+let auth: Auth | null = null
 
-export const auth = getAuth(app)
+try {
+  app = getApps().length ? getApps()[0]! : initializeApp(firebaseConfig)
+  auth = getAuth(app)
+} catch (err) {
+  // Never let a bad/missing Firebase config take down the whole app.
+  // eslint-disable-next-line no-console
+  console.error('Firebase ishga tushmadi:', err)
+}
+
+export { app, auth }
