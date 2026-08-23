@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import DiscountBanner from '@/components/DiscountBanner'
 import PriceEstimator from '@/components/PriceEstimator'
+import Reveal from '@/components/Reveal'
 import TeamPreview from '@/components/TeamPreview'
 
 const steps = [
@@ -196,29 +197,30 @@ export default function Home() {
             Ehtiyojingizga mos xizmat turini tanlang — narx band qilishda avtomatik hisoblanadi.
           </p>
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
-            {serviceTiles.map((tile) => (
-              <Link
-                key={tile.title}
-                to="/xizmatlar"
-                className="group overflow-hidden rounded-lg border border-gray-200 transition hover:border-brand-300 hover:shadow-md"
-              >
-                <div className="h-40 overflow-hidden">
-                  <img
-                    src={tile.img}
-                    alt={tile.title}
-                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="p-4">
-                  <div className="font-semibold text-gray-900">{tile.title}</div>
-                  <p className="mt-1 text-sm text-gray-500">{tile.desc}</p>
-                  <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-700">
-                    Batafsil
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </span>
-                </div>
-              </Link>
+            {serviceTiles.map((tile, i) => (
+              <Reveal key={tile.title} delayMs={i * 100}>
+                <Link
+                  to="/xizmatlar"
+                  className="group block overflow-hidden rounded-lg border border-gray-200 transition hover:border-brand-300 hover:shadow-md"
+                >
+                  <div className="h-40 overflow-hidden">
+                    <img
+                      src={tile.img}
+                      alt={tile.title}
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <div className="font-semibold text-gray-900">{tile.title}</div>
+                    <p className="mt-1 text-sm text-gray-500">{tile.desc}</p>
+                    <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-700">
+                      Batafsil
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </span>
+                  </div>
+                </Link>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -227,14 +229,14 @@ export default function Home() {
       {/* Why us */}
       <section className="bg-white py-16">
         <div className="section grid items-center gap-12 md:grid-cols-2">
-          <div className="overflow-hidden rounded-lg border border-gray-200">
+          <Reveal className="overflow-hidden rounded-lg border border-gray-200">
             <img
               src="https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=1200&q=80"
               alt="Tozalangan yorug' xona"
               className="h-full w-full object-cover"
               loading="lazy"
             />
-          </div>
+          </Reveal>
           <div>
             <span className="tag bg-brand-50 text-brand-700">Nega CleanPro</span>
             <h2 className="mt-3 text-3xl font-bold text-gray-900">Ishonchli, shaffof va qulay</h2>
@@ -260,15 +262,17 @@ export default function Home() {
             Toza va tartibli xona — har bir tashrifdan kutadigan natijangiz shu.
           </p>
           <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
-            {galleryPhotos.map((src) => (
-              <div key={src} className="aspect-square overflow-hidden rounded-lg border border-gray-200">
-                <img
-                  src={src}
-                  alt="Toza va tartibli xona"
-                  className="h-full w-full object-cover transition duration-300 hover:scale-105"
-                  loading="lazy"
-                />
-              </div>
+            {galleryPhotos.map((src, i) => (
+              <Reveal key={src} delayMs={i * 80}>
+                <div className="aspect-square overflow-hidden rounded-lg border border-gray-200">
+                  <img
+                    src={src}
+                    alt="Toza va tartibli xona"
+                    className="h-full w-full object-cover transition duration-300 hover:scale-105"
+                    loading="lazy"
+                  />
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
