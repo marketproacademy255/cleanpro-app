@@ -8,6 +8,9 @@ import {
   Sparkles,
   Zap,
 } from 'lucide-react'
+import DiscountBanner from '@/components/DiscountBanner'
+import PriceEstimator from '@/components/PriceEstimator'
+import TeamPreview from '@/components/TeamPreview'
 
 const steps = [
   { title: '1. Xizmatni tanlang', desc: "Uy yoki ofis, tozalash turi va qo'shimcha xizmatlarni belgilang." },
@@ -47,6 +50,15 @@ const serviceTiles = [
   },
 ]
 
+const galleryPhotos = [
+  'https://images.unsplash.com/photo-1647381518264-97ff1835026f?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1742483359033-13315b247c74?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80',
+]
+
 const faqs = [
   {
     q: 'Xizmatchilar qanday tekshiriladi?',
@@ -64,11 +76,17 @@ const faqs = [
     q: 'Buyurtmani bekor qilish yoki ko\'chirish mumkinmi?',
     a: "Ha, shaxsiy kabinetingizdan buyurtma sanasini bekor qilish yoki o'zgartirish so'rovini yuborishingiz mumkin.",
   },
+  {
+    q: "Qaysi hududlarda xizmat ko'rsatasiz?",
+    a: "Hozircha Toshkent shahri bo'ylab xizmat ko'rsatamiz. Manzilingizni band qilish formasida ko'rsating — hudud mos kelsa, xizmatchi tayinlanadi.",
+  },
 ]
 
 export default function Home() {
   return (
     <div>
+      <DiscountBanner />
+
       {/* Hero */}
       <section className="relative overflow-hidden bg-brand-900">
         <div className="absolute inset-0">
@@ -202,8 +220,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Service tiles */}
+      {/* Instant price estimate */}
       <section className="bg-white py-16">
+        <div className="section max-w-2xl">
+          <h2 className="text-center text-3xl font-bold text-gray-900">Narxni hoziroq bilib oling</h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-gray-500">
+            Ro'yxatdan o'tmasdan turib, taxminiy narxni ko'ring.
+          </p>
+          <div className="mt-8">
+            <PriceEstimator />
+          </div>
+        </div>
+      </section>
+
+      {/* Service tiles */}
+      <section className="bg-gray-50 py-16">
         <div className="section">
           <h2 className="text-center text-3xl font-bold text-gray-900">Xizmatlarimiz</h2>
           <p className="mx-auto mt-2 max-w-xl text-center text-gray-500">
@@ -260,6 +291,30 @@ export default function Home() {
                 </li>
               ))}
             </ul>
+          </div>
+        </div>
+      </section>
+
+      <TeamPreview />
+
+      {/* Gallery */}
+      <section className="bg-white py-16">
+        <div className="section">
+          <h2 className="text-center text-3xl font-bold text-gray-900">Natija qanday ko'rinadi</h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-gray-500">
+            Toza va tartibli xona — har bir tashrifdan kutadigan natijangiz shu.
+          </p>
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+            {galleryPhotos.map((src) => (
+              <div key={src} className="aspect-square overflow-hidden rounded-lg border border-gray-200">
+                <img
+                  src={src}
+                  alt="Toza va tartibli xona"
+                  className="h-full w-full object-cover transition duration-300 hover:scale-105"
+                  loading="lazy"
+                />
+              </div>
+            ))}
           </div>
         </div>
       </section>

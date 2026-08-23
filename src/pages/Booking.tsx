@@ -9,7 +9,7 @@ import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, Servi
 
 const TIERS: BookingTier[] = ['standard', 'premium', 'elite']
 
-const DRAFT_KEY = 'cleanpro_booking_draft'
+export const DRAFT_KEY = 'cleanpro_booking_draft'
 
 interface DraftForm {
   serviceId: string
@@ -316,7 +316,7 @@ export default function Booking() {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="card sticky top-24">
+          <div className="card lg:sticky lg:top-24">
             <h3 className="text-lg font-semibold text-gray-900">Narx tafsiloti</h3>
             {priceBreakdown ? (
               <div className="mt-4 space-y-2 text-sm">

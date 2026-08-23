@@ -30,6 +30,7 @@ export default function Footer() {
           <h4 className="mb-3 text-sm font-semibold text-gray-900">Kompaniya</h4>
           <ul className="space-y-2 text-sm text-gray-500">
             <li><Link to="/biz-haqimizda" className="hover:text-brand-700">Biz haqimizda</Link></li>
+            <li><Link to="/maslahatlar" className="hover:text-brand-700">Maslahatlar</Link></li>
             <li><Link to="/aloqa" className="hover:text-brand-700">Aloqa</Link></li>
             <li><Link to="/band-qilish" className="hover:text-brand-700">Buyurtma berish</Link></li>
           </ul>
@@ -57,8 +58,14 @@ export default function Footer() {
           </div>
         </div>
       </div>
-      <div className="border-t border-gray-100 py-4 text-center text-xs text-gray-400">
-        © {new Date().getFullYear()} CleanPro. Barcha huquqlar himoyalangan.
+      <div className="border-t border-gray-100 py-4">
+        <div className="section flex flex-col items-center justify-between gap-2 text-xs text-gray-400 sm:flex-row">
+          <span>© {new Date().getFullYear()} CleanPro. Barcha huquqlar himoyalangan.</span>
+          <div className="flex gap-4">
+            <Link to="/maxfiylik" className="hover:text-brand-700">Maxfiylik siyosati</Link>
+            <Link to="/foydalanish-shartlari" className="hover:text-brand-700">Foydalanish shartlari</Link>
+          </div>
+        </div>
       </div>
     </footer>
   )

@@ -8,6 +8,7 @@ import { IS_DEMO } from '@/lib/config'
 const links = [
   { to: '/', label: 'Bosh sahifa' },
   { to: '/xizmatlar', label: 'Xizmatlar va narxlar' },
+  { to: '/maslahatlar', label: 'Maslahatlar' },
   { to: '/biz-haqimizda', label: 'Biz haqimizda' },
   { to: '/aloqa', label: 'Aloqa' },
 ]
@@ -36,7 +37,7 @@ export default function Navbar() {
           )}
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-5 lg:flex">
           {links.map((l) => (
             <NavLink
               key={l.to}
@@ -50,7 +51,7 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-3 lg:flex">
           <a
             href="tel:+998901112233"
             className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-brand-700"
@@ -95,7 +96,7 @@ export default function Navbar() {
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
           <button
-            className="grid h-10 w-10 place-items-center rounded-md border border-gray-200 text-gray-500 md:hidden"
+            className="grid h-10 w-10 place-items-center rounded-md border border-gray-200 text-gray-500 lg:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Menyu"
           >
@@ -105,34 +106,58 @@ export default function Navbar() {
       </div>
 
       {open && (
-        <div className="border-t border-gray-100 bg-white px-4 pb-4 md:hidden">
-          <nav className="flex flex-col gap-3 pt-3">
+        <div className="border-t border-gray-100 bg-white px-4 pb-4 lg:hidden">
+          <nav className="flex flex-col gap-1 pt-3">
             {links.map((l) => (
-              <Link key={l.to} to={l.to} onClick={() => setOpen(false)} className="text-sm font-medium text-gray-700">
+              <Link
+                key={l.to}
+                to={l.to}
+                onClick={() => setOpen(false)}
+                className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50"
+              >
                 {l.label}
               </Link>
             ))}
+            <a
+              href="tel:+998901112233"
+              className="flex items-center gap-1.5 rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50"
+            >
+              <Phone className="h-3.5 w-3.5" />
+              +998 90 111 22 33
+            </a>
             <hr className="my-1" />
             {user ? (
               <>
                 {isAdmin && (
-                  <Link to="/admin" onClick={() => setOpen(false)} className="text-sm font-medium text-gray-700">
+                  <Link
+                    to="/admin"
+                    onClick={() => setOpen(false)}
+                    className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50"
+                  >
                     Admin panel
                   </Link>
                 )}
-                <Link to="/kabinet" onClick={() => setOpen(false)} className="text-sm font-medium text-gray-700">
+                <Link
+                  to="/kabinet"
+                  onClick={() => setOpen(false)}
+                  className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50"
+                >
                   Kabinetim
                 </Link>
-                <button onClick={handleSignOut} className="btn-secondary w-full">
+                <button onClick={handleSignOut} className="btn-secondary mt-1 w-full">
                   Chiqish
                 </button>
               </>
             ) : (
               <>
-                <Link to="/kirish" onClick={() => setOpen(false)} className="text-sm font-medium text-gray-700">
+                <Link
+                  to="/kirish"
+                  onClick={() => setOpen(false)}
+                  className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50"
+                >
                   Kirish
                 </Link>
-                <Link to="/band-qilish" onClick={() => setOpen(false)} className="btn-primary w-full">
+                <Link to="/band-qilish" onClick={() => setOpen(false)} className="btn-primary mt-1 w-full">
                   Buyurtma berish
                 </Link>
               </>
