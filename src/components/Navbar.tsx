@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { Menu, Moon, Phone, Sun, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -17,7 +17,21 @@ export default function Navbar() {
   const { user, profile, isAdmin, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const [open, setOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const navigate = useNavigate()
+
+  // Header is `sticky` (see className below), so it already sits in normal
+  // flow at the top of the page and only "sticks" once you scroll past it -
+  // this just tracks that moment to add a subtle shadow/compact transition
+  // (like kun.uz's header) instead of an abrupt, static-looking stick.
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 8)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   async function handleSignOut() {
     await signOut()
@@ -25,8 +39,16 @@ export default function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/90 backdrop-blur">
-      <div className="section flex h-16 items-center justify-between">
+    <header
+      className={`sticky top-0 z-40 border-b bg-white/90 backdrop-blur transition-shadow duration-300 ${
+        scrolled ? 'border-gray-200 shadow-sm' : 'border-transparent shadow-none'
+      }`}
+    >
+      <div
+        className={`section flex items-center justify-between transition-[height] duration-300 ${
+          scrolled ? 'h-14' : 'h-16'
+        }`}
+      >
         <Link to="/" className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-brand-700">
           <span className="grid h-9 w-9 place-items-center rounded-md bg-brand-600 text-white">CP</span>
           CleanPro
@@ -37,7 +59,7 @@ export default function Navbar() {
           )}
         </Link>
 
-        <nav className="hidden items-center gap-5 lg:flex">
+        <nav className="hidden items-center gap-6 lg:flex">
           {links.map((l) => (
             <NavLink
               key={l.to}
@@ -52,14 +74,6 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <a
-            href="tel:+998901112233"
-            className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-brand-700"
-          >
-            <Phone className="h-3.5 w-3.5" />
-            +998 90 111 22 33
-          </a>
-          <span className="h-4 w-px bg-gray-200" aria-hidden="true" />
           {user ? (
             <>
               {isAdmin && (
