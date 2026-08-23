@@ -40,7 +40,7 @@ export default function Navbar() {
 
   return (
     <header
-      className={`sticky top-0 z-40 border-b bg-white/90 backdrop-blur transition-shadow duration-300 ${
+      className={`sticky top-0 z-40 border-b bg-white/90 backdrop-blur transition-shadow duration-300 dark:bg-[#101c17]/90 ${
         scrolled ? 'border-gray-200 shadow-sm' : 'border-transparent shadow-none'
       }`}
     >

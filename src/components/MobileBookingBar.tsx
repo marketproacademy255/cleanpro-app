@@ -13,7 +13,7 @@ export default function MobileBookingBar() {
   if (MOBILE_BAR_HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))) return null
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t border-gray-200 bg-white/95 px-3 py-2.5 backdrop-blur md:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t border-gray-200 bg-white/95 px-3 py-2.5 backdrop-blur dark:bg-[#101c17]/95 md:hidden">
       <a
         href={`tel:${COMPANY_PHONE_TEL}`}
         aria-label="Qo'ng'iroq qilish"
