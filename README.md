@@ -1,4 +1,4 @@
-# CleanPro — Tozalash xizmatlari platformasi
+# Prime Standard & Co — Tozalash xizmatlari platformasi
 
 Uy va ofislarni tozalash xizmatini onlayn band qilish, narxni avtomatik hisoblash va **Payme** /
 **Click** orqali to'lov qabul qilish uchun to'liq stack veb-ilova.
@@ -94,8 +94,8 @@ faylida ham hammasi izohlangan.
 | `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` | Firebase Console → Project settings → General → "Your apps" |
 | `VITE_PAYME_MERCHANT_ID` | business.payme.uz |
 | `VITE_CLICK_MERCHANT_ID`, `VITE_CLICK_SERVICE_ID` | merchant.click.uz |
-| `VITE_APP_URL` | production domeningiz, masalan `https://cleanpro.uz` |
-| `VITE_TELEGRAM_BOT_USERNAME` | Telegram ro'yxatdan o'tish botining username'i (`@` siz), masalan `cleanpro_uz_bot` — `telegram-auth-bot/` papkasiga qarang |
+| `VITE_APP_URL` | production domeningiz, masalan `https://cleaningpro.uz` |
+| `VITE_TELEGRAM_BOT_USERNAME` | Telegram ro'yxatdan o'tish botining username'i (`@` siz), masalan `primestandard_uz_bot` — `telegram-auth-bot/` papkasiga qarang |
 
 **Faqat serverga (Netlify Functions) — HECH QACHON `VITE_` prefiksi bilan yozmang, aks holda
 brauzer bundle'iga tushib, hamma ko'radi:**

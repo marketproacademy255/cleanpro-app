@@ -18,14 +18,14 @@ const DEFAULT_MODEL = 'openai/gpt-4o-mini'
 const MAX_MESSAGE_LEN = 1000
 const MAX_HISTORY = 8
 
-const SYSTEM_PROMPT = `Siz CleanPro (Toshkentda uy va ofis tozalash xizmati) saytidagi AI yordamchisiz.
+const SYSTEM_PROMPT = `Siz Prime Standard & Co (Toshkentda uy va ofis tozalash xizmati) saytidagi AI yordamchisiz.
 Vazifangiz: tashrif buyuruvchilarning tozalash xizmatlari, narxlar tuzilishi, band qilish jarayoni haqidagi
 savollariga qisqa, aniq va samimiy o'zbek tilida javob berish hamda ularni "/band-qilish" sahifasida
 buyurtma berishga yo'naltirish.
 
 Muhim qoidalar:
-- Faqat CleanPro va uning xizmatlari haqida gapiring. Aloqasi yo'q mavzularda yordam berishdan muloyimlik
-  bilan bosh torting va suhbatni xizmatlarga qaytaring.
+- Faqat Prime Standard & Co va uning xizmatlari haqida gapiring. Aloqasi yo'q mavzularda yordam berishdan
+  muloyimlik bilan bosh torting va suhbatni xizmatlarga qaytaring.
 - Aniq narx yoki muayyan buyurtma holatini bilmaysiz - buyurtma holatini bilish uchun "Shaxsiy kabinet"ga
   yoki to'g'ridan-to'g'ri operatorga (telefon/WhatsApp) murojaat qilishni tavsiya qiling.
 - Hech qachon mavjud bo'lmagan chegirma, kafolat yoki xizmat haqida gapirmang.
@@ -78,8 +78,8 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
       // OpenRouter-recommended identification headers (not secrets).
-      'HTTP-Referer': process.env.URL || 'https://cleanpro.uz',
-      'X-Title': 'CleanPro',
+      'HTTP-Referer': process.env.URL || 'https://cleaningpro.uz',
+      'X-Title': 'Prime Standard & Co',
     },
     body: JSON.stringify({
       model: process.env.OPENROUTER_MODEL || DEFAULT_MODEL,

@@ -1,8 +1,8 @@
 {
-  "name": "cleanpro-telegram-auth-bot",
+  "name": "primestandard-telegram-auth-bot",
   "version": "1.0.0",
   "private": true,
-  "description": "CleanPro uchun standalone Telegram ro'yxatdan o'tish boti (Node.js / Telegraf)",
+  "description": "Prime Standard & Co uchun standalone Telegram ro'yxatdan o'tish boti (Node.js / Telegraf)",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"

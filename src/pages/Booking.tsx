@@ -9,7 +9,7 @@ import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, Servi
 
 const TIERS: BookingTier[] = ['standard', 'premium', 'elite']
 
-export const DRAFT_KEY = 'cleanpro_booking_draft'
+export const DRAFT_KEY = 'primestandard_booking_draft'
 
 interface DraftForm {
   serviceId: string

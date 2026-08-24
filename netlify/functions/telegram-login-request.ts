@@ -75,7 +75,7 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
 
   const sent = await sendTelegramDirectMessage(
     authData.chat_id,
-    `Sizning CleanPro kirish kodingiz: <b>${code}</b>\nKod 5 daqiqa amal qiladi. Agar bu so'rovni siz yubormagan bo'lsangiz, xabarni e'tiborsiz qoldiring.`,
+    `Sizning Prime Standard & Co kirish kodingiz: <b>${code}</b>\nKod 5 daqiqa amal qiladi. Agar bu so'rovni siz yubormagan bo'lsangiz, xabarni e'tiborsiz qoldiring.`,
   )
   if (!sent) {
     return serverError("Kodni yuborib bo'lmadi. Birozdan so'ng qaytadan urinib ko'ring.")

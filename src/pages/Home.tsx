@@ -12,78 +12,28 @@ import DiscountBanner from '@/components/DiscountBanner'
 import PriceEstimator from '@/components/PriceEstimator'
 import Reveal from '@/components/Reveal'
 import TeamPreview from '@/components/TeamPreview'
+import { useTranslation } from '@/context/LanguageContext'
 
-const steps = [
-  { title: '1. Xizmatni tanlang', desc: "Uy yoki ofis, tozalash turi va qo'shimcha xizmatlarni belgilang." },
-  { title: '2. Vaqtni band qiling', desc: 'Sizga qulay sana va soatni tanlang — bir martalik yoki muntazam.' },
-  { title: '3. Onlayn to\'lang', desc: "Payme yoki Click orqali xavfsiz to'lov qiling, xizmatchi tayinlanadi." },
-]
-
-const trustPoints = [
-  { icon: ShieldCheck, label: 'Tekshirilgan xizmatchilar', desc: 'Har biri shaxsan suhbatdan o\'tgan' },
-  { icon: CreditCard, label: 'Xavfsiz onlayn to\'lov', desc: "Payme va Click orqali" },
-  { icon: Zap, label: 'Tez javob', desc: "So'rovga bir necha daqiqada javob" },
-  { icon: Sparkles, label: 'Shaffof narx', desc: "Yashirin to'lovlarsiz, oldindan aniq" },
-]
-
-const whyUs = [
-  "Har bir xizmatchi ro'yxatga olinishdan oldin shaxsan suhbatdan o'tadi va tajribasi tekshiriladi",
-  "Narx band qilishdan oldin aniq hisoblanadi — xona soni yoki maydonga qarab, yashirin qo'shimchalarsiz",
-  "To'lov faqat tasdiqlangan xavfsiz kanallar — Payme va Click orqali amalga oshiriladi",
-  "Har bir buyurtma holati shaxsiy kabinetingizda real vaqtda kuzatiladi",
-]
-
-const serviceTiles = [
-  {
-    title: 'Standart tozalash',
-    desc: "Kundalik tozalik — chang tozalash, sanuzel va oshxona.",
-    img: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    title: 'Chuqur tozalash',
-    desc: "Ko'chishdan oldin/keyin yoki mavsumiy chuqur tozalash.",
-    img: 'https://images.unsplash.com/photo-1742483359033-13315b247c74?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    title: 'Ofis tozalash',
-    desc: "Ish joyingiz uchun muntazam yoki bir martalik tozalash.",
-    img: 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=800&q=80',
-  },
-]
-
-const galleryPhotos = [
-  'https://images.unsplash.com/photo-1647381518264-97ff1835026f?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1742483359033-13315b247c74?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80',
-]
-
-const faqs = [
-  {
-    q: 'Xizmatchilar qanday tekshiriladi?',
-    a: "Har bir xizmatchi ishga qabul qilinishdan oldin shaxsan suhbatdan o'tadi, tajribasi va tavsiyalari tekshiriladi. Profilida tajriba yili va mijozlar bahosi ko'rsatiladi.",
-  },
-  {
-    q: "To'lovni qachon amalga oshiraman?",
-    a: "Buyurtmani tasdiqlaganingizdan so'ng, Payme yoki Click orqali onlayn to'lov qilasiz. To'lov xizmatchi tayinlangandan keyin, xizmat ko'rsatilishidan oldin amalga oshiriladi.",
-  },
-  {
-    q: "Agar natijadan qoniqmasam nima qilishim kerak?",
-    a: "Aloqa sahifasi orqali yoki telefon raqamimiz bilan biz bilan bog'laning — muammoni tezkor hal qilishga harakat qilamiz.",
-  },
-  {
-    q: 'Buyurtmani bekor qilish yoki ko\'chirish mumkinmi?',
-    a: "Ha, shaxsiy kabinetingizdan buyurtma sanasini bekor qilish yoki o'zgartirish so'rovini yuborishingiz mumkin.",
-  },
-  {
-    q: "Qaysi hududlarda xizmat ko'rsatasiz?",
-    a: "Hozircha Toshkent shahri bo'ylab xizmat ko'rsatamiz. Manzilingizni band qilish formasida ko'rsating — hudud mos kelsa, xizmatchi tayinlanadi.",
-  },
-]
+const TRUST_ICONS = [ShieldCheck, CreditCard, Zap, Sparkles]
 
 export default function Home() {
+  const { t } = useTranslation()
+
+  const trustPoints: { label: string; desc: string }[] = t('home.trustPoints')
+  const steps: { title: string; desc: string }[] = t('home.steps')
+  const serviceTiles: { title: string; desc: string; img: string }[] = t('home.serviceTiles')
+  const whyUs: string[] = t('home.whyUs')
+  const faqs: { q: string; a: string }[] = t('home.faqs')
+
+  const galleryPhotos = [
+    'https://images.unsplash.com/photo-1647381518264-97ff1835026f?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1742483359033-13315b247c74?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80',
+  ]
+
   return (
     <div>
       <DiscountBanner />
@@ -100,76 +50,73 @@ export default function Home() {
         </div>
 
         <div className="section relative max-w-2xl py-20 md:py-28">
-          <span className="tag bg-white/10 text-white">Toshkentdagi tozalash xizmati</span>
+          <span className="tag bg-white/10 text-white">{t('home.heroTag')}</span>
           <h1 className="mt-4 text-4xl font-extrabold leading-tight text-white md:text-5xl">
-            Uyingiz yoki ofisingiz uchun{' '}
-            <span className="text-brand-100">professional tozalash</span>
+            {t('home.heroTitle')} <span className="text-brand-100">{t('home.heroTitleHighlight')}</span>
           </h1>
-          <p className="mt-5 max-w-lg text-lg text-white/80">
-            Onlayn band qiling, Payme yoki Click orqali xavfsiz to'lang va tekshirilgan xizmatchimiz
-            eshigingizga keladi.
-          </p>
+          <p className="mt-5 max-w-lg text-lg text-white/80">{t('home.heroDesc')}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to="/band-qilish"
               className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-5 py-3 font-semibold tracking-tight text-brand-700 transition hover:bg-brand-50"
             >
-              Hoziroq band qilish
+              {t('home.ctaBook')}
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/xizmatlar"
               className="inline-flex items-center justify-center gap-2 rounded-md border border-white/30 px-5 py-3 font-semibold tracking-tight text-white transition hover:bg-white/10"
             >
-              Narxlarni ko'rish
+              {t('home.ctaPrices')}
             </Link>
           </div>
           <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm text-white/80">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4" />
-              Tekshirilgan xizmatchilar
+              {t('home.heroTrust1')}
             </div>
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
-              Xavfsiz onlayn to'lov
+              {t('home.heroTrust2')}
             </div>
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4" />
-              Tez javob beramiz
+              {t('home.heroTrust3')}
             </div>
           </div>
         </div>
       </section>
 
       {/* Trust bar */}
-      <section className="border-b border-gray-100 bg-white py-10">
+      <section className="border-b border-gray-100 bg-white py-10 dark:border-gray-800 dark:bg-[#0c1512]">
         <div className="section grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {trustPoints.map((t) => (
-            <div key={t.label} className="flex items-start gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-brand-50 text-brand-700">
-                <t.icon className="h-5 w-5" />
-              </span>
-              <div>
-                <div className="font-semibold text-gray-900">{t.label}</div>
-                <div className="mt-0.5 text-sm text-gray-500">{t.desc}</div>
+          {trustPoints.map((t2, i) => {
+            const Icon = TRUST_ICONS[i] ?? ShieldCheck
+            return (
+              <div key={t2.label} className="flex items-start gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100">{t2.label}</div>
+                  <div className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{t2.desc}</div>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </section>
 
       {/* How it works */}
-      <section className="bg-gray-50 py-16">
+      <section className="bg-gray-50 py-16 dark:bg-[#0f1a15]">
         <div className="section">
-          <h2 className="text-center text-3xl font-bold text-gray-900">Qanday ishlaydi</h2>
-          <p className="mx-auto mt-2 max-w-xl text-center text-gray-500">
-            Uch oddiy qadamda uyingiz yoki ofisingizni tozalatib oling.
-          </p>
+          <h2 className="text-center text-3xl font-bold text-gray-900 dark:text-gray-100">{t('home.howTitle')}</h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-gray-500 dark:text-gray-400">{t('home.howDesc')}</p>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {steps.map((s) => (
               <div key={s.title} className="card">
-                <h3 className="text-lg font-semibold text-gray-900">{s.title}</h3>
-                <p className="mt-2 text-sm text-gray-500">{s.desc}</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{s.title}</h3>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{s.desc}</p>
               </div>
             ))}
           </div>
@@ -177,12 +124,10 @@ export default function Home() {
       </section>
 
       {/* Instant price estimate */}
-      <section className="bg-white py-16">
+      <section className="bg-white py-16 dark:bg-[#0c1512]">
         <div className="section max-w-2xl">
-          <h2 className="text-center text-3xl font-bold text-gray-900">Narxni hoziroq bilib oling</h2>
-          <p className="mx-auto mt-2 max-w-xl text-center text-gray-500">
-            Ro'yxatdan o'tmasdan turib, taxminiy narxni ko'ring.
-          </p>
+          <h2 className="text-center text-3xl font-bold text-gray-900 dark:text-gray-100">{t('home.estimateTitle')}</h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-gray-500 dark:text-gray-400">{t('home.estimateDesc')}</p>
           <div className="mt-8">
             <PriceEstimator />
           </div>
@@ -190,18 +135,16 @@ export default function Home() {
       </section>
 
       {/* Service tiles */}
-      <section className="bg-gray-50 py-16">
+      <section className="bg-gray-50 py-16 dark:bg-[#0f1a15]">
         <div className="section">
-          <h2 className="text-center text-3xl font-bold text-gray-900">Xizmatlarimiz</h2>
-          <p className="mx-auto mt-2 max-w-xl text-center text-gray-500">
-            Ehtiyojingizga mos xizmat turini tanlang — narx band qilishda avtomatik hisoblanadi.
-          </p>
-          <div className="mt-10 grid gap-6 sm:grid-cols-3">
+          <h2 className="text-center text-3xl font-bold text-gray-900 dark:text-gray-100">{t('home.servicesTitle')}</h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-gray-500 dark:text-gray-400">{t('home.servicesDesc')}</p>
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {serviceTiles.map((tile, i) => (
               <Reveal key={tile.title} delayMs={i * 100}>
                 <Link
                   to="/xizmatlar"
-                  className="group block overflow-hidden rounded-lg border border-gray-200 transition hover:border-brand-300 hover:shadow-md"
+                  className="group block h-full overflow-hidden rounded-lg border border-gray-200 transition hover:border-brand-300 hover:shadow-md dark:border-gray-800 dark:hover:border-brand-700"
                 >
                   <div className="h-40 overflow-hidden">
                     <img
@@ -212,10 +155,10 @@ export default function Home() {
                     />
                   </div>
                   <div className="p-4">
-                    <div className="font-semibold text-gray-900">{tile.title}</div>
-                    <p className="mt-1 text-sm text-gray-500">{tile.desc}</p>
-                    <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-700">
-                      Batafsil
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{tile.title}</div>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{tile.desc}</p>
+                    <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-700 dark:text-brand-400">
+                      {t('home.detail')}
                       <ArrowRight className="h-3.5 w-3.5" />
                     </span>
                   </div>
@@ -227,9 +170,9 @@ export default function Home() {
       </section>
 
       {/* Why us */}
-      <section className="bg-white py-16">
+      <section className="bg-white py-16 dark:bg-[#0c1512]">
         <div className="section grid items-center gap-12 md:grid-cols-2">
-          <Reveal className="overflow-hidden rounded-lg border border-gray-200">
+          <Reveal direction="left" className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
             <img
               src="https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=1200&q=80"
               alt="Tozalangan yorug' xona"
@@ -237,34 +180,32 @@ export default function Home() {
               loading="lazy"
             />
           </Reveal>
-          <div>
-            <span className="tag bg-brand-50 text-brand-700">Nega CleanPro</span>
-            <h2 className="mt-3 text-3xl font-bold text-gray-900">Ishonchli, shaffof va qulay</h2>
+          <Reveal direction="right">
+            <span className="tag bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">{t('home.whyTag')}</span>
+            <h2 className="mt-3 text-3xl font-bold text-gray-900 dark:text-gray-100">{t('home.whyTitle')}</h2>
             <ul className="mt-6 space-y-4">
               {whyUs.map((item) => (
                 <li key={item} className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
-                  <span className="text-gray-600">{item}</span>
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-brand-600 dark:text-brand-400" />
+                  <span className="text-gray-600 dark:text-gray-300">{item}</span>
                 </li>
               ))}
             </ul>
-          </div>
+          </Reveal>
         </div>
       </section>
 
       <TeamPreview />
 
       {/* Gallery */}
-      <section className="bg-white py-16">
+      <section className="bg-white py-16 dark:bg-[#0c1512]">
         <div className="section">
-          <h2 className="text-center text-3xl font-bold text-gray-900">Natija qanday ko'rinadi</h2>
-          <p className="mx-auto mt-2 max-w-xl text-center text-gray-500">
-            Toza va tartibli xona — har bir tashrifdan kutadigan natijangiz shu.
-          </p>
+          <h2 className="text-center text-3xl font-bold text-gray-900 dark:text-gray-100">{t('home.galleryTitle')}</h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-gray-500 dark:text-gray-400">{t('home.galleryDesc')}</p>
           <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
             {galleryPhotos.map((src, i) => (
-              <Reveal key={src} delayMs={i * 80}>
-                <div className="aspect-square overflow-hidden rounded-lg border border-gray-200">
+              <Reveal key={src} delayMs={i * 80} direction={i % 2 === 0 ? 'left' : 'right'}>
+                <div className="aspect-square overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
                   <img
                     src={src}
                     alt="Toza va tartibli xona"
@@ -279,21 +220,21 @@ export default function Home() {
       </section>
 
       {/* FAQ */}
-      <section className="bg-gray-50 py-16">
+      <section className="bg-gray-50 py-16 dark:bg-[#0f1a15]">
         <div className="section max-w-3xl">
-          <div className="flex items-center justify-center gap-2 text-brand-700">
+          <div className="flex items-center justify-center gap-2 text-brand-700 dark:text-brand-400">
             <MessageCircleQuestion className="h-5 w-5" />
-            <span className="text-sm font-semibold uppercase tracking-wide">Savol-javob</span>
+            <span className="text-sm font-semibold uppercase tracking-wide">{t('home.faqTag')}</span>
           </div>
-          <h2 className="mt-2 text-center text-3xl font-bold text-gray-900">Ko'p so'raladigan savollar</h2>
+          <h2 className="mt-2 text-center text-3xl font-bold text-gray-900 dark:text-gray-100">{t('home.faqTitle')}</h2>
           <div className="mt-8 space-y-3">
             {faqs.map((f) => (
               <details key={f.q} className="card group cursor-pointer">
-                <summary className="flex list-none items-center justify-between font-semibold text-gray-900 marker:content-none">
+                <summary className="flex list-none items-center justify-between font-semibold text-gray-900 marker:content-none dark:text-gray-100">
                   {f.q}
-                  <span className="ml-4 shrink-0 text-brand-600 transition group-open:rotate-45">+</span>
+                  <span className="ml-4 shrink-0 text-brand-600 transition group-open:rotate-45 dark:text-brand-400">+</span>
                 </summary>
-                <p className="mt-3 text-sm text-gray-500">{f.a}</p>
+                <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">{f.a}</p>
               </details>
             ))}
           </div>
@@ -304,14 +245,14 @@ export default function Home() {
       <section className="section py-16">
         <div className="card flex flex-col items-center justify-between gap-6 border-brand-700 bg-brand-700 text-center text-white md:flex-row md:text-left">
           <div>
-            <h3 className="text-2xl font-bold">Bugun tozalash xizmatini band qiling</h3>
-            <p className="mt-1 text-white/80">Narxni bir necha soniyada hisoblang va onlayn to'lang.</p>
+            <h3 className="text-2xl font-bold">{t('home.ctaTitle')}</h3>
+            <p className="mt-1 text-white/80">{t('home.ctaDesc')}</p>
           </div>
           <Link
             to="/band-qilish"
             className="rounded-md bg-white px-6 py-3 font-semibold text-brand-700 transition hover:bg-brand-50"
           >
-            Buyurtma berish
+            {t('home.ctaButton')}
           </Link>
         </div>
       </section>

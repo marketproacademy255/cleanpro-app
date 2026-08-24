@@ -43,6 +43,11 @@ export interface ServiceType {
   code: string
   name_uz: string
   name_en: string | null
+  // Optional Russian name - added alongside the site's UZ/EN/RU language
+  // switcher. Older seed data / Firestore docs written before this field
+  // existed simply won't have it, so every read site falls back to
+  // name_en, then name_uz (see getServiceName() in lib/i18nHelpers.ts).
+  name_ru?: string | null
   description_uz: string | null
   property_type: PropertyType
   pricing_unit: PricingUnit

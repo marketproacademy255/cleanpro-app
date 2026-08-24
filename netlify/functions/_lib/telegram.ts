@@ -1,5 +1,5 @@
 /**
- * Sends a message to the CleanPro admin Telegram bot/chat. Fails silently
+ * Sends a message to the Prime Standard & Co admin Telegram bot/chat. Fails silently
  * (just logs) so a Telegram outage never blocks a booking or payment from
  * going through.
  *

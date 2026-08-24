@@ -1,0 +1,892 @@
+// Translation dictionaries for the site's 3 supported languages. Structure
+// mirrors the pages/components that consume it (nav, footer, home, ...).
+// Values can be strings OR arrays/objects of strings - useTranslation()'s
+// t() just returns whatever is stored at that path, so callers that need a
+// list (FAQ, steps, ...) get the list back typed as `any`.
+//
+// NOTE ON SCOPE: this covers every public/marketing page (Navbar, Footer,
+// Home, Services chrome, About, Contact, Blog, Privacy, Terms) plus shared
+// widgets (DiscountBanner, MobileBookingBar, FloatingContact, TeamPreview,
+// PriceEstimator, NotFound). Authenticated app screens (Booking form,
+// Login/Register, Kabinet/Dashboard, Admin panel) are NOT translated in this
+// pass and stay in Uzbek - they're used post-signup by a mostly-local
+// audience, and translating transactional forms + validation copy is a
+// separate, larger effort. Ask if you want those covered too.
+
+export type Lang = 'uz' | 'en' | 'ru'
+
+export const LANGUAGES: { code: Lang; label: string }[] = [
+  { code: 'uz', label: "O'zbek" },
+  { code: 'en', label: 'English' },
+  { code: 'ru', label: 'Русский' },
+]
+
+const translations = {
+  uz: {
+    brand: {
+      name: 'Prime Standard & Co',
+      tagline: 'Tozalash xizmati',
+      initials: 'PS',
+    },
+    nav: {
+      home: 'Bosh sahifa',
+      services: 'Xizmatlar va narxlar',
+      blog: 'Maslahatlar',
+      about: 'Biz haqimizda',
+      contact: 'Aloqa',
+      login: 'Kirish',
+      myAccount: 'Kabinetim',
+      signOut: 'Chiqish',
+      bookNow: 'Buyurtma berish',
+      adminPanel: 'Admin panel',
+      menu: 'Menyu',
+      toggleTheme: 'Mavzuni almashtirish',
+      language: 'Til',
+    },
+    footer: {
+      tagline:
+        "Uy va ofislaringiz uchun ishonchli, tez va sifatli tozalash xizmati. Onlayn band qiling — Payme yoki Click orqali xavfsiz to'lang.",
+      servicesTitle: 'Xizmatlar',
+      services: ['Standart tozalash', 'Chuqur tozalash', "Ko'chishdan oldin/keyin", 'Ofis tozalash', 'Qurilishdan keyingi tozalash'],
+      companyTitle: 'Kompaniya',
+      about: 'Biz haqimizda',
+      blog: 'Maslahatlar',
+      contact: 'Aloqa',
+      bookNow: 'Buyurtma berish',
+      contactTitle: 'Aloqa',
+      address: "Toshkent, O'zbekiston",
+      rights: 'Barcha huquqlar himoyalangan.',
+      privacy: 'Maxfiylik siyosati',
+      terms: 'Foydalanish shartlari',
+    },
+    discountBanner: {
+      pre: 'Birinchi buyurtmangizga',
+      percent: '-20%',
+      mid: '— band qilishda izohga',
+      code: 'YANGI20',
+      post: "promo-kodini yozing.",
+      cta: 'Hoziroq band qiling',
+      close: 'Yopish',
+    },
+    mobileBar: {
+      call: "Qo'ng'iroq qilish",
+      book: 'Band qilish',
+    },
+    floatingContact: {
+      whatsapp: 'WhatsApp orqali yozing',
+      telegram: 'Telegram orqali yozing',
+      aiChat: 'AI yordamchi bilan suhbat',
+      close: "Bog'lanishni yopish",
+      open: 'Biz bilan bog\'laning',
+      back: 'Orqaga',
+      aiTitle: 'AI yordamchi',
+      aiGreeting:
+        "Salom! Men Prime Standard & Co'ning AI yordamchisiman. Xizmatlar, narxlar yoki band qilish haqida savolingiz bo'lsa, yozing.",
+      aiUnavailable:
+        "AI yordamchi hozircha mavjud emas. Savolingiz bo'lsa, WhatsApp yoki telefon orqali to'g'ridan-to'g'ri yozing - pastdagi menyudan tanlashingiz mumkin.",
+      aiPlaceholder: 'Savolingizni yozing…',
+      aiSending: 'Yozmoqda…',
+      aiError: "Kechirasiz, javob bera olmadim. Qaytadan urinib ko'ring yoki WhatsApp orqali yozing.",
+      aiSend: 'Yuborish',
+    },
+    home: {
+      heroTag: 'Toshkentdagi tozalash xizmati',
+      heroTitle: 'Uyingiz yoki ofisingiz uchun',
+      heroTitleHighlight: 'professional tozalash',
+      heroDesc:
+        "Onlayn band qiling, Payme yoki Click orqali xavfsiz to'lang va tekshirilgan xizmatchimiz eshigingizga keladi.",
+      ctaBook: 'Hoziroq band qilish',
+      ctaPrices: "Narxlarni ko'rish",
+      heroTrust1: 'Tekshirilgan xizmatchilar',
+      heroTrust2: "Xavfsiz onlayn to'lov",
+      heroTrust3: 'Tez javob beramiz',
+      trustPoints: [
+        { label: 'Tekshirilgan xizmatchilar', desc: "Har biri shaxsan suhbatdan o'tgan" },
+        { label: "Xavfsiz onlayn to'lov", desc: 'Payme va Click orqali' },
+        { label: 'Tez javob', desc: "So'rovga bir necha daqiqada javob" },
+        { label: 'Shaffof narx', desc: "Yashirin to'lovlarsiz, oldindan aniq" },
+      ],
+      howTitle: 'Qanday ishlaydi',
+      howDesc: 'Uch oddiy qadamda uyingiz yoki ofisingizni tozalatib oling.',
+      steps: [
+        { title: '1. Xizmatni tanlang', desc: "Uy yoki ofis, tozalash turi va qo'shimcha xizmatlarni belgilang." },
+        { title: '2. Vaqtni band qiling', desc: 'Sizga qulay sana va soatni tanlang — bir martalik yoki muntazam.' },
+        { title: "3. Onlayn to'lang", desc: "Payme yoki Click orqali xavfsiz to'lov qiling, xizmatchi tayinlanadi." },
+      ],
+      estimateTitle: 'Narxni hoziroq bilib oling',
+      estimateDesc: "Ro'yxatdan o'tmasdan turib, taxminiy narxni ko'ring.",
+      servicesTitle: 'Xizmatlarimiz',
+      servicesDesc: 'Ehtiyojingizga mos xizmat turini tanlang — narx band qilishda avtomatik hisoblanadi.',
+      serviceTiles: [
+        {
+          title: 'Standart tozalash',
+          desc: 'Kundalik tozalik — chang tozalash, sanuzel va oshxona.',
+          img: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80',
+        },
+        {
+          title: 'Chuqur tozalash',
+          desc: "Ko'chishdan oldin/keyin yoki mavsumiy chuqur tozalash.",
+          img: 'https://images.unsplash.com/photo-1742483359033-13315b247c74?auto=format&fit=crop&w=800&q=80',
+        },
+        {
+          title: 'Ofis tozalash',
+          desc: 'Ish joyingiz uchun muntazam yoki bir martalik tozalash.',
+          img: 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=800&q=80',
+        },
+        {
+          title: 'Qurilishdan keyingi tozalash',
+          desc: "Yangi qurilgan ko'p qavatli uylar va ofislar uchun to'liq remontdan keyingi tozalash.",
+          img: 'https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=800&q=80',
+        },
+      ],
+      detail: 'Batafsil',
+      whyTag: 'Nega Prime Standard & Co',
+      whyTitle: 'Ishonchli, shaffof va qulay',
+      whyUs: [
+        "Har bir xizmatchi ro'yxatga olinishdan oldin shaxsan suhbatdan o'tadi va tajribasi tekshiriladi",
+        "Narx band qilishdan oldin aniq hisoblanadi — xona soni yoki maydonga qarab, yashirin qo'shimchalarsiz",
+        "To'lov faqat tasdiqlangan xavfsiz kanallar — Payme va Click orqali amalga oshiriladi",
+        'Har bir buyurtma holati shaxsiy kabinetingizda real vaqtda kuzatiladi',
+      ],
+      teamTitle: 'Jamoamiz bilan tanishing',
+      teamDesc: "Har bir xizmatchimiz shaxsan suhbatdan o'tgan va tajribasi tekshirilgan.",
+      teamExperience: 'yil tajriba',
+      teamSeeAll: 'Butun jamoani ko\'rish →',
+      galleryTitle: 'Natija qanday ko\'rinadi',
+      galleryDesc: 'Toza va tartibli xona — har bir tashrifdan kutadigan natijangiz shu.',
+      faqTag: 'Savol-javob',
+      faqTitle: "Ko'p so'raladigan savollar",
+      faqs: [
+        {
+          q: 'Xizmatchilar qanday tekshiriladi?',
+          a: "Har bir xizmatchi ishga qabul qilinishdan oldin shaxsan suhbatdan o'tadi, tajribasi va tavsiyalari tekshiriladi. Profilida tajriba yili va mijozlar bahosi ko'rsatiladi.",
+        },
+        {
+          q: "To'lovni qachon amalga oshiraman?",
+          a: "Buyurtmani tasdiqlaganingizdan so'ng, Payme yoki Click orqali onlayn to'lov qilasiz. To'lov xizmatchi tayinlangandan keyin, xizmat ko'rsatilishidan oldin amalga oshiriladi.",
+        },
+        {
+          q: 'Agar natijadan qoniqmasam nima qilishim kerak?',
+          a: "Aloqa sahifasi orqali yoki telefon raqamimiz bilan biz bilan bog'laning — muammoni tezkor hal qilishga harakat qilamiz.",
+        },
+        {
+          q: "Buyurtmani bekor qilish yoki ko'chirish mumkinmi?",
+          a: "Ha, shaxsiy kabinetingizdan buyurtma sanasini bekor qilish yoki o'zgartirish so'rovini yuborishingiz mumkin.",
+        },
+        {
+          q: "Qaysi hududlarda xizmat ko'rsatasiz?",
+          a: "Hozircha Toshkent shahri bo'ylab xizmat ko'rsatamiz. Manzilingizni band qilish formasida ko'rsating — hudud mos kelsa, xizmatchi tayinlanadi.",
+        },
+      ],
+      ctaTitle: 'Bugun tozalash xizmatini band qiling',
+      ctaDesc: 'Narxni bir necha soniyada hisoblang va onlayn to\'lang.',
+      ctaButton: 'Buyurtma berish',
+    },
+    services: {
+      heroTitle: 'Xizmatlar va narxlar',
+      heroDesc:
+        "Narxlarimiz AQSHdagi yetakchi tozalash platformalari (Merry Maids, Molly Maid, MaidPro) tuzilmasi asosida shakllantirilgan va O'zbekiston bozoriga moslashtirilgan. Aniq narx xona soni yoki maydonga qarab band qilish sahifasida avtomatik hisoblanadi.",
+      loading: 'Yuklanmoqda…',
+      home: 'Uy',
+      office: 'Ofis',
+      startingPrice: "boshlang'ich narx (1 xona)",
+      perExtraRoom: "har bir qo'shimcha xona uchun",
+      min: 'min.',
+      bookThis: 'Ushbu xizmatni band qilish',
+      teamTitle: 'Jamoamiz',
+      teamDesc: "Har bir xizmatchimiz tekshirilgan va sinovdan o'tgan.",
+      yearsExperience: 'yil tajriba',
+    },
+    about: {
+      title: 'Biz haqimizda',
+      intro:
+        "Prime Standard & Co — Toshkentda faoliyat yurituvchi zamonaviy tozalash xizmati. Maqsadimiz uy va ofislarni onlayn bir necha bosim bilan, tekshirilgan xizmatchilar yordamida va xavfsiz onlayn to'lov orqali tozalatish imkonini berish.",
+      pillars: [
+        { title: 'Tekshirilgan xizmatchilar', desc: "Har bir xizmatchi shaxsan suhbatdan o'tadi" },
+        { title: "Xavfsiz to'lov", desc: 'Payme, Click yoki chek orqali' },
+        { title: 'Ekologik vositalar', desc: "Sog'liq uchun xavfsiz tozalash kimyoviy vositalari" },
+      ],
+      whyTitle: 'Nega aynan biz?',
+      reasons: [
+        "Barcha xizmatchilar ishga qabul qilinishdan oldin sinovdan o'tadi",
+        'Payme va Click orqali xavfsiz onlayn to\'lov',
+        "Shaffof narxlash — yashirin to'lovlar yo'q",
+        'Ekologik va xavfsiz tozalash vositalari',
+      ],
+    },
+    contact: {
+      title: 'Aloqa',
+      desc: "Savollaringiz bo'lsa, biz bilan bog'laning.",
+      sentMessage: 'Xabaringiz uchun rahmat! Tez orada bog\'lanamiz.',
+      nameLabel: 'Ism',
+      contactLabel: 'Telefon yoki email',
+      messageLabel: 'Xabar',
+      sending: 'Yuborilmoqda…',
+      send: 'Yuborish',
+      error: "Xabar yuborilmadi. Qaytadan urinib ko'ring.",
+      address: "Toshkent, O'zbekiston",
+    },
+    privacy: {
+      title: 'Maxfiylik siyosati',
+      updated: "Oxirgi yangilanish: 2026-yil avgust",
+      sections: [
+        {
+          h: "1. Qanday ma'lumot to'playmiz",
+          p: "Ro'yxatdan o'tganingizda yoki buyurtma berganingizda ism, telefon raqam, email va manzil kabi ma'lumotlarni to'playmiz. Bu ma'lumotlar faqat xizmatni ko'rsatish — buyurtmani tasdiqlash, xizmatchini tayinlash va siz bilan bog'lanish uchun ishlatiladi.",
+        },
+        {
+          h: "2. Ma'lumotlardan qanday foydalanamiz",
+          p: "Ma'lumotlaringiz uchinchi shaxslarga sotilmaydi. Ular faqat buyurtmani bajarish (xizmatchiga biriktirish), to'lovni amalga oshirish (Payme, Click) va zarurat tug'ilganda siz bilan bog'lanish uchun ishlatiladi.",
+        },
+        {
+          h: "3. Ma'lumotlarni saqlash",
+          p: "Ma'lumotlar xavfsiz serverlarda saqlanadi va faqat vakolatli xodimlar tomonidan, xizmat ko'rsatish maqsadida ko'riladi.",
+        },
+        {
+          h: '4. Sizning huquqlaringiz',
+          p: "Shaxsiy kabinetingizdan o'z ma'lumotlaringizni ko'rishingiz mumkin. Ma'lumotlaringizni o'zgartirish yoki o'chirishni so'rash uchun {email} manziliga murojaat qiling.",
+        },
+        {
+          h: "5. Cookie va texnik ma'lumotlar",
+          p: "Saytdan qulay foydalanish uchun brauzeringizda ba'zi sozlamalar (masalan, tanlangan mavzu va til) saqlanishi mumkin. Ular shaxsingizni aniqlash uchun ishlatilmaydi.",
+        },
+        {
+          h: "6. Bog'lanish",
+          p: "Maxfiylik siyosati bo'yicha savollaringiz bo'lsa, {email} orqali biz bilan bog'lanishingiz mumkin.",
+        },
+      ],
+    },
+    terms: {
+      title: 'Foydalanish shartlari',
+      updated: "Oxirgi yangilanish: 2026-yil avgust",
+      sections: [
+        {
+          h: '1. Xizmat haqida',
+          p: "Prime Standard & Co uy va ofislar uchun tozalash xizmatlarini onlayn band qilish platformasi. Saytdan foydalanish orqali siz ushbu shartlarga rozilik bildirasiz.",
+        },
+        {
+          h: '2. Buyurtma va narxlar',
+          p: "Narx xizmat turi, xona soni yoki maydon, tanlangan tarif va qo'shimcha xizmatlarga qarab hisoblanadi va band qilish jarayonida oldindan ko'rsatiladi. Yakuniy narx to'lovdan oldin tasdiqlanadi.",
+        },
+        {
+          h: "3. To'lov",
+          p: "To'lovlar Payme yoki Click orqali amalga oshiriladi. To'lov muvaffaqiyatli amalga oshirilgach, buyurtma tasdiqlangan hisoblanadi.",
+        },
+        {
+          h: "4. Bekor qilish va o'zgartirish",
+          p: "Buyurtmani bekor qilish yoki sanasini o'zgartirish uchun shaxsiy kabinetingiz orqali murojaat qiling yoki biz bilan telefon orqali bog'laning.",
+        },
+        {
+          h: '5. Javobgarlik',
+          p: "Xizmat natijasidan qoniqmagan holatlarda Aloqa sahifasi orqali murojaat qiling — muammoni tezkor hal qilishga harakat qilamiz.",
+        },
+        {
+          h: "6. Shartlarning o'zgarishi",
+          p: "Ushbu shartlar vaqti-vaqti bilan yangilanishi mumkin. Muhim o'zgarishlar haqida saytda e'lon qilinadi.",
+        },
+      ],
+    },
+    blog: {
+      title: 'Maslahatlar',
+      desc: "Uy va ofisni toza saqlash bo'yicha qisqa va foydali maslahatlar.",
+      readMinutes: 'daqiqa',
+      read: "O'qish",
+      allPosts: 'Barcha maslahatlar',
+      ctaTitle: 'Tozalash xizmati kerakmi?',
+      ctaDesc: 'Bir necha daqiqada onlayn band qiling.',
+      ctaButton: 'Band qilish',
+    },
+    notFound: {
+      text: 'Sahifa topilmadi.',
+      backHome: 'Bosh sahifaga qaytish',
+    },
+    priceEstimator: {
+      title: 'Taxminiy narx',
+      desc: "Xizmat turi va o'lchamni tanlang — narxni bir zumda ko'ring.",
+      serviceType: 'Xizmat turi',
+      area: 'Maydon (m²)',
+      rooms: 'Xonalar soni',
+      estimateLabel: 'Taxminiy narx (standart tarif)',
+      continue: 'Band qilishni davom ettirish',
+    },
+  },
+
+  en: {
+    brand: {
+      name: 'Prime Standard & Co',
+      tagline: 'Cleaning Services',
+      initials: 'PS',
+    },
+    nav: {
+      home: 'Home',
+      services: 'Services & Pricing',
+      blog: 'Tips',
+      about: 'About Us',
+      contact: 'Contact',
+      login: 'Log In',
+      myAccount: 'My Account',
+      signOut: 'Sign Out',
+      bookNow: 'Book Now',
+      adminPanel: 'Admin Panel',
+      menu: 'Menu',
+      toggleTheme: 'Toggle theme',
+      language: 'Language',
+    },
+    footer: {
+      tagline:
+        'Reliable, fast and high-quality cleaning for your home or office. Book online — pay securely with Payme or Click.',
+      servicesTitle: 'Services',
+      services: ['Standard Cleaning', 'Deep Cleaning', 'Move In/Out Cleaning', 'Office Cleaning', 'Post-Construction Cleaning'],
+      companyTitle: 'Company',
+      about: 'About Us',
+      blog: 'Tips',
+      contact: 'Contact',
+      bookNow: 'Book Now',
+      contactTitle: 'Contact',
+      address: 'Tashkent, Uzbekistan',
+      rights: 'All rights reserved.',
+      privacy: 'Privacy Policy',
+      terms: 'Terms of Use',
+    },
+    discountBanner: {
+      pre: '',
+      percent: '-20% off your first order',
+      mid: '— just add the code',
+      code: 'YANGI20',
+      post: 'in the booking notes.',
+      cta: 'Book now',
+      close: 'Close',
+    },
+    mobileBar: {
+      call: 'Call',
+      book: 'Book Now',
+    },
+    floatingContact: {
+      whatsapp: 'Message us on WhatsApp',
+      telegram: 'Message us on Telegram',
+      aiChat: 'Chat with AI assistant',
+      close: 'Close contact panel',
+      open: 'Contact us',
+      back: 'Back',
+      aiTitle: 'AI Assistant',
+      aiGreeting:
+        "Hi! I'm Prime Standard & Co's AI assistant. Ask me anything about our services, prices, or booking.",
+      aiUnavailable:
+        'The AI assistant is unavailable right now. Message us directly on WhatsApp or by phone using the menu below.',
+      aiPlaceholder: 'Type your question…',
+      aiSending: 'Typing…',
+      aiError: "Sorry, I couldn't reply. Please try again or reach us on WhatsApp.",
+      aiSend: 'Send',
+    },
+    home: {
+      heroTag: 'Cleaning service in Tashkent',
+      heroTitle: 'Professional cleaning for your',
+      heroTitleHighlight: 'home or office',
+      heroDesc: 'Book online, pay securely with Payme or Click, and our vetted cleaner comes to your door.',
+      ctaBook: 'Book Now',
+      ctaPrices: 'View Prices',
+      heroTrust1: 'Vetted cleaners',
+      heroTrust2: 'Secure online payment',
+      heroTrust3: 'Fast response',
+      trustPoints: [
+        { label: 'Vetted cleaners', desc: 'Each one personally interviewed' },
+        { label: 'Secure online payment', desc: 'Via Payme and Click' },
+        { label: 'Fast response', desc: 'We reply within minutes' },
+        { label: 'Transparent pricing', desc: 'No hidden fees, known upfront' },
+      ],
+      howTitle: 'How it works',
+      howDesc: 'Get your home or office cleaned in three simple steps.',
+      steps: [
+        { title: '1. Choose a service', desc: 'Pick home or office, cleaning type, and any add-ons.' },
+        { title: '2. Book a time', desc: 'Pick a date and time that works for you — one-off or recurring.' },
+        { title: '3. Pay online', desc: 'Pay securely via Payme or Click and a cleaner is assigned.' },
+      ],
+      estimateTitle: 'Get an instant price estimate',
+      estimateDesc: 'See an approximate price before you even sign up.',
+      servicesTitle: 'Our Services',
+      servicesDesc: 'Choose the service that fits your needs — price is calculated automatically at booking.',
+      serviceTiles: [
+        {
+          title: 'Standard Cleaning',
+          desc: 'Everyday tidiness — dusting, bathroom and kitchen.',
+          img: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80',
+        },
+        {
+          title: 'Deep Cleaning',
+          desc: 'Move-in/move-out or seasonal deep cleaning.',
+          img: 'https://images.unsplash.com/photo-1742483359033-13315b247c74?auto=format&fit=crop&w=800&q=80',
+        },
+        {
+          title: 'Office Cleaning',
+          desc: 'Regular or one-off cleaning for your workplace.',
+          img: 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=800&q=80',
+        },
+        {
+          title: 'Post-Construction Cleaning',
+          desc: 'Full post-renovation cleaning for newly built multi-story residential buildings and offices.',
+          img: 'https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=800&q=80',
+        },
+      ],
+      detail: 'Details',
+      whyTag: 'Why Prime Standard & Co',
+      whyTitle: 'Reliable, transparent and convenient',
+      whyUs: [
+        'Every cleaner is personally interviewed and their experience verified before joining the team',
+        'Price is calculated up front based on room count or area — no hidden extras',
+        'Payment only goes through verified, secure channels — Payme and Click',
+        'Every booking status is tracked in real time from your personal account',
+      ],
+      teamTitle: 'Meet our team',
+      teamDesc: 'Every cleaner has been personally interviewed and their experience verified.',
+      teamExperience: 'yrs experience',
+      teamSeeAll: 'See the full team →',
+      galleryTitle: 'What the result looks like',
+      galleryDesc: 'A clean, tidy room — the result you can expect from every visit.',
+      faqTag: 'FAQ',
+      faqTitle: 'Frequently Asked Questions',
+      faqs: [
+        {
+          q: 'How are cleaners vetted?',
+          a: 'Every cleaner is personally interviewed before being hired, and their experience and references are checked. Years of experience and customer rating are shown on their profile.',
+        },
+        {
+          q: 'When do I pay?',
+          a: 'After confirming your booking, you pay online via Payme or Click. Payment happens once a cleaner is assigned, before the service is performed.',
+        },
+        {
+          q: "What if I'm not happy with the result?",
+          a: 'Contact us via the Contact page or by phone — we work to resolve any issue quickly.',
+        },
+        {
+          q: 'Can I cancel or reschedule a booking?',
+          a: 'Yes, you can request to cancel or change the booking date from your personal account.',
+        },
+        {
+          q: 'Which areas do you serve?',
+          a: 'We currently serve the city of Tashkent. Enter your address on the booking form — if it\'s within our area, a cleaner will be assigned.',
+        },
+      ],
+      ctaTitle: 'Book a cleaning today',
+      ctaDesc: 'Get a price in seconds and pay online.',
+      ctaButton: 'Book Now',
+    },
+    services: {
+      heroTitle: 'Services & Pricing',
+      heroDesc:
+        "Our pricing is structured after leading US cleaning platforms (Merry Maids, Molly Maid, MaidPro) and adapted to the Uzbekistan market. The exact price, based on room count or area, is calculated automatically on the booking page.",
+      loading: 'Loading…',
+      home: 'Home',
+      office: 'Office',
+      startingPrice: 'starting price (1 room)',
+      perExtraRoom: 'per additional room',
+      min: 'min.',
+      bookThis: 'Book this service',
+      teamTitle: 'Our Team',
+      teamDesc: 'Every one of our cleaners is vetted and tested.',
+      yearsExperience: 'yrs experience',
+    },
+    about: {
+      title: 'About Us',
+      intro:
+        'Prime Standard & Co is a modern cleaning service operating in Tashkent. Our goal is to let you get your home or office cleaned online in a few clicks, with vetted cleaners and secure online payment.',
+      pillars: [
+        { title: 'Vetted cleaners', desc: 'Every cleaner is personally interviewed' },
+        { title: 'Secure payment', desc: 'Via Payme, Click, or receipt' },
+        { title: 'Eco-friendly supplies', desc: 'Cleaning products that are safe for your health' },
+      ],
+      whyTitle: 'Why choose us?',
+      reasons: [
+        'All cleaners are tested before being hired',
+        'Secure online payment via Payme and Click',
+        'Transparent pricing — no hidden fees',
+        'Eco-friendly, safe cleaning supplies',
+      ],
+    },
+    contact: {
+      title: 'Contact',
+      desc: "Have questions? Get in touch with us.",
+      sentMessage: "Thanks for your message! We'll be in touch soon.",
+      nameLabel: 'Name',
+      contactLabel: 'Phone or email',
+      messageLabel: 'Message',
+      sending: 'Sending…',
+      send: 'Send',
+      error: 'Message failed to send. Please try again.',
+      address: 'Tashkent, Uzbekistan',
+    },
+    privacy: {
+      title: 'Privacy Policy',
+      updated: 'Last updated: August 2026',
+      sections: [
+        {
+          h: '1. What information we collect',
+          p: "When you register or place a booking, we collect information such as your name, phone number, email and address. This information is used solely to provide the service — confirming your booking, assigning a cleaner, and contacting you.",
+        },
+        {
+          h: '2. How we use your information',
+          p: 'Your information is never sold to third parties. It is used only to fulfil your order (assigning a cleaner), process payment (Payme, Click), and to contact you when necessary.',
+        },
+        {
+          h: '3. Data storage',
+          p: 'Your data is stored on secure servers and is only accessed by authorized staff for the purpose of providing the service.',
+        },
+        {
+          h: '4. Your rights',
+          p: 'You can view your own data from your personal account. To request a change or deletion of your data, contact us at {email}.',
+        },
+        {
+          h: '5. Cookies and technical data',
+          p: 'For a smoother experience, your browser may store certain settings (such as your chosen theme and language). These are not used to identify you personally.',
+        },
+        {
+          h: '6. Contact',
+          p: 'If you have questions about this privacy policy, you can reach us at {email}.',
+        },
+      ],
+    },
+    terms: {
+      title: 'Terms of Use',
+      updated: 'Last updated: August 2026',
+      sections: [
+        {
+          h: '1. About the service',
+          p: 'Prime Standard & Co is an online booking platform for home and office cleaning services. By using this site, you agree to these terms.',
+        },
+        {
+          h: '2. Orders and pricing',
+          p: 'Price is calculated based on service type, room count or area, the selected tier, and any add-ons, and is shown up front during booking. The final price is confirmed before payment.',
+        },
+        {
+          h: '3. Payment',
+          p: 'Payments are made via Payme or Click. Once payment is successfully completed, the booking is considered confirmed.',
+        },
+        {
+          h: '4. Cancellation and changes',
+          p: 'To cancel or reschedule a booking, use your personal account or contact us by phone.',
+        },
+        {
+          h: '5. Liability',
+          p: "If you're not satisfied with the service, contact us via the Contact page — we work to resolve issues quickly.",
+        },
+        {
+          h: '6. Changes to these terms',
+          p: 'These terms may be updated from time to time. Significant changes will be announced on the site.',
+        },
+      ],
+    },
+    blog: {
+      title: 'Tips',
+      desc: 'Short, useful tips for keeping your home and office clean.',
+      readMinutes: 'min read',
+      read: 'Read',
+      allPosts: 'All tips',
+      ctaTitle: 'Need a cleaning service?',
+      ctaDesc: 'Book online in just a few minutes.',
+      ctaButton: 'Book Now',
+    },
+    notFound: {
+      text: 'Page not found.',
+      backHome: 'Back to home',
+    },
+    priceEstimator: {
+      title: 'Price Estimate',
+      desc: 'Choose a service type and size — see the price instantly.',
+      serviceType: 'Service type',
+      area: 'Area (m²)',
+      rooms: 'Number of rooms',
+      estimateLabel: 'Estimated price (standard tier)',
+      continue: 'Continue to booking',
+    },
+  },
+
+  ru: {
+    brand: {
+      name: 'Prime Standard & Co',
+      tagline: 'Клининговые услуги',
+      initials: 'PS',
+    },
+    nav: {
+      home: 'Главная',
+      services: 'Услуги и цены',
+      blog: 'Советы',
+      about: 'О нас',
+      contact: 'Контакты',
+      login: 'Войти',
+      myAccount: 'Личный кабинет',
+      signOut: 'Выйти',
+      bookNow: 'Заказать',
+      adminPanel: 'Админ-панель',
+      menu: 'Меню',
+      toggleTheme: 'Сменить тему',
+      language: 'Язык',
+    },
+    footer: {
+      tagline:
+        'Надёжная, быстрая и качественная уборка для вашего дома или офиса. Закажите онлайн — оплатите безопасно через Payme или Click.',
+      servicesTitle: 'Услуги',
+      services: ['Стандартная уборка', 'Генеральная уборка', 'Уборка при переезде', 'Уборка офисов', 'Уборка после строительства'],
+      companyTitle: 'Компания',
+      about: 'О нас',
+      blog: 'Советы',
+      contact: 'Контакты',
+      bookNow: 'Заказать',
+      contactTitle: 'Контакты',
+      address: 'Ташкент, Узбекистан',
+      rights: 'Все права защищены.',
+      privacy: 'Политика конфиденциальности',
+      terms: 'Условия использования',
+    },
+    discountBanner: {
+      pre: '',
+      percent: '-20% на первый заказ',
+      mid: '— укажите промокод',
+      code: 'YANGI20',
+      post: 'в комментарии к заказу.',
+      cta: 'Заказать сейчас',
+      close: 'Закрыть',
+    },
+    mobileBar: {
+      call: 'Позвонить',
+      book: 'Заказать',
+    },
+    floatingContact: {
+      whatsapp: 'Написать в WhatsApp',
+      telegram: 'Написать в Telegram',
+      aiChat: 'Чат с AI-помощником',
+      close: 'Закрыть окно связи',
+      open: 'Связаться с нами',
+      back: 'Назад',
+      aiTitle: 'AI-помощник',
+      aiGreeting:
+        'Здравствуйте! Я AI-помощник Prime Standard & Co. Если у вас есть вопросы об услугах, ценах или заказе — напишите.',
+      aiUnavailable:
+        'AI-помощник сейчас недоступен. Напишите нам напрямую в WhatsApp или по телефону — выберите вариант в меню ниже.',
+      aiPlaceholder: 'Напишите ваш вопрос…',
+      aiSending: 'Печатает…',
+      aiError: 'Извините, не удалось ответить. Попробуйте снова или напишите нам в WhatsApp.',
+      aiSend: 'Отправить',
+    },
+    home: {
+      heroTag: 'Клининговые услуги в Ташкенте',
+      heroTitle: 'Профессиональная уборка для вашего',
+      heroTitleHighlight: 'дома или офиса',
+      heroDesc:
+        'Закажите онлайн, оплатите безопасно через Payme или Click, и наш проверенный клинер приедет к вам.',
+      ctaBook: 'Заказать сейчас',
+      ctaPrices: 'Смотреть цены',
+      heroTrust1: 'Проверенные клинеры',
+      heroTrust2: 'Безопасная онлайн-оплата',
+      heroTrust3: 'Быстрый ответ',
+      trustPoints: [
+        { label: 'Проверенные клинеры', desc: 'Каждый прошёл личное собеседование' },
+        { label: 'Безопасная онлайн-оплата', desc: 'Через Payme и Click' },
+        { label: 'Быстрый ответ', desc: 'Отвечаем в течение нескольких минут' },
+        { label: 'Прозрачные цены', desc: 'Без скрытых платежей, известны заранее' },
+      ],
+      howTitle: 'Как это работает',
+      howDesc: 'Закажите уборку дома или офиса всего за три простых шага.',
+      steps: [
+        { title: '1. Выберите услугу', desc: 'Дом или офис, тип уборки и дополнительные услуги.' },
+        { title: '2. Забронируйте время', desc: 'Выберите удобную дату и время — разово или регулярно.' },
+        { title: '3. Оплатите онлайн', desc: 'Оплатите безопасно через Payme или Click, вам назначат клинера.' },
+      ],
+      estimateTitle: 'Узнайте цену прямо сейчас',
+      estimateDesc: 'Посмотрите приблизительную цену ещё до регистрации.',
+      servicesTitle: 'Наши услуги',
+      servicesDesc: 'Выберите подходящую услугу — цена рассчитывается автоматически при бронировании.',
+      serviceTiles: [
+        {
+          title: 'Стандартная уборка',
+          desc: 'Повседневная чистота — уборка пыли, санузел и кухня.',
+          img: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80',
+        },
+        {
+          title: 'Генеральная уборка',
+          desc: 'Уборка при переезде или сезонная генеральная уборка.',
+          img: 'https://images.unsplash.com/photo-1742483359033-13315b247c74?auto=format&fit=crop&w=800&q=80',
+        },
+        {
+          title: 'Уборка офисов',
+          desc: 'Регулярная или разовая уборка вашего рабочего места.',
+          img: 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=800&q=80',
+        },
+        {
+          title: 'Уборка после строительства',
+          desc: 'Полная уборка после ремонта для новостроек и офисов.',
+          img: 'https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=800&q=80',
+        },
+      ],
+      detail: 'Подробнее',
+      whyTag: 'Почему Prime Standard & Co',
+      whyTitle: 'Надёжно, прозрачно и удобно',
+      whyUs: [
+        'Каждый клинер лично проходит собеседование, а его опыт проверяется до начала работы',
+        'Цена рассчитывается заранее по количеству комнат или площади — без скрытых доплат',
+        'Оплата проходит только через проверенные безопасные каналы — Payme и Click',
+        'Статус каждого заказа отслеживается в реальном времени в личном кабинете',
+      ],
+      teamTitle: 'Познакомьтесь с нашей командой',
+      teamDesc: 'Каждый наш клинер лично прошёл собеседование, а его опыт проверен.',
+      teamExperience: 'лет опыта',
+      teamSeeAll: 'Смотреть всю команду →',
+      galleryTitle: 'Как выглядит результат',
+      galleryDesc: 'Чистая и аккуратная комната — результат, который вы получите после каждого визита.',
+      faqTag: 'Вопрос-ответ',
+      faqTitle: 'Часто задаваемые вопросы',
+      faqs: [
+        {
+          q: 'Как проверяются клинеры?',
+          a: 'Каждый клинер лично проходит собеседование перед приёмом на работу, его опыт и рекомендации проверяются. В профиле указаны стаж работы и рейтинг клиентов.',
+        },
+        {
+          q: 'Когда нужно платить?',
+          a: 'После подтверждения заказа вы оплачиваете онлайн через Payme или Click. Оплата производится после назначения клинера, до оказания услуги.',
+        },
+        {
+          q: 'Что делать, если я не доволен результатом?',
+          a: 'Свяжитесь с нами через страницу контактов или по телефону — мы стараемся быстро решить любую проблему.',
+        },
+        {
+          q: 'Можно ли отменить или перенести заказ?',
+          a: 'Да, вы можете отправить запрос на отмену или изменение даты заказа из личного кабинета.',
+        },
+        {
+          q: 'В каких районах вы работаете?',
+          a: 'Пока мы работаем по городу Ташкенту. Укажите ваш адрес в форме бронирования — если район подходит, вам назначат клинера.',
+        },
+      ],
+      ctaTitle: 'Закажите уборку сегодня',
+      ctaDesc: 'Узнайте цену за несколько секунд и оплатите онлайн.',
+      ctaButton: 'Заказать',
+    },
+    services: {
+      heroTitle: 'Услуги и цены',
+      heroDesc:
+        'Наши цены сформированы на основе структуры ведущих клининговых платформ США (Merry Maids, Molly Maid, MaidPro) и адаптированы под рынок Узбекистана. Точная цена по количеству комнат или площади рассчитывается автоматически на странице бронирования.',
+      loading: 'Загрузка…',
+      home: 'Дом',
+      office: 'Офис',
+      startingPrice: 'начальная цена (1 комната)',
+      perExtraRoom: 'за каждую дополнительную комнату',
+      min: 'мин.',
+      bookThis: 'Заказать эту услугу',
+      teamTitle: 'Наша команда',
+      teamDesc: 'Каждый наш клинер проверен и прошёл испытание.',
+      yearsExperience: 'лет опыта',
+    },
+    about: {
+      title: 'О нас',
+      intro:
+        'Prime Standard & Co — современный клининговый сервис, работающий в Ташкенте. Наша цель — дать вам возможность заказать уборку дома или офиса онлайн в несколько кликов, с проверенными клинерами и безопасной онлайн-оплатой.',
+      pillars: [
+        { title: 'Проверенные клинеры', desc: 'Каждый клинер лично проходит собеседование' },
+        { title: 'Безопасная оплата', desc: 'Через Payme, Click или по чеку' },
+        { title: 'Экологичные средства', desc: 'Безопасные для здоровья чистящие средства' },
+      ],
+      whyTitle: 'Почему именно мы?',
+      reasons: [
+        'Все клинеры проходят проверку перед приёмом на работу',
+        'Безопасная онлайн-оплата через Payme и Click',
+        'Прозрачное ценообразование — без скрытых платежей',
+        'Экологичные и безопасные чистящие средства',
+      ],
+    },
+    contact: {
+      title: 'Контакты',
+      desc: 'Есть вопросы? Свяжитесь с нами.',
+      sentMessage: 'Спасибо за сообщение! Мы скоро свяжемся с вами.',
+      nameLabel: 'Имя',
+      contactLabel: 'Телефон или email',
+      messageLabel: 'Сообщение',
+      sending: 'Отправка…',
+      send: 'Отправить',
+      error: 'Не удалось отправить сообщение. Попробуйте снова.',
+      address: 'Ташкент, Узбекистан',
+    },
+    privacy: {
+      title: 'Политика конфиденциальности',
+      updated: 'Последнее обновление: август 2026 г.',
+      sections: [
+        {
+          h: '1. Какую информацию мы собираем',
+          p: 'При регистрации или оформлении заказа мы собираем такую информацию, как имя, номер телефона, email и адрес. Эта информация используется исключительно для оказания услуги — подтверждения заказа, назначения клинера и связи с вами.',
+        },
+        {
+          h: '2. Как мы используем информацию',
+          p: 'Ваши данные никогда не продаются третьим лицам. Они используются только для выполнения заказа (назначение клинера), обработки платежа (Payme, Click) и связи с вами при необходимости.',
+        },
+        {
+          h: '3. Хранение данных',
+          p: 'Данные хранятся на защищённых серверах и доступны только уполномоченным сотрудникам в целях оказания услуги.',
+        },
+        {
+          h: '4. Ваши права',
+          p: 'Вы можете просматривать свои данные в личном кабинете. Чтобы запросить изменение или удаление данных, свяжитесь с нами по адресу {email}.',
+        },
+        {
+          h: '5. Cookie и технические данные',
+          p: 'Для удобства использования сайта в вашем браузере могут сохраняться некоторые настройки (например, выбранная тема и язык). Они не используются для идентификации вашей личности.',
+        },
+        {
+          h: '6. Связь с нами',
+          p: 'Если у вас есть вопросы по политике конфиденциальности, вы можете связаться с нами по адресу {email}.',
+        },
+      ],
+    },
+    terms: {
+      title: 'Условия использования',
+      updated: 'Последнее обновление: август 2026 г.',
+      sections: [
+        {
+          h: '1. Об услуге',
+          p: 'Prime Standard & Co — платформа для онлайн-бронирования клининговых услуг для дома и офиса. Используя сайт, вы соглашаетесь с данными условиями.',
+        },
+        {
+          h: '2. Заказ и цены',
+          p: 'Цена рассчитывается в зависимости от типа услуги, количества комнат или площади, выбранного тарифа и дополнительных услуг, и показывается заранее в процессе бронирования. Итоговая цена подтверждается перед оплатой.',
+        },
+        {
+          h: '3. Оплата',
+          p: 'Оплата производится через Payme или Click. После успешной оплаты заказ считается подтверждённым.',
+        },
+        {
+          h: '4. Отмена и изменение',
+          p: 'Для отмены заказа или изменения даты обратитесь через личный кабинет или свяжитесь с нами по телефону.',
+        },
+        {
+          h: '5. Ответственность',
+          p: 'Если вы не удовлетворены результатом услуги, обратитесь через страницу контактов — мы стараемся быстро решить проблему.',
+        },
+        {
+          h: '6. Изменение условий',
+          p: 'Данные условия могут периодически обновляться. О существенных изменениях будет объявлено на сайте.',
+        },
+      ],
+    },
+    blog: {
+      title: 'Советы',
+      desc: 'Короткие и полезные советы о том, как поддерживать чистоту дома и офиса.',
+      readMinutes: 'мин чтения',
+      read: 'Читать',
+      allPosts: 'Все советы',
+      ctaTitle: 'Нужна уборка?',
+      ctaDesc: 'Забронируйте онлайн за несколько минут.',
+      ctaButton: 'Заказать',
+    },
+    notFound: {
+      text: 'Страница не найдена.',
+      backHome: 'Вернуться на главную',
+    },
+    priceEstimator: {
+      title: 'Примерная цена',
+      desc: 'Выберите тип услуги и размер — цена появится мгновенно.',
+      serviceType: 'Тип услуги',
+      area: 'Площадь (м²)',
+      rooms: 'Количество комнат',
+      estimateLabel: 'Примерная цена (стандартный тариф)',
+      continue: 'Продолжить бронирование',
+    },
+  },
+} as const
+
+export default translations

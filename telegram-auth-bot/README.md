@@ -1,6 +1,6 @@
-# CleanPro Telegram ro'yxatdan o'tish boti (Node.js)
+# Prime Standard & Co Telegram ro'yxatdan o'tish boti (Node.js)
 
-Bu alohida, mustaqil Node.js bot - CleanPro saytining `cleanpro-app` loyihasidan
+Bu alohida, mustaqil Node.js bot - Prime Standard & Co saytining `primestandard-app` loyihasidan
 alohida ishga tushiriladi (o'z serveringizda, VPS'da yoki shunga o'xshash joyda).
 [Telegraf](https://telegraf.js.org/) kutubxonasi va Firebase Admin SDK (Node) asosida yozilgan.
 
@@ -39,11 +39,12 @@ cp .env.example .env
 
 `.env` faylini oching va to'ldiring:
 
-- `BOT_TOKEN` - @BotFather'dan olingan token (hozircha demo uchun `bot.js`
-  ichiga ham yozib qo'yilgan, shu yerga qo'ysangiz shu ustunlik qiladi)
+- `BOT_TOKEN` - @BotFather'dan olingan token. Faqat shu yerda (`.env`, gitignored)
+  saqlanadi - koddagi hardcoded fallback endi yo'q, token bo'lmasa bot ishga
+  tushmaydi.
 - `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` -
   Firebase Console -> Project settings -> Service accounts -> Generate new
-  private key orqali oling (bu `cleanpro-app/netlify/functions`dagi bilan
+  private key orqali oling (bu `primestandard-app/netlify/functions`dagi bilan
   BIR XIL service account bo'lishi kerak - loyiha bitta Firebase'ga yozadi)
 
 ## Ishga tushirish
@@ -58,11 +59,11 @@ Bot ishga tushgach, Telegram'da botingizga `/start` yozib sinab ko'ring.
 
 ## Serverda doimiy ishlashi uchun (systemd misoli)
 
-`/etc/systemd/system/cleanpro-auth-bot.service`:
+`/etc/systemd/system/primestandard-auth-bot.service`:
 
 ```ini
 [Unit]
-Description=CleanPro Telegram auth bot
+Description=Prime Standard & Co Telegram auth bot
 After=network.target
 
 [Service]
@@ -79,28 +80,28 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now cleanpro-auth-bot
-sudo systemctl status cleanpro-auth-bot
+sudo systemctl enable --now primestandard-auth-bot
+sudo systemctl status primestandard-auth-bot
 ```
 
 Yoki [PM2](https://pm2.keymetrics.io/) bilan:
 
 ```bash
 npm install -g pm2
-pm2 start bot.js --name cleanpro-auth-bot
+pm2 start bot.js --name primestandard-auth-bot
 pm2 save
 pm2 startup
 ```
 
 ## Botning username'ini saytga bog'lash
 
-Bot yaratilgach (@BotFather'da) uning username'i (masalan `cleanpro_uz_bot`)
+Bot yaratilgach (@BotFather'da) uning username'i (masalan `primestandard_uz_bot`)
 ma'lum bo'ladi. Shuni Netlify'da quyidagi muhit o'zgaruvchisiga qo'ying -
 shunda saytdagi "Ro'yxatdan o'tish" va "Kirish" sahifalarida botga
 o'tuvchi tugma/havola chiqadi:
 
 ```
-VITE_TELEGRAM_BOT_USERNAME=cleanpro_uz_bot
+VITE_TELEGRAM_BOT_USERNAME=primestandard_uz_bot
 ```
 
 ## Muhim eslatmalar

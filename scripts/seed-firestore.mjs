@@ -35,6 +35,7 @@ const serviceTypes = [
     code: 'standard_home',
     name_uz: 'Standart tozalash',
     name_en: 'Standard Cleaning',
+    name_ru: 'Стандартная уборка',
     description_uz:
       "Muntazam uy tozaligini saqlash uchun: chang artish, polni yuvish, sanuzel va oshxonani tozalash.",
     property_type: 'home',
@@ -50,6 +51,7 @@ const serviceTypes = [
     code: 'deep_home',
     name_uz: 'Chuqur tozalash',
     name_en: 'Deep Cleaning',
+    name_ru: 'Генеральная уборка',
     description_uz:
       "Har bir burchakni qamrab oluvchi mukammal tozalash: plintuslar, batareyalar, yorug'lik asboblari va boshqalar.",
     property_type: 'home',
@@ -65,6 +67,7 @@ const serviceTypes = [
     code: 'move_home',
     name_uz: "Ko'chishdan oldin/keyin tozalash",
     name_en: 'Move In/Out Cleaning',
+    name_ru: 'Уборка при переезде',
     description_uz: "Bo'sh xonadonni to'liq tozalash: shkaflar ichi, oynalar, chuqur yuvish.",
     property_type: 'home',
     pricing_unit: 'per_room',
@@ -79,6 +82,7 @@ const serviceTypes = [
     code: 'office_clean',
     name_uz: 'Ofis tozalash',
     name_en: 'Office Cleaning',
+    name_ru: 'Уборка офисов',
     description_uz: "Ish joyingiz uchun professional tozalash xizmati, kv.m bo'yicha hisoblanadi.",
     property_type: 'office',
     pricing_unit: 'per_sqm',
@@ -88,6 +92,28 @@ const serviceTypes = [
     multiplier: 1.0,
     is_active: true,
     sort_order: 4,
+  },
+  {
+    // New service (added per business request): full post-renovation
+    // cleaning for newly built multi-story residential buildings and
+    // offices - construction dust, adhesive residue, paint splatter etc.,
+    // which needs a heavier pass than a normal deep clean. Priced per sqm
+    // like office cleaning, but at a higher rate given the extra labor.
+    code: 'post_construction',
+    name_uz: 'Qurilishdan keyingi tozalash',
+    name_en: 'Post-Construction Cleaning',
+    name_ru: 'Уборка после строительства',
+    description_uz:
+      "Yangi qurilgan ko'p qavatli uylar va ofislar uchun to'liq remontdan keyingi tozalash: qurilish changi, " +
+      "bo'yoq va yelim izlari, derazalar va pollarning chuqur tozalanishi.",
+    property_type: 'home',
+    pricing_unit: 'per_sqm',
+    base_price: 0,
+    extra_unit_price: 12000,
+    min_price: 400000,
+    multiplier: 1.0,
+    is_active: true,
+    sort_order: 5,
   },
 ]
 

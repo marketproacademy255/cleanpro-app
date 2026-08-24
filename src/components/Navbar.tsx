@@ -3,22 +3,25 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { Menu, Moon, Phone, Sun, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useTheme } from '@/context/ThemeContext'
+import { useTranslation } from '@/context/LanguageContext'
 import { IS_DEMO } from '@/lib/config'
-
-const links = [
-  { to: '/', label: 'Bosh sahifa' },
-  { to: '/xizmatlar', label: 'Xizmatlar va narxlar' },
-  { to: '/maslahatlar', label: 'Maslahatlar' },
-  { to: '/biz-haqimizda', label: 'Biz haqimizda' },
-  { to: '/aloqa', label: 'Aloqa' },
-]
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 export default function Navbar() {
   const { user, profile, isAdmin, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const navigate = useNavigate()
+
+  const links = [
+    { to: '/', label: t('nav.home') },
+    { to: '/xizmatlar', label: t('nav.services') },
+    { to: '/maslahatlar', label: t('nav.blog') },
+    { to: '/biz-haqimizda', label: t('nav.about') },
+    { to: '/aloqa', label: t('nav.contact') },
+  ]
 
   // Header is `sticky` (see className below), so it already sits in normal
   // flow at the top of the page and only "sticks" once you scroll past it -
@@ -41,7 +44,7 @@ export default function Navbar() {
   return (
     <header
       className={`sticky top-0 z-40 border-b bg-white/90 backdrop-blur transition-shadow duration-300 dark:bg-[#101c17]/90 ${
-        scrolled ? 'border-gray-200 shadow-sm' : 'border-transparent shadow-none'
+        scrolled ? 'border-gray-200 shadow-sm dark:border-gray-800' : 'border-transparent shadow-none'
       }`}
     >
       <div
@@ -49,9 +52,16 @@ export default function Navbar() {
           scrolled ? 'h-14' : 'h-16'
         }`}
       >
-        <Link to="/" className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-brand-700">
-          <span className="grid h-9 w-9 place-items-center rounded-md bg-brand-600 text-white">CP</span>
-          CleanPro
+        <Link to="/" className="flex items-center gap-2.5 text-xl font-extrabold leading-none tracking-tight text-brand-700 dark:text-brand-400">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-brand-600 text-white">
+            {t('brand.initials')}
+          </span>
+          <span className="flex flex-col">
+            <span>{t('brand.name')}</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+              {t('brand.tagline')}
+            </span>
+          </span>
           {IS_DEMO && (
             <span className="tag bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700">
               Demo
@@ -65,10 +75,23 @@ export default function Navbar() {
               key={l.to}
               to={l.to}
               className={({ isActive }) =>
-                `text-sm font-medium transition hover:text-brand-700 ${isActive ? 'text-brand-700' : 'text-gray-600'}`
+                `group relative py-1 text-sm font-medium transition-colors duration-200 hover:text-brand-700 dark:hover:text-brand-400 ${
+                  isActive ? 'text-brand-700 dark:text-brand-400' : 'text-gray-600 dark:text-gray-300'
+                }`
               }
             >
-              {l.label}
+              {({ isActive }) => (
+                <>
+                  {l.label}
+                  {/* Animated underline: expands from the center on hover,
+                      and stays fully expanded when the link is active. */}
+                  <span
+                    className={`pointer-events-none absolute -bottom-1 left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-brand-600 transition-all duration-300 ease-out dark:bg-brand-400 ${
+                      isActive ? 'w-full' : 'w-0 group-hover:w-full'
+                    }`}
+                  />
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -77,42 +100,43 @@ export default function Navbar() {
           {user ? (
             <>
               {isAdmin && (
-                <Link to="/admin" className="text-sm font-medium text-gray-600 hover:text-brand-700">
-                  Admin panel
+                <Link to="/admin" className="text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
+                  {t('nav.adminPanel')}
                 </Link>
               )}
-              <Link to="/kabinet" className="text-sm font-medium text-gray-600 hover:text-brand-700">
-                {profile?.full_name || 'Kabinetim'}
+              <Link to="/kabinet" className="text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
+                {profile?.full_name || t('nav.myAccount')}
               </Link>
               <button onClick={handleSignOut} className="btn-secondary py-2">
-                Chiqish
+                {t('nav.signOut')}
               </button>
             </>
           ) : (
             <>
-              <Link to="/kirish" className="text-sm font-medium text-gray-600 hover:text-brand-700">
-                Kirish
+              <Link to="/kirish" className="text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
+                {t('nav.login')}
               </Link>
               <Link to="/band-qilish" className="btn-primary py-2">
-                Buyurtma berish
+                {t('nav.bookNow')}
               </Link>
             </>
           )}
         </div>
 
         <div className="flex items-center gap-2">
+          <LanguageSwitcher compact />
           <button
-            className="grid h-10 w-10 place-items-center rounded-md border border-gray-200 text-gray-500 transition hover:border-brand-600 hover:text-brand-700"
+            className="grid h-10 w-10 place-items-center rounded-md border border-gray-200 text-gray-500 transition hover:border-brand-600 hover:text-brand-700 dark:border-gray-700 dark:text-gray-400 dark:hover:border-brand-500 dark:hover:text-brand-400"
             onClick={toggleTheme}
-            aria-label="Mavzuni almashtirish"
-            title="Mavzuni almashtirish"
+            aria-label={t('nav.toggleTheme')}
+            title={t('nav.toggleTheme')}
           >
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
           <button
-            className="grid h-10 w-10 place-items-center rounded-md border border-gray-200 text-gray-500 lg:hidden"
+            className="grid h-10 w-10 place-items-center rounded-md border border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400 lg:hidden"
             onClick={() => setOpen((v) => !v)}
-            aria-label="Menyu"
+            aria-label={t('nav.menu')}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -120,46 +144,46 @@ export default function Navbar() {
       </div>
 
       {open && (
-        <div className="border-t border-gray-100 bg-white px-4 pb-4 lg:hidden">
+        <div className="border-t border-gray-100 bg-white px-4 pb-4 dark:border-gray-800 dark:bg-[#101c17] lg:hidden">
           <nav className="flex flex-col gap-1 pt-3">
             {links.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
-                className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50"
+                className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 transition-colors active:bg-gray-50 dark:text-gray-200 dark:active:bg-brand-900/40"
               >
                 {l.label}
               </Link>
             ))}
             <a
               href="tel:+998901112233"
-              className="flex items-center gap-1.5 rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50"
+              className="flex items-center gap-1.5 rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50 dark:text-gray-200 dark:active:bg-brand-900/40"
             >
               <Phone className="h-3.5 w-3.5" />
               +998 90 111 22 33
             </a>
-            <hr className="my-1" />
+            <hr className="my-1 dark:border-gray-800" />
             {user ? (
               <>
                 {isAdmin && (
                   <Link
                     to="/admin"
                     onClick={() => setOpen(false)}
-                    className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50"
+                    className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50 dark:text-gray-200 dark:active:bg-brand-900/40"
                   >
-                    Admin panel
+                    {t('nav.adminPanel')}
                   </Link>
                 )}
                 <Link
                   to="/kabinet"
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50"
+                  className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50 dark:text-gray-200 dark:active:bg-brand-900/40"
                 >
-                  Kabinetim
+                  {t('nav.myAccount')}
                 </Link>
                 <button onClick={handleSignOut} className="btn-secondary mt-1 w-full">
-                  Chiqish
+                  {t('nav.signOut')}
                 </button>
               </>
             ) : (
@@ -167,12 +191,12 @@ export default function Navbar() {
                 <Link
                   to="/kirish"
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50"
+                  className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50 dark:text-gray-200 dark:active:bg-brand-900/40"
                 >
-                  Kirish
+                  {t('nav.login')}
                 </Link>
                 <Link to="/band-qilish" onClick={() => setOpen(false)} className="btn-primary mt-1 w-full">
-                  Buyurtma berish
+                  {t('nav.bookNow')}
                 </Link>
               </>
             )}

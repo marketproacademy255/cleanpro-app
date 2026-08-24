@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Calculator } from 'lucide-react'
 import { fetchActiveServiceTypes } from '@/lib/publicData'
 import { calculatePrice, formatUZS } from '@/lib/pricing'
+import { getServiceName } from '@/lib/i18nHelpers'
 import { DRAFT_KEY } from '@/pages/Booking'
 import type { ServiceType } from '@/lib/types'
+import { useTranslation } from '@/context/LanguageContext'
 
 /**
  * Quick, no-login price teaser for the Home page. Reuses the exact same
@@ -17,6 +19,7 @@ import type { ServiceType } from '@/lib/types'
  */
 export default function PriceEstimator() {
   const navigate = useNavigate()
+  const { t, lang } = useTranslation()
   const [services, setServices] = useState<ServiceType[]>([])
   const [serviceId, setServiceId] = useState('')
   const [rooms, setRooms] = useState(2)
@@ -76,28 +79,26 @@ export default function PriceEstimator() {
 
   return (
     <div className="card">
-      <div className="flex items-center gap-2 text-brand-700">
+      <div className="flex items-center gap-2 text-brand-700 dark:text-brand-400">
         <Calculator className="h-5 w-5" />
-        <span className="text-sm font-semibold uppercase tracking-wide">Taxminiy narx</span>
+        <span className="text-sm font-semibold uppercase tracking-wide">{t('priceEstimator.title')}</span>
       </div>
-      <p className="mt-1 text-sm text-gray-500">
-        Xizmat turi va o'lchamni tanlang — narxni bir zumda ko'ring.
-      </p>
+      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('priceEstimator.desc')}</p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="label">Xizmat turi</label>
+          <label className="label">{t('priceEstimator.serviceType')}</label>
           <select className="input" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
             {services.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name_uz}
+                {getServiceName(s, lang)}
               </option>
             ))}
           </select>
         </div>
         {selected?.pricing_unit === 'per_sqm' ? (
           <div>
-            <label className="label">Maydon (m²)</label>
+            <label className="label">{t('priceEstimator.area')}</label>
             <input
               type="number"
               min={1}
@@ -108,7 +109,7 @@ export default function PriceEstimator() {
           </div>
         ) : (
           <div>
-            <label className="label">Xonalar soni</label>
+            <label className="label">{t('priceEstimator.rooms')}</label>
             <input
               type="number"
               min={1}
@@ -121,15 +122,15 @@ export default function PriceEstimator() {
         )}
       </div>
 
-      <div className="mt-5 flex flex-col items-start justify-between gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:items-center">
+      <div className="mt-5 flex flex-col items-start justify-between gap-3 border-t border-gray-100 pt-5 dark:border-gray-800 sm:flex-row sm:items-center">
         <div>
-          <div className="text-xs text-gray-400">Taxminiy narx (standart tarif)</div>
-          <div className="text-2xl font-bold text-gray-900">
+          <div className="text-xs text-gray-400">{t('priceEstimator.estimateLabel')}</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {estimate ? formatUZS(estimate.totalAmount) : '—'}
           </div>
         </div>
         <button type="button" onClick={continueToBooking} className="btn-primary w-full sm:w-auto">
-          Band qilishni davom ettirish
+          {t('priceEstimator.continue')}
         </button>
       </div>
     </div>
