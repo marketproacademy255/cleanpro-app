@@ -31,16 +31,22 @@ const admin = require('firebase-admin')
 // --------------------------------------------------------------------------
 // Sozlamalar
 // --------------------------------------------------------------------------
-// Foydalanuvchining o'zi aytganidek, token hozircha to'g'ridan-to'g'ri kodga
-// ham qo'shib qo'yildi (ishga tushirish uchun .env shart emas) - lekin
-// BOT_TOKEN muhit o'zgaruvchisi berilsa, o'sha ustunlik qiladi. Demo bosqichi
-// tugagach buni environment-only qilib, quyidagi qatordan tokenni olib
-// tashlash tavsiya etiladi.
-const BOT_TOKEN = process.env.BOT_TOKEN || '8862054310:AAEfsiYWVuZ8mCsqj-07XXZxYf2VfPc4mIw'
+// Token endi FAQAT muhit o'zgaruvchisi orqali beriladi - koddagi hardcoded
+// fallback (demo bosqichida shu yerda turgan edi) olib tashlandi, chunki u
+// repozitoriyda va suhbat tarixida oshkor bo'lgan. Agar shu eski token
+// ('8862054310:...' bilan boshlanadigan) hali ham ishlatilayotgan bo'lsa,
+// @BotFather orqali darhol /revoke qiling va yangisini oling - zaharlangan
+// hisoblanadi.
+const BOT_TOKEN = process.env.BOT_TOKEN
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID
 const FIREBASE_CLIENT_EMAIL = process.env.FIREBASE_CLIENT_EMAIL
 const FIREBASE_PRIVATE_KEY = (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
+
+if (!BOT_TOKEN) {
+  console.error("BOT_TOKEN muhit o'zgaruvchisi topilmadi. .env.example ga qarang.")
+  process.exit(1)
+}
 
 if (!FIREBASE_PROJECT_ID || !FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
   console.error(

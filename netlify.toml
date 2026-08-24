@@ -3,6 +3,25 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[build.environment]
+  # Pinned so Netlify's build image can't drift onto an older/newer Node
+  # than what this project is actually built and tested against (a common,
+  # hard-to-diagnose cause of "works locally, fails on Netlify" deploys).
+  NODE_VERSION = "20"
+
+  # Netlify's build-output secrets scanner was failing every deploy with
+  # "Exposed secrets detected" (exit code 2). Cause: Vite bakes every
+  # VITE_-prefixed env var straight into the built JS bundle by design -
+  # that's how a client-side app gets its (non-secret, public) Firebase
+  # config, app URL, etc. The scanner doesn't know these are meant to be
+  # public, so it flags them as leaked secrets and kills the build. This
+  # tells it which keys are intentionally public and safe to skip; every
+  # real secret (FIREBASE_PRIVATE_KEY, TELEGRAM_BOT_TOKEN,
+  # PAYME_MERCHANT_KEY, CLICK_SECRET_KEY, TELEGRAM_AUTH_BOT_TOKEN,
+  # OPENROUTER_API_KEY, ...) is deliberately NOT in this list, so the
+  # scanner still catches those if one ever ends up somewhere it shouldn't.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_FIREBASE_API_KEY,VITE_FIREBASE_AUTH_DOMAIN,VITE_FIREBASE_PROJECT_ID,VITE_FIREBASE_STORAGE_BUCKET,VITE_FIREBASE_MESSAGING_SENDER_ID,VITE_FIREBASE_APP_ID,VITE_APP_URL,VITE_TELEGRAM_BOT_USERNAME,VITE_PAYME_MERCHANT_ID,VITE_CLICK_MERCHANT_ID,VITE_CLICK_SERVICE_ID,VITE_GA_MEASUREMENT_ID"
+
 [functions]
   node_bundler = "esbuild"
 
