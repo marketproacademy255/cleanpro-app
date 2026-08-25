@@ -8,6 +8,13 @@ import { badRequest, json, serverError } from './_lib/respond'
 const CODE_TTL_MS = 5 * 60 * 1000
 const RESEND_COOLDOWN_MS = 60 * 1000
 
+// Brute-force lockout for the password check below - mirrors the
+// MAX_ATTEMPTS pattern already used for the OTP code in
+// telegram-login-verify.ts, so a bot can't hammer bcrypt.compare() with
+// unlimited guesses against one phone number.
+const MAX_LOGIN_ATTEMPTS = 5
+const LOCKOUT_MS = 15 * 60 * 1000
+
 /**
  * POST /.netlify/functions/telegram-login-request { phone, password }
  *
@@ -48,10 +55,32 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     return badRequest("Bu raqam ro'yxatdan o'tmagan. Avval Telegram bot orqali ro'yxatdan o'ting.")
   }
   const authData = authSnap.data()!
+  const nowMs = Date.now()
+
+  // Locked out from a previous run of bad guesses - refuse before even
+  // touching bcrypt.compare().
+  if (authData.locked_until) {
+    const lockedUntilMs = new Date(authData.locked_until).getTime()
+    if (lockedUntilMs > nowMs) {
+      const minutesLeft = Math.ceil((lockedUntilMs - nowMs) / 60000)
+      return badRequest(`Juda ko'p noto'g'ri urinish. ${minutesLeft} daqiqadan so'ng qayta urinib ko'ring.`)
+    }
+  }
 
   const valid = await bcrypt.compare(body.password, authData.password_hash)
   if (!valid) {
+    const attempts = (authData.failed_login_attempts ?? 0) + 1
+    const patch: Record<string, unknown> = { failed_login_attempts: attempts }
+    if (attempts >= MAX_LOGIN_ATTEMPTS) {
+      patch.locked_until = new Date(nowMs + LOCKOUT_MS).toISOString()
+    }
+    await authSnap.ref.update(patch)
     return badRequest("Telefon raqam yoki parol noto'g'ri.")
+  }
+
+  // Correct password - clear any accumulated lockout state.
+  if (authData.failed_login_attempts || authData.locked_until) {
+    await authSnap.ref.update({ failed_login_attempts: 0, locked_until: null })
   }
 
   const codeRef = db.collection('telegramLoginCodes').doc(phone)
