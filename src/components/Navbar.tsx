@@ -48,17 +48,17 @@ export default function Navbar() {
       }`}
     >
       <div
-        className={`section flex items-center justify-between transition-[height] duration-300 ${
-          scrolled ? 'h-14' : 'h-16'
+        className={`section flex items-center justify-between gap-4 transition-[height] duration-300 ${
+          scrolled ? 'h-16' : 'h-20'
         }`}
       >
-        <Link to="/" className="flex items-center gap-2.5 text-xl font-extrabold leading-none tracking-tight text-brand-700 dark:text-brand-400">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-brand-600 text-white">
+        <Link to="/" className="flex shrink-0 items-center gap-3 leading-none tracking-tight text-brand-700 dark:text-brand-400">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-brand-600 text-lg font-extrabold text-white">
             {t('brand.initials')}
           </span>
-          <span className="flex flex-col">
-            <span>{t('brand.name')}</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          <span className="flex flex-col justify-center gap-0.5">
+            <span className="text-lg font-extrabold leading-tight sm:text-xl">{t('brand.name')}</span>
+            <span className="text-[11px] font-semibold uppercase leading-none tracking-wide text-gray-400 dark:text-gray-500">
               {t('brand.tagline')}
             </span>
           </span>
@@ -69,7 +69,7 @@ export default function Navbar() {
           )}
         </Link>
 
-        <nav className="hidden items-center gap-6 lg:flex">
+        <nav className="hidden items-center gap-7 lg:flex">
           {links.map((l) => (
             <NavLink
               key={l.to}

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CheckCircle2, Clock } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { useTranslation } from '@/context/LanguageContext'
 import type { Booking } from '@/lib/types'
 
 /**
@@ -15,6 +16,7 @@ export default function PaymentResult() {
   const bookingId = params.get('booking')
   const [booking, setBooking] = useState<Booking | null>(null)
   const [loading, setLoading] = useState(true)
+  const { t } = useTranslation()
 
   useEffect(() => {
     let attempts = 0
@@ -45,30 +47,27 @@ export default function PaymentResult() {
   return (
     <div className="section flex min-h-[60vh] max-w-lg flex-col items-center justify-center py-14 text-center">
       {loading ? (
-        <p className="text-gray-400">To'lov holati tekshirilmoqda…</p>
+        <p className="text-gray-400">{t('paymentResult.checking')}</p>
       ) : isPaid ? (
         <>
           <span className="grid h-16 w-16 place-items-center rounded-full bg-brand-50 text-brand-600">
             <CheckCircle2 className="h-9 w-9" />
           </span>
-          <h1 className="mt-4 text-2xl font-bold text-gray-900">To'lov muvaffaqiyatli!</h1>
-          <p className="mt-2 text-gray-500">Buyurtmangiz tasdiqlandi. Xizmatchimiz belgilangan vaqtda tashrif buyuradi.</p>
+          <h1 className="mt-4 text-2xl font-bold text-gray-900">{t('paymentResult.successTitle')}</h1>
+          <p className="mt-2 text-gray-500">{t('paymentResult.successDesc')}</p>
         </>
       ) : (
         <>
           <span className="grid h-16 w-16 place-items-center rounded-full bg-amber-50 text-amber-600">
             <Clock className="h-9 w-9" />
           </span>
-          <h1 className="mt-4 text-2xl font-bold text-gray-900">To'lov kutilmoqda</h1>
-          <p className="mt-2 text-gray-500">
-            To'lovingiz hali tasdiqlanmadi. Agar to'lov jarayonini yakunlagan bo'lsangiz, bir necha daqiqada holat
-            yangilanadi.
-          </p>
+          <h1 className="mt-4 text-2xl font-bold text-gray-900">{t('paymentResult.pendingTitle')}</h1>
+          <p className="mt-2 text-gray-500">{t('paymentResult.pendingDesc')}</p>
         </>
       )}
       {bookingId && (
         <Link to={`/kabinet/buyurtma/${bookingId}`} className="btn-primary mt-6">
-          Buyurtmani ko'rish
+          {t('paymentResult.viewBooking')}
         </Link>
       )}
     </div>

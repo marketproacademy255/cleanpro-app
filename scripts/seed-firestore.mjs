@@ -46,6 +46,8 @@ const serviceTypes = [
     multiplier: 1.0,
     is_active: true,
     sort_order: 1,
+    category: 'cleaning',
+    image: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80',
   },
   {
     code: 'deep_home',
@@ -62,6 +64,8 @@ const serviceTypes = [
     multiplier: 1.4,
     is_active: true,
     sort_order: 2,
+    category: 'cleaning',
+    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80',
   },
   {
     code: 'move_home',
@@ -77,6 +81,8 @@ const serviceTypes = [
     multiplier: 1.6,
     is_active: true,
     sort_order: 3,
+    category: 'cleaning',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
   },
   {
     code: 'office_clean',
@@ -92,6 +98,8 @@ const serviceTypes = [
     multiplier: 1.0,
     is_active: true,
     sort_order: 4,
+    category: 'cleaning',
+    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
   },
   {
     // New service (added per business request): full post-renovation
@@ -114,6 +122,69 @@ const serviceTypes = [
     multiplier: 1.0,
     is_active: true,
     sort_order: 5,
+    category: 'cleaning',
+    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    // Repair/renovation category (added per business request): newly built
+    // multi-story residential buildings need interior finishing work, not
+    // just cleaning. These services use floor_multiplier since higher
+    // floors cost more to service (material/equipment lifting, logistics).
+    code: 'repair_painting',
+    name_uz: "Bo'yash ishlari",
+    name_en: 'Painting Services',
+    name_ru: 'Малярные работы',
+    description_uz:
+      "Devor va shift bo'yash: shpaklash, primer va yakuniy bo'yoq qatlami. Yangi qurilgan xonadonlar uchun ideal.",
+    property_type: 'home',
+    pricing_unit: 'per_sqm',
+    base_price: 0,
+    extra_unit_price: 25000,
+    min_price: 500000,
+    multiplier: 1.0,
+    is_active: true,
+    sort_order: 6,
+    category: 'repair',
+    floor_multiplier: 0.03,
+    image: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    code: 'repair_furniture',
+    name_uz: 'Mebel yig\'ish va o\'rnatish',
+    name_en: 'Furniture Assembly & Installation',
+    name_ru: 'Сборка и установка мебели',
+    description_uz:
+      "Oshxona va shkaf garniturasi, karavot, stol-stul yig'ish hamda o'rnatish. Tajribali ustalar jamoasi.",
+    property_type: 'home',
+    pricing_unit: 'flat',
+    base_price: 400000,
+    extra_unit_price: 0,
+    min_price: 400000,
+    multiplier: 1.0,
+    is_active: true,
+    sort_order: 7,
+    category: 'repair',
+    floor_multiplier: 0.03,
+    image: 'https://images.unsplash.com/photo-1581539250439-c96689b516dd?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    code: 'repair_renovation',
+    name_uz: "To'liq remont",
+    name_en: 'Full Renovation',
+    name_ru: 'Полный ремонт',
+    description_uz:
+      "Yangi qavatli uylar uchun to'liq ichki remont: elektr, santexnika, gips karton, pol qoplamasi va bo'yash ishlari birgalikda.",
+    property_type: 'home',
+    pricing_unit: 'per_sqm',
+    base_price: 0,
+    extra_unit_price: 180000,
+    min_price: 3000000,
+    multiplier: 1.0,
+    is_active: true,
+    sort_order: 8,
+    category: 'repair',
+    floor_multiplier: 0.04,
+    image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80',
   },
 ]
 

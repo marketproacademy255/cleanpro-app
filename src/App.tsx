@@ -39,7 +39,14 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/xizmatlar" element={<Services />} />
-          <Route path="/band-qilish" element={<Booking />} />
+          <Route
+            path="/band-qilish"
+            element={
+              <ProtectedRoute>
+                <Booking />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/kirish" element={<Login />} />
           <Route path="/royxatdan-otish" element={<Register />} />
           <Route path="/biz-haqimizda" element={<About />} />

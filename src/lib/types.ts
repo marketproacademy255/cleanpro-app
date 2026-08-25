@@ -23,6 +23,10 @@ export interface Profile {
   phone: string | null
   role: UserRole
   created_at: string
+  // Saved UI language ('uz' | 'en' | 'ru') so it follows the user across
+  // devices/sessions once logged in - see LanguageContext + App.tsx's sync
+  // effect. Optional/nullable since older profiles won't have it yet.
+  language?: string | null
 }
 
 export interface Cleaner {
@@ -37,6 +41,8 @@ export interface Cleaner {
   is_active: boolean
   created_at: string
 }
+
+export type ServiceCategory = 'cleaning' | 'repair'
 
 export interface ServiceType {
   id: string
@@ -58,6 +64,20 @@ export interface ServiceType {
   is_active: boolean
   sort_order: number
   created_at: string
+  // Which tab this service shows under on the Booking page. Missing/absent
+  // is treated as 'cleaning' for backward compatibility with rows seeded
+  // before the Repair category existed.
+  category?: ServiceCategory
+  // Photo shown on the Booking page's service picker and (for the
+  // highlighted set) the Home page tiles. Optional so older rows without
+  // one just fall back to no image instead of breaking.
+  image?: string | null
+  // Extra fraction of the base price added per floor above ground level,
+  // e.g. 0.03 = +3% per floor. Used for repair services (painting,
+  // furniture installation, ...) where higher floors cost more to service
+  // (equipment/material lifting, logistics). 0/undefined means the floor
+  // number has no effect on price.
+  floor_multiplier?: number
 }
 
 export interface Addon {

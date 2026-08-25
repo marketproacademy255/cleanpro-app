@@ -6,12 +6,15 @@ import { badRequest, json, serverError, unauthorized } from './_lib/respond'
 /**
  * GET  /.netlify/functions/profile  -> returns the caller's own profile
  *      (auto-creates a minimal one if missing).
- * POST /.netlify/functions/profile  -> sets full_name/phone on the
- *      caller's own profile (called right after Firebase sign-up).
+ * POST /.netlify/functions/profile  -> sets full_name/phone/language on
+ *      the caller's own profile (called right after Firebase sign-up, and
+ *      whenever the user switches the UI language while logged in - see
+ *      the sync effect in AuthContext.tsx).
  *      `role` is intentionally never accepted from the client - it can
  *      only be changed directly in Firestore, never over the API, to
  *      prevent a customer from granting themselves admin.
  */
+const VALID_LANGS = ['uz', 'en', 'ru']
 const handler: Handler = async (event) => {
   try {
     return await route(event)
@@ -31,7 +34,7 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
   }
 
   if (event.httpMethod === 'POST') {
-    let body: { full_name?: string; phone?: string }
+    let body: { full_name?: string; phone?: string; language?: string }
     try {
       body = JSON.parse(event.body ?? '{}')
     } catch {
@@ -44,6 +47,7 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       email: req.email,
       full_name: body.full_name ?? req.profile?.full_name ?? null,
       phone: body.phone ?? req.profile?.phone ?? null,
+      language: body.language && VALID_LANGS.includes(body.language) ? body.language : (req.profile?.language ?? null),
       role: req.profile?.role ?? 'customer',
       created_at: req.profile?.created_at ?? new Date().toISOString(),
     }

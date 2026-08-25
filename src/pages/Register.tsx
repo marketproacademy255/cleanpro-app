@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { useTranslation } from '@/context/LanguageContext'
 import { TELEGRAM_BOT_USERNAME } from '@/lib/config'
 
 export default function Register() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
@@ -39,40 +41,36 @@ export default function Register() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-brand-900/10" />
         <div className="absolute bottom-10 left-10 right-10 text-white">
-          <p className="text-2xl font-semibold leading-snug">
-            Bir necha daqiqada ro'yxatdan o'ting va birinchi buyurtmangizni band qiling.
-          </p>
+          <p className="text-2xl font-semibold leading-snug">{t('register.heroQuote')}</p>
         </div>
       </div>
 
       <div className="flex items-center justify-center px-4 py-14 sm:px-6">
       <div className="card w-full max-w-md">
-        <h1 className="text-2xl font-bold text-gray-900">Ro'yxatdan o'tish</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('register.title')}</h1>
         {done ? (
-          <p className="mt-4 rounded-lg bg-brand-50 p-3 text-sm text-brand-700">
-            Muvaffaqiyatli ro'yxatdan o'tdingiz! Kirish sahifasiga yo'naltirilmoqda…
-          </p>
+          <p className="mt-4 rounded-lg bg-brand-50 p-3 text-sm text-brand-700">{t('register.successMessage')}</p>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
-              <label className="label">To'liq ism</label>
+              <label className="label">{t('register.fullNameLabel')}</label>
               <input className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
             </div>
             <div>
-              <label className="label">Telefon raqam</label>
+              <label className="label">{t('register.phoneLabel')}</label>
               <input className="input" placeholder="+998 90 123 45 67" value={phone} onChange={(e) => setPhone(e.target.value)} required />
             </div>
             <div>
-              <label className="label">Email</label>
+              <label className="label">{t('register.emailLabel')}</label>
               <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div>
-              <label className="label">Parol</label>
+              <label className="label">{t('register.passwordLabel')}</label>
               <input type="password" minLength={6} className="input" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
             <button type="submit" disabled={loading} className="btn-primary w-full">
-              {loading ? 'Yuborilmoqda…' : "Ro'yxatdan o'tish"}
+              {loading ? t('register.submitting') : t('register.submit')}
             </button>
           </form>
         )}
@@ -84,14 +82,14 @@ export default function Register() {
             rel="noopener noreferrer"
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-brand-200 bg-brand-50 py-2.5 text-sm font-medium text-brand-700 transition hover:bg-brand-100"
           >
-            Telegram orqali ro'yxatdan o'tish
+            {t('register.telegramButton')}
           </a>
         )}
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          Hisobingiz bormi?{' '}
+          {t('register.haveAccount')}{' '}
           <Link to="/kirish" className="font-medium text-brand-700">
-            Kirish
+            {t('register.loginLink')}
           </Link>
         </p>
       </div>

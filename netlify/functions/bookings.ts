@@ -13,6 +13,7 @@ interface CreateBookingBody {
   serviceId: string
   rooms: number
   areaSqm: number | null
+  floor: number | null
   address: string
   city: string
   date: string
@@ -114,6 +115,7 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       selectedAddons,
       frequency: body.frequency ?? 'once',
       tier,
+      floor: body.floor ? Number(body.floor) : null,
     })
 
     const now = new Date().toISOString()

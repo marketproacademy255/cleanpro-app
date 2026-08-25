@@ -74,8 +74,11 @@ export function calculatePrice(params: {
   selectedAddons: Addon[]
   frequency: BookingFrequency
   tier?: BookingTier
+  /** Floor number the property is on (1 = ground). Only affects price when
+   *  the service has a `floor_multiplier` set (repair-category services). */
+  floor?: number | null
 }): PriceBreakdown {
-  const { service, rooms, areaSqm, selectedAddons, frequency, tier = 'standard' } = params
+  const { service, rooms, areaSqm, selectedAddons, frequency, tier = 'standard', floor } = params
 
   let base = 0
   if (service.pricing_unit === 'per_room') {
@@ -89,6 +92,14 @@ export function calculatePrice(params: {
   }
 
   base = base * service.multiplier
+
+  if (service.floor_multiplier && floor && floor > 1) {
+    // Floor 1 (ground) is the baseline - each floor above it adds
+    // floor_multiplier as extra fraction of the base price (e.g. 0.03 and
+    // floor 5 -> +12% for the 4 floors above ground).
+    base = base * (1 + service.floor_multiplier * (floor - 1))
+  }
+
   base = Math.max(base, service.min_price)
 
   const tierMultiplier = TIER_MULTIPLIER[tier] ?? 1

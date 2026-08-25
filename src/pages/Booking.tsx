@@ -4,10 +4,13 @@ import { Check } from 'lucide-react'
 import { fetchActiveAddons, fetchActiveServiceTypes } from '@/lib/publicData'
 import { apiFetch, ApiError } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import { calculatePrice, formatUZS, FREQUENCY_LABEL_UZ, TIER_LABEL_UZ, TIER_MULTIPLIER, TIER_PERKS_UZ } from '@/lib/pricing'
-import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, ServiceType } from '@/lib/types'
+import { useTranslation } from '@/context/LanguageContext'
+import { getServiceName } from '@/lib/i18nHelpers'
+import { calculatePrice, formatUZS, TIER_MULTIPLIER } from '@/lib/pricing'
+import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, ServiceCategory, ServiceType } from '@/lib/types'
 
 const TIERS: BookingTier[] = ['standard', 'premium', 'elite']
+const CATEGORIES: ServiceCategory[] = ['cleaning', 'repair']
 
 export const DRAFT_KEY = 'primestandard_booking_draft'
 
@@ -15,6 +18,7 @@ interface DraftForm {
   serviceId: string
   rooms: number
   areaSqm: string
+  floor: string
   address: string
   city: string
   date: string
@@ -31,6 +35,7 @@ const emptyForm: DraftForm = {
   serviceId: '',
   rooms: 1,
   areaSqm: '',
+  floor: '',
   address: '',
   city: 'Toshkent',
   date: '',
@@ -43,13 +48,18 @@ const emptyForm: DraftForm = {
   notes: '',
 }
 
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80'
+
 export default function Booking() {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
+  const { t, lang } = useTranslation()
 
   const [services, setServices] = useState<ServiceType[]>([])
   const [addons, setAddons] = useState<Addon[]>([])
   const [form, setForm] = useState<DraftForm>(emptyForm)
+  const [category, setCategory] = useState<ServiceCategory>('cleaning')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -63,18 +73,23 @@ export default function Booking() {
 
         const draftRaw = sessionStorage.getItem(DRAFT_KEY)
         if (draftRaw) {
-          setForm(JSON.parse(draftRaw))
+          const draft: DraftForm = JSON.parse(draftRaw)
+          setForm({ ...draft, floor: draft.floor ?? '' })
+          const draftService = serviceList.find((s) => s.id === draft.serviceId)
+          if (draftService) setCategory((draftService.category as ServiceCategory) ?? 'cleaning')
           sessionStorage.removeItem(DRAFT_KEY)
-        } else if (serviceList[0]) {
-          setForm((f) => ({ ...f, serviceId: serviceList[0].id }))
+        } else {
+          const firstCleaning = serviceList.find((s) => (s.category ?? 'cleaning') === 'cleaning')
+          if (firstCleaning) setForm((f) => ({ ...f, serviceId: firstCleaning.id }))
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Ma'lumotlarni yuklab bo'lmadi. Qaytadan urinib ko'ring.")
+        setError(err instanceof Error ? err.message : t('booking.loadError'))
       } finally {
         setLoading(false)
       }
     }
     load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -84,8 +99,26 @@ export default function Booking() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile])
 
+  const servicesInCategory = useMemo(
+    () => services.filter((s) => (s.category ?? 'cleaning') === category),
+    [services, category],
+  )
+
+  // Keep the selected service in sync with the active category tab - if the
+  // user switches tabs and the currently-selected service isn't in the new
+  // list, fall back to the first service of that category.
+  useEffect(() => {
+    if (!services.length) return
+    const stillValid = servicesInCategory.some((s) => s.id === form.serviceId)
+    if (!stillValid && servicesInCategory[0]) {
+      setForm((f) => ({ ...f, serviceId: servicesInCategory[0].id }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, services])
+
   const selectedService = services.find((s) => s.id === form.serviceId)
   const selectedAddons = addons.filter((a) => form.addonCodes.includes(a.code))
+  const showFloorInput = !!selectedService?.floor_multiplier
 
   const priceBreakdown = useMemo(() => {
     if (!selectedService) return null
@@ -96,8 +129,9 @@ export default function Booking() {
       selectedAddons,
       frequency: form.frequency,
       tier: form.tier,
+      floor: form.floor ? Number(form.floor) : null,
     })
-  }, [selectedService, form.rooms, form.areaSqm, selectedAddons, form.frequency, form.tier])
+  }, [selectedService, form.rooms, form.areaSqm, form.floor, selectedAddons, form.frequency, form.tier])
 
   function updateField<K extends keyof DraftForm>(key: K, value: DraftForm[K]) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -115,11 +149,11 @@ export default function Booking() {
     setError(null)
 
     if (!selectedService || !priceBreakdown) {
-      setError('Xizmat turini tanlang.')
+      setError(t('booking.selectServiceError'))
       return
     }
     if (!form.address || !form.date || !form.contactPhone) {
-      setError("Iltimos, manzil, sana va telefon raqamini to'ldiring.")
+      setError(t('booking.requiredFieldsError'))
       return
     }
 
@@ -139,6 +173,7 @@ export default function Booking() {
           serviceId: selectedService.id,
           rooms: form.rooms,
           areaSqm: form.areaSqm ? Number(form.areaSqm) : null,
+          floor: form.floor ? Number(form.floor) : null,
           address: form.address,
           city: form.city,
           date: form.date,
@@ -153,37 +188,62 @@ export default function Booking() {
       })
       navigate(`/kabinet/buyurtma/${data.id}`)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Buyurtma yuborilmadi. Qaytadan urinib ko'ring.")
+      setError(err instanceof ApiError ? err.message : t('booking.submitError'))
     } finally {
       setSubmitting(false)
     }
   }
 
+  const tierLabels = t('pricing.tierLabels') as Record<BookingTier, string>
+  const tierPerks = t('pricing.tierPerks') as Record<BookingTier, string[]>
+  const frequencyLabels = t('pricing.frequencyLabels') as Record<BookingFrequency, string>
+
   if (loading) {
-    return <div className="section py-20 text-center text-gray-400">Yuklanmoqda…</div>
+    return <div className="section py-20 text-center text-gray-400">{t('booking.loading')}</div>
   }
 
   return (
     <div className="section py-14">
-      <h1 className="text-3xl font-bold text-gray-900">Tozalash xizmatini band qilish</h1>
-      <p className="mt-2 text-gray-500">Ma'lumotlarni to'ldiring — narx pastda avtomatik hisoblanadi.</p>
+      <h1 className="text-3xl font-bold text-gray-900">{t('booking.title')}</h1>
+      <p className="mt-2 text-gray-500">{t('booking.subtitle')}</p>
 
       <form onSubmit={handleSubmit} className="mt-8 grid gap-8 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <div className="card">
-            <label className="label">Xizmat turi</label>
+            <label className="label">{t('booking.categoryLabel')}</label>
+            <div className="flex gap-2">
+              {CATEGORIES.map((c) => (
+                <button
+                  type="button"
+                  key={c}
+                  onClick={() => setCategory(c)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    category === c ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {c === 'cleaning' ? t('booking.categoryCleaning') : t('booking.categoryRepair')}
+                </button>
+              ))}
+            </div>
+
+            <label className="label mt-5">{t('booking.serviceType')}</label>
             <div className="grid gap-3 sm:grid-cols-2">
-              {services.map((s) => (
+              {servicesInCategory.map((s) => (
                 <button
                   type="button"
                   key={s.id}
                   onClick={() => updateField('serviceId', s.id)}
-                  className={`rounded-md border p-4 text-left transition ${
-                    form.serviceId === s.id ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-brand-300'
+                  className={`overflow-hidden rounded-lg border text-left transition ${
+                    form.serviceId === s.id ? 'border-brand-600 ring-2 ring-brand-100' : 'border-gray-200 hover:border-brand-300'
                   }`}
                 >
-                  <div className="font-semibold text-gray-900">{s.name_uz}</div>
-                  <div className="mt-1 text-xs text-gray-500">{s.description_uz}</div>
+                  <div className="h-28 w-full overflow-hidden bg-gray-100">
+                    <img src={s.image || FALLBACK_IMAGE} alt={getServiceName(s, lang)} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="p-3">
+                    <div className="font-semibold text-gray-900">{getServiceName(s, lang)}</div>
+                    <div className="mt-1 text-xs text-gray-500">{s.description_uz}</div>
+                  </div>
                 </button>
               ))}
             </div>
@@ -191,12 +251,16 @@ export default function Booking() {
 
           <div className="card grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="label">Mulk turi</label>
-              <input className="input bg-gray-50" disabled value={selectedService?.property_type === 'office' ? 'Ofis' : 'Uy / kvartira'} />
+              <label className="label">{t('booking.propertyType')}</label>
+              <input
+                className="input bg-gray-50"
+                disabled
+                value={selectedService?.property_type === 'office' ? t('booking.office') : t('booking.home')}
+              />
             </div>
             {selectedService?.pricing_unit === 'per_sqm' ? (
               <div>
-                <label className="label">Maydon (m²)</label>
+                <label className="label">{t('booking.area')}</label>
                 <input
                   type="number"
                   min={1}
@@ -208,7 +272,7 @@ export default function Booking() {
               </div>
             ) : (
               <div>
-                <label className="label">Xonalar soni</label>
+                <label className="label">{t('booking.rooms')}</label>
                 <input
                   type="number"
                   min={1}
@@ -219,60 +283,74 @@ export default function Booking() {
                 />
               </div>
             )}
+            {showFloorInput && (
+              <div className="sm:col-span-2">
+                <label className="label">{t('booking.floor')}</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  className="input"
+                  value={form.floor}
+                  onChange={(e) => updateField('floor', e.target.value)}
+                />
+                <p className="mt-1 text-xs text-gray-400">{t('booking.floorHelp')}</p>
+              </div>
+            )}
             <div className="sm:col-span-2">
-              <label className="label">Manzil</label>
+              <label className="label">{t('booking.address')}</label>
               <input
                 className="input"
-                placeholder="Ko'cha, uy, kvartira raqami"
+                placeholder={t('booking.addressPlaceholder')}
                 value={form.address}
                 onChange={(e) => updateField('address', e.target.value)}
                 required
               />
             </div>
             <div>
-              <label className="label">Shahar</label>
+              <label className="label">{t('booking.city')}</label>
               <input className="input" value={form.city} onChange={(e) => updateField('city', e.target.value)} />
             </div>
             <div>
-              <label className="label">Chastota</label>
+              <label className="label">{t('booking.frequency')}</label>
               <select className="input" value={form.frequency} onChange={(e) => updateField('frequency', e.target.value as BookingFrequency)}>
-                {Object.entries(FREQUENCY_LABEL_UZ).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                {Object.entries(frequencyLabels).map(([value, label]) => (
+                  <option key={value} value={value}>{label as string}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="label">Sana</label>
+              <label className="label">{t('booking.date')}</label>
               <input type="date" className="input" value={form.date} min={new Date().toISOString().slice(0, 10)} onChange={(e) => updateField('date', e.target.value)} required />
             </div>
             <div>
-              <label className="label">Vaqt</label>
+              <label className="label">{t('booking.time')}</label>
               <input type="time" className="input" value={form.time} onChange={(e) => updateField('time', e.target.value)} required />
             </div>
           </div>
 
           <div className="card">
-            <label className="label">Tarif</label>
+            <label className="label">{t('booking.tier')}</label>
             <div className="grid gap-3 sm:grid-cols-3">
-              {TIERS.map((t) => (
+              {TIERS.map((tier) => (
                 <button
                   type="button"
-                  key={t}
-                  onClick={() => updateField('tier', t)}
+                  key={tier}
+                  onClick={() => updateField('tier', tier)}
                   className={`rounded-md border p-4 text-left transition ${
-                    form.tier === t ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-brand-300'
+                    form.tier === tier ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-brand-300'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-gray-900">{TIER_LABEL_UZ[t]}</span>
-                    {t !== 'standard' && (
+                    <span className="font-semibold text-gray-900">{tierLabels[tier]}</span>
+                    {tier !== 'standard' && (
                       <span className="tag bg-brand-600 px-2 py-0.5 text-[11px] text-white">
-                        +{Math.round((TIER_MULTIPLIER[t] - 1) * 100)}%
+                        +{Math.round((TIER_MULTIPLIER[tier] - 1) * 100)}%
                       </span>
                     )}
                   </div>
                   <ul className="mt-2 space-y-1 text-xs text-gray-500">
-                    {TIER_PERKS_UZ[t].map((perk) => (
+                    {tierPerks[tier].map((perk) => (
                       <li key={perk} className="flex items-start gap-1.5">
                         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
                         {perk}
@@ -285,7 +363,7 @@ export default function Booking() {
           </div>
 
           <div className="card">
-            <label className="label">Qo'shimcha xizmatlar</label>
+            <label className="label">{t('booking.addonsLabel')}</label>
             <div className="grid gap-2 sm:grid-cols-2">
               {addons.map((a) => (
                 <label key={a.code} className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm">
@@ -301,15 +379,15 @@ export default function Booking() {
 
           <div className="card grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="label">Ism</label>
+              <label className="label">{t('booking.nameLabel')}</label>
               <input className="input" value={form.contactName} onChange={(e) => updateField('contactName', e.target.value)} required />
             </div>
             <div>
-              <label className="label">Telefon raqam</label>
+              <label className="label">{t('booking.phoneLabel')}</label>
               <input className="input" placeholder="+998 90 123 45 67" value={form.contactPhone} onChange={(e) => updateField('contactPhone', e.target.value)} required />
             </div>
             <div className="sm:col-span-2">
-              <label className="label">Qo'shimcha izoh (ixtiyoriy)</label>
+              <label className="label">{t('booking.notesLabel')}</label>
               <textarea className="input" rows={3} value={form.notes} onChange={(e) => updateField('notes', e.target.value)} />
             </div>
           </div>
@@ -317,49 +395,47 @@ export default function Booking() {
 
         <div className="lg:col-span-1">
           <div className="card lg:sticky lg:top-24">
-            <h3 className="text-lg font-semibold text-gray-900">Narx tafsiloti</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('booking.priceDetailsTitle')}</h3>
             {priceBreakdown ? (
               <div className="mt-4 space-y-2 text-sm">
                 <div className="flex justify-between text-gray-600">
-                  <span>Asosiy narx</span>
+                  <span>{t('booking.baseAmount')}</span>
                   <span>{formatUZS(priceBreakdown.baseAmount)}</span>
                 </div>
                 {priceBreakdown.tierAmount > 0 && (
                   <div className="flex justify-between text-gray-600">
-                    <span>{TIER_LABEL_UZ[form.tier]} tarifi</span>
+                    <span>{tierLabels[form.tier]}</span>
                     <span>+{formatUZS(priceBreakdown.tierAmount)}</span>
                   </div>
                 )}
                 {priceBreakdown.addonsAmount > 0 && (
                   <div className="flex justify-between text-gray-600">
-                    <span>Qo'shimcha xizmatlar</span>
+                    <span>{t('booking.addonsAmount')}</span>
                     <span>{formatUZS(priceBreakdown.addonsAmount)}</span>
                   </div>
                 )}
                 {priceBreakdown.discountAmount > 0 && (
                   <div className="flex justify-between text-brand-700">
-                    <span>Chegirma</span>
+                    <span>{t('booking.discount')}</span>
                     <span>-{formatUZS(priceBreakdown.discountAmount)}</span>
                   </div>
                 )}
                 <hr />
                 <div className="flex justify-between text-lg font-bold text-gray-900">
-                  <span>Jami</span>
+                  <span>{t('booking.total')}</span>
                   <span>{formatUZS(priceBreakdown.totalAmount)}</span>
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-sm text-gray-400">Xizmat turini tanlang</p>
+              <p className="mt-4 text-sm text-gray-400">{t('booking.selectService')}</p>
             )}
 
             {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
             <button type="submit" disabled={submitting} className="btn-primary mt-6 w-full">
-              {submitting ? 'Yuborilmoqda…' : user ? 'Buyurtmani tasdiqlash' : 'Davom etish uchun kiring'}
+              {submitting ? t('booking.submitting') : user ? t('booking.submit') : t('booking.loginToContinue')}
             </button>
-            <p className="mt-3 text-center text-xs text-gray-400">
-              Keyingi bosqichda Payme yoki Click orqali onlayn to'lov qilasiz.
-            </p>
+            <p className="mt-3 text-center text-xs text-gray-400">{t('booking.nextStepNote')}</p>
           </div>
         </div>
       </form>

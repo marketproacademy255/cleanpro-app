@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { signInWithCustomToken } from 'firebase/auth'
 import { useAuth } from '@/context/AuthContext'
+import { useTranslation } from '@/context/LanguageContext'
 import { auth } from '@/lib/firebaseClient'
 import { apiFetch, ApiError } from '@/lib/api'
 import { TELEGRAM_BOT_USERNAME } from '@/lib/config'
@@ -9,6 +10,7 @@ import { TELEGRAM_BOT_USERNAME } from '@/lib/config'
 export default function Login() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const location = useLocation() as { state?: { from?: string; message?: string } }
   const [mode, setMode] = useState<'email' | 'telegram'>('email')
 
@@ -47,7 +49,7 @@ export default function Login() {
       })
       setTgStep('code')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Kod yuborilmadi. Qaytadan urinib ko'ring.")
+      setError(err instanceof ApiError ? err.message : t('login.codeSendError'))
     } finally {
       setLoading(false)
     }
@@ -58,7 +60,7 @@ export default function Login() {
     setError(null)
     setLoading(true)
     try {
-      if (!auth) throw new Error("Xizmat hozircha mavjud emas.")
+      if (!auth) throw new Error(t('login.serviceUnavailable'))
       const { token } = await apiFetch<{ token: string }>('telegram-login-verify', {
         method: 'POST',
         body: JSON.stringify({ phone: tgPhone, code: tgCode }),
@@ -71,7 +73,7 @@ export default function Login() {
           ? err.message
           : err instanceof Error && err.message
             ? err.message
-            : "Tasdiqlanmadi. Qaytadan urinib ko'ring.",
+            : t('login.verifyError'),
       )
     } finally {
       setLoading(false)
@@ -88,15 +90,13 @@ export default function Login() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-brand-900/90 via-brand-900/40 to-brand-900/10" />
         <div className="absolute bottom-10 left-10 right-10 text-white">
-          <p className="text-2xl font-semibold leading-snug">
-            Onlayn band qiling, xavfsiz to'lang — tekshirilgan xizmatchimiz eshigingizga keladi.
-          </p>
+          <p className="text-2xl font-semibold leading-snug">{t('login.heroQuote')}</p>
         </div>
       </div>
 
       <div className="flex items-center justify-center px-4 py-14 sm:px-6">
       <div className="card w-full max-w-md">
-        <h1 className="text-2xl font-bold text-gray-900">Tizimga kirish</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('login.title')}</h1>
         {location.state?.message && (
           <p className="mt-2 rounded-lg bg-brand-50 p-3 text-sm text-brand-700">{location.state.message}</p>
         )}
@@ -107,48 +107,46 @@ export default function Login() {
             onClick={() => { setMode('email'); setError(null) }}
             className={`rounded-md py-2 text-sm font-medium transition ${mode === 'email' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
           >
-            Email
+            {t('login.email')}
           </button>
           <button
             type="button"
             onClick={() => { setMode('telegram'); setError(null) }}
             className={`rounded-md py-2 text-sm font-medium transition ${mode === 'telegram' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
           >
-            Telegram
+            {t('login.telegram')}
           </button>
         </div>
 
         {mode === 'email' ? (
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
-              <label className="label">Email</label>
+              <label className="label">{t('login.emailLabel')}</label>
               <input type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div>
-              <label className="label">Parol</label>
+              <label className="label">{t('login.passwordLabel')}</label>
               <input type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
             <button type="submit" disabled={loading} className="btn-primary w-full">
-              {loading ? 'Kirilmoqda…' : 'Kirish'}
+              {loading ? t('login.loggingIn') : t('login.loginButton')}
             </button>
           </form>
         ) : tgStep === 'credentials' ? (
           <form onSubmit={requestTelegramCode} className="mt-6 space-y-4">
-            <p className="text-xs text-gray-500">
-              Telegram bot orqali ro'yxatdan o'tgan telefon raqam va parolingizni kiriting — botga tasdiqlash kodi yuboriladi.
-            </p>
+            <p className="text-xs text-gray-500">{t('login.telegramIntro')}</p>
             <div>
-              <label className="label">Telefon raqam</label>
+              <label className="label">{t('login.phoneLabel')}</label>
               <input className="input" placeholder="+998 90 123 45 67" value={tgPhone} onChange={(e) => setTgPhone(e.target.value)} required />
             </div>
             <div>
-              <label className="label">Parol</label>
+              <label className="label">{t('login.passwordLabel')}</label>
               <input type="password" className="input" value={tgPassword} onChange={(e) => setTgPassword(e.target.value)} required />
             </div>
             {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
             <button type="submit" disabled={loading} className="btn-primary w-full">
-              {loading ? 'Yuborilmoqda…' : 'Telegramga kod yuborish'}
+              {loading ? t('login.sendingCode') : t('login.sendCode')}
             </button>
             {TELEGRAM_BOT_USERNAME && (
               <a
@@ -157,31 +155,31 @@ export default function Login() {
                 rel="noopener noreferrer"
                 className="block text-center text-xs text-brand-700"
               >
-                Hali ro'yxatdan o'tmaganmisiz? Telegram bot orqali ro'yxatdan o'ting
+                {t('login.notRegistered')}
               </a>
             )}
           </form>
         ) : (
           <form onSubmit={verifyTelegramCode} className="mt-6 space-y-4">
-            <p className="text-xs text-gray-500">Telegram botga yuborilgan 6 xonali kodni kiriting.</p>
+            <p className="text-xs text-gray-500">{t('login.codeIntro')}</p>
             <div>
-              <label className="label">Kod</label>
+              <label className="label">{t('login.codeLabel')}</label>
               <input className="input text-center text-lg tracking-widest" maxLength={6} value={tgCode} onChange={(e) => setTgCode(e.target.value)} required />
             </div>
             {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
             <button type="submit" disabled={loading} className="btn-primary w-full">
-              {loading ? 'Tekshirilmoqda…' : 'Tasdiqlash'}
+              {loading ? t('login.verifying') : t('login.verify')}
             </button>
             <button type="button" onClick={() => setTgStep('credentials')} className="w-full text-center text-xs text-gray-400">
-              Orqaga
+              {t('login.back')}
             </button>
           </form>
         )}
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          Hisobingiz yo'qmi?{' '}
+          {t('login.noAccount')}{' '}
           <Link to="/royxatdan-otish" className="font-medium text-brand-700">
-            Ro'yxatdan o'ting
+            {t('login.registerLink')}
           </Link>
         </p>
       </div>
