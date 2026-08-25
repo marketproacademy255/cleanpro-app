@@ -130,6 +130,12 @@ const serviceTypes = [
     // multi-story residential buildings need interior finishing work, not
     // just cleaning. These services use floor_multiplier since higher
     // floors cost more to service (material/equipment lifting, logistics).
+    //
+    // extra_unit_price/base_price below target the "Standart" tier
+    // (REPAIR_TIER_MULTIPLIER.premium = 1.0x, see src/lib/pricing.ts) - the
+    // Kosmetik tier is 0.6x that and Evroremont is 1.9x, roughly matching
+    // real Tashkent renovation market bands (cosmetic vs. capital vs.
+    // design-grade repair), per market research done August 2026.
     code: 'repair_painting',
     name_uz: "Bo'yash ishlari",
     name_en: 'Painting Services',
@@ -139,7 +145,7 @@ const serviceTypes = [
     property_type: 'home',
     pricing_unit: 'per_sqm',
     base_price: 0,
-    extra_unit_price: 25000,
+    extra_unit_price: 32000,
     min_price: 500000,
     multiplier: 1.0,
     is_active: true,
@@ -157,9 +163,9 @@ const serviceTypes = [
       "Oshxona va shkaf garniturasi, karavot, stol-stul yig'ish hamda o'rnatish. Tajribali ustalar jamoasi.",
     property_type: 'home',
     pricing_unit: 'flat',
-    base_price: 400000,
+    base_price: 450000,
     extra_unit_price: 0,
-    min_price: 400000,
+    min_price: 450000,
     multiplier: 1.0,
     is_active: true,
     sort_order: 7,
@@ -177,8 +183,8 @@ const serviceTypes = [
     property_type: 'home',
     pricing_unit: 'per_sqm',
     base_price: 0,
-    extra_unit_price: 180000,
-    min_price: 3000000,
+    extra_unit_price: 150000,
+    min_price: 4000000,
     multiplier: 1.0,
     is_active: true,
     sort_order: 8,

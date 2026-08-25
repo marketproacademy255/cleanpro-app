@@ -26,6 +26,27 @@ export const TIER_MULTIPLIER: Record<BookingTier, number> = {
   elite: 1.65,
 }
 
+/**
+ * Repair/renovation services reuse the same 3 tier "slots" (standard/premium/
+ * elite) as cleaning, but they mean something different: a Tashkent
+ * renovation market typically splits into "Kosmetik" (light/budget), "Standart"
+ * (mid-grade capital repair - the baseline) and "Evroremont" (premium/design-
+ * grade, ~2x the baseline). See TIER_LABEL_UZ vs REPAIR_TIER_LABEL_UZ (and the
+ * `pricing.repairTierLabels`/`repairTierPerks` i18n namespace) for the
+ * repair-specific labels/perks shown on the Booking page.
+ */
+export const REPAIR_TIER_MULTIPLIER: Record<BookingTier, number> = {
+  standard: 0.6, // Kosmetik
+  premium: 1.0, // Standart (baseline - service base_price/extra_unit_price already target this tier)
+  elite: 1.9, // Evroremont
+}
+
+export const REPAIR_TIER_LABEL_UZ: Record<BookingTier, string> = {
+  standard: 'Kosmetik',
+  premium: 'Standart',
+  elite: 'Evroremont',
+}
+
 export const TIER_LABEL_UZ: Record<BookingTier, string> = {
   standard: 'Standart',
   premium: 'Premium',
@@ -102,7 +123,11 @@ export function calculatePrice(params: {
 
   base = Math.max(base, service.min_price)
 
-  const tierMultiplier = TIER_MULTIPLIER[tier] ?? 1
+  // Repair services use their own tier multiplier scale (Kosmetik/Standart/
+  // Evroremont) instead of the cleaning one (Standard/Premium/Elite) - see
+  // REPAIR_TIER_MULTIPLIER above.
+  const multiplierMap = service.category === 'repair' ? REPAIR_TIER_MULTIPLIER : TIER_MULTIPLIER
+  const tierMultiplier = multiplierMap[tier] ?? 1
   const tierAmount = base * (tierMultiplier - 1)
   const baseWithTier = base + tierAmount
 

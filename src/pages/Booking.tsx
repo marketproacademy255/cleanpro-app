@@ -6,7 +6,7 @@ import { apiFetch, ApiError } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
 import { getServiceName } from '@/lib/i18nHelpers'
-import { calculatePrice, formatUZS, TIER_MULTIPLIER } from '@/lib/pricing'
+import { calculatePrice, formatUZS, REPAIR_TIER_MULTIPLIER, TIER_MULTIPLIER } from '@/lib/pricing'
 import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, ServiceCategory, ServiceType } from '@/lib/types'
 
 const TIERS: BookingTier[] = ['standard', 'premium', 'elite']
@@ -104,21 +104,27 @@ export default function Booking() {
     [services, category],
   )
 
-  // Keep the selected service in sync with the active category tab - if the
-  // user switches tabs and the currently-selected service isn't in the new
-  // list, fall back to the first service of that category.
+  // Keep the selected service (and a couple of category-only settings) in
+  // sync with the active category tab - if the user switches tabs and the
+  // currently-selected service isn't in the new list, fall back to the
+  // first service of that category. Renovation work is one-off (not a
+  // recurring weekly/monthly visit like cleaning), so the frequency picker
+  // makes no sense there - reset it to "once" whenever repair is selected.
   useEffect(() => {
     if (!services.length) return
     const stillValid = servicesInCategory.some((s) => s.id === form.serviceId)
-    if (!stillValid && servicesInCategory[0]) {
-      setForm((f) => ({ ...f, serviceId: servicesInCategory[0].id }))
-    }
+    setForm((f) => ({
+      ...f,
+      ...(!stillValid && servicesInCategory[0] ? { serviceId: servicesInCategory[0].id } : {}),
+      ...(category === 'repair' ? { frequency: 'once' as BookingFrequency } : {}),
+    }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, services])
 
   const selectedService = services.find((s) => s.id === form.serviceId)
   const selectedAddons = addons.filter((a) => form.addonCodes.includes(a.code))
   const showFloorInput = !!selectedService?.floor_multiplier
+  const isRepair = category === 'repair'
 
   const priceBreakdown = useMemo(() => {
     if (!selectedService) return null
@@ -194,8 +200,9 @@ export default function Booking() {
     }
   }
 
-  const tierLabels = t('pricing.tierLabels') as Record<BookingTier, string>
-  const tierPerks = t('pricing.tierPerks') as Record<BookingTier, string[]>
+  const tierLabels = (isRepair ? t('pricing.repairTierLabels') : t('pricing.tierLabels')) as Record<BookingTier, string>
+  const tierPerks = (isRepair ? t('pricing.repairTierPerks') : t('pricing.tierPerks')) as Record<BookingTier, string[]>
+  const tierMultiplierMap = isRepair ? REPAIR_TIER_MULTIPLIER : TIER_MULTIPLIER
   const frequencyLabels = t('pricing.frequencyLabels') as Record<BookingFrequency, string>
 
   if (loading) {
@@ -226,27 +233,37 @@ export default function Booking() {
               ))}
             </div>
 
+            {isRepair && (
+              <p className="mt-4 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-700">{t('booking.repairPromo')}</p>
+            )}
+
             <label className="label mt-5">{t('booking.serviceType')}</label>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {servicesInCategory.map((s) => (
-                <button
-                  type="button"
-                  key={s.id}
-                  onClick={() => updateField('serviceId', s.id)}
-                  className={`overflow-hidden rounded-lg border text-left transition ${
-                    form.serviceId === s.id ? 'border-brand-600 ring-2 ring-brand-100' : 'border-gray-200 hover:border-brand-300'
-                  }`}
-                >
-                  <div className="h-28 w-full overflow-hidden bg-gray-100">
-                    <img src={s.image || FALLBACK_IMAGE} alt={getServiceName(s, lang)} className="h-full w-full object-cover" />
-                  </div>
-                  <div className="p-3">
-                    <div className="font-semibold text-gray-900">{getServiceName(s, lang)}</div>
-                    <div className="mt-1 text-xs text-gray-500">{s.description_uz}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            {servicesInCategory.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400">
+                {t('booking.noServicesInCategory')}
+              </p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {servicesInCategory.map((s) => (
+                  <button
+                    type="button"
+                    key={s.id}
+                    onClick={() => updateField('serviceId', s.id)}
+                    className={`overflow-hidden rounded-lg border text-left transition ${
+                      form.serviceId === s.id ? 'border-brand-600 ring-2 ring-brand-100' : 'border-gray-200 hover:border-brand-300'
+                    }`}
+                  >
+                    <div className="h-28 w-full overflow-hidden bg-gray-100">
+                      <img src={s.image || FALLBACK_IMAGE} alt={getServiceName(s, lang)} className="h-full w-full object-cover" />
+                    </div>
+                    <div className="p-3">
+                      <div className="font-semibold text-gray-900">{getServiceName(s, lang)}</div>
+                      <div className="mt-1 text-xs text-gray-500">{s.description_uz}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="card grid gap-4 sm:grid-cols-2">
@@ -311,14 +328,16 @@ export default function Booking() {
               <label className="label">{t('booking.city')}</label>
               <input className="input" value={form.city} onChange={(e) => updateField('city', e.target.value)} />
             </div>
-            <div>
-              <label className="label">{t('booking.frequency')}</label>
-              <select className="input" value={form.frequency} onChange={(e) => updateField('frequency', e.target.value as BookingFrequency)}>
-                {Object.entries(frequencyLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label as string}</option>
-                ))}
-              </select>
-            </div>
+            {!isRepair && (
+              <div>
+                <label className="label">{t('booking.frequency')}</label>
+                <select className="input" value={form.frequency} onChange={(e) => updateField('frequency', e.target.value as BookingFrequency)}>
+                  {Object.entries(frequencyLabels).map(([value, label]) => (
+                    <option key={value} value={value}>{label as string}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="label">{t('booking.date')}</label>
               <input type="date" className="input" value={form.date} min={new Date().toISOString().slice(0, 10)} onChange={(e) => updateField('date', e.target.value)} required />
@@ -330,9 +349,11 @@ export default function Booking() {
           </div>
 
           <div className="card">
-            <label className="label">{t('booking.tier')}</label>
+            <label className="label">{isRepair ? t('booking.repairTier') : t('booking.tier')}</label>
             <div className="grid gap-3 sm:grid-cols-3">
-              {TIERS.map((tier) => (
+              {TIERS.map((tier) => {
+                const pct = Math.round((tierMultiplierMap[tier] - 1) * 100)
+                return (
                 <button
                   type="button"
                   key={tier}
@@ -343,9 +364,9 @@ export default function Booking() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-gray-900">{tierLabels[tier]}</span>
-                    {tier !== 'standard' && (
-                      <span className="tag bg-brand-600 px-2 py-0.5 text-[11px] text-white">
-                        +{Math.round((TIER_MULTIPLIER[tier] - 1) * 100)}%
+                    {pct !== 0 && (
+                      <span className={`tag px-2 py-0.5 text-[11px] text-white ${pct > 0 ? 'bg-brand-600' : 'bg-gray-400'}`}>
+                        {pct > 0 ? '+' : ''}{pct}%
                       </span>
                     )}
                   </div>
@@ -358,7 +379,8 @@ export default function Booking() {
                     ))}
                   </ul>
                 </button>
-              ))}
+                )
+              })}
             </div>
           </div>
 
