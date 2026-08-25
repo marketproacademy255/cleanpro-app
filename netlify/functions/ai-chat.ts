@@ -1,5 +1,6 @@
 import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
-import { badRequest, json, serverError } from './_lib/respond'
+import { badRequest, json, serverError, tooManyRequests } from './_lib/respond'
+import { checkRateLimit, getClientIp } from './_lib/rateLimit'
 
 /**
  * POST /.netlify/functions/ai-chat { message, history? }
@@ -17,6 +18,11 @@ import { badRequest, json, serverError } from './_lib/respond'
 const DEFAULT_MODEL = 'openai/gpt-4o-mini'
 const MAX_MESSAGE_LEN = 1000
 const MAX_HISTORY = 8
+
+// Every request here is a paid OpenRouter API call - cap it per IP so a
+// script can't run up the bill (cost-based DoS).
+const RATE_LIMIT = 10
+const RATE_WINDOW_MS = 60 * 1000
 
 const SYSTEM_PROMPT = `Siz Prime Standard & Co (Toshkentda uy va ofis tozalash xizmati) saytidagi AI yordamchisiz.
 Vazifangiz: tashrif buyuruvchilarning tozalash xizmatlari, narxlar tuzilishi, band qilish jarayoni haqidagi
@@ -43,6 +49,10 @@ const handler: Handler = async (event) => {
 
 async function route(event: HandlerEvent): Promise<HandlerResponse> {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' })
+
+  const ip = getClientIp(event)
+  const allowed = await checkRateLimit(`ai-chat:${ip}`, RATE_LIMIT, RATE_WINDOW_MS)
+  if (!allowed) return tooManyRequests()
 
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) {

@@ -13,3 +13,5 @@ export const forbidden = () => json(403, { error: "Bu amal uchun ruxsatingiz yo'
 export const notFound = () => json(404, { error: 'Topilmadi.' })
 export const badRequest = (message: string) => json(400, { error: message })
 export const serverError = (message = 'Server xatoligi.') => json(500, { error: message })
+export const tooManyRequests = (message = "Juda ko'p so'rov yuborildi. Birozdan so'ng qayta urinib ko'ring.") =>
+  json(429, { error: message })

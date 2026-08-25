@@ -3,7 +3,8 @@ import bcrypt from 'bcryptjs'
 import { getDb } from './_lib/firebaseAdmin'
 import { normalizeUzPhone } from './_lib/phone'
 import { sendTelegramDirectMessage } from './_lib/telegram'
-import { badRequest, json, serverError } from './_lib/respond'
+import { badRequest, json, serverError, tooManyRequests } from './_lib/respond'
+import { checkRateLimit, getClientIp } from './_lib/rateLimit'
 
 const CODE_TTL_MS = 5 * 60 * 1000
 const RESEND_COOLDOWN_MS = 60 * 1000
@@ -14,6 +15,12 @@ const RESEND_COOLDOWN_MS = 60 * 1000
 // unlimited guesses against one phone number.
 const MAX_LOGIN_ATTEMPTS = 5
 const LOCKOUT_MS = 15 * 60 * 1000
+
+// Separate, IP+phone-keyed rate limit on top of the per-phone lockout above -
+// this one also blocks an attacker who spreads guesses across many phone
+// numbers from the same IP (which the lockout alone wouldn't catch).
+const RATE_LIMIT = 5
+const RATE_WINDOW_MS = 60 * 60 * 1000
 
 /**
  * POST /.netlify/functions/telegram-login-request { phone, password }
@@ -48,6 +55,10 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
   if (!phone || !body.password) {
     return badRequest("Telefon raqam va parol kerak.")
   }
+
+  const ip = getClientIp(event)
+  const allowed = await checkRateLimit(`telegram-login-request:${ip}:${phone}`, RATE_LIMIT, RATE_WINDOW_MS)
+  if (!allowed) return tooManyRequests()
 
   const db = getDb()
   const authSnap = await db.collection('telegramAuth').doc(phone).get()

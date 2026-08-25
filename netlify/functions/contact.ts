@@ -1,6 +1,12 @@
 import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
-import { badRequest, json, serverError } from './_lib/respond'
+import { badRequest, json, serverError, tooManyRequests } from './_lib/respond'
 import { formatContactMessage, notifyTelegram } from './_lib/telegram'
+import { checkRateLimit, getClientIp } from './_lib/rateLimit'
+
+// Prevents a script from flooding the admin's Telegram chat with fake
+// contact-form submissions.
+const RATE_LIMIT = 3
+const RATE_WINDOW_MS = 60 * 60 * 1000
 
 /**
  * POST /.netlify/functions/contact { name, contact, message }
@@ -23,6 +29,10 @@ const handler: Handler = async (event) => {
 
 async function route(event: HandlerEvent): Promise<HandlerResponse> {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' })
+
+  const ip = getClientIp(event)
+  const allowed = await checkRateLimit(`contact:${ip}`, RATE_LIMIT, RATE_WINDOW_MS)
+  if (!allowed) return tooManyRequests()
 
   let body: { name?: string; contact?: string; message?: string }
   try {

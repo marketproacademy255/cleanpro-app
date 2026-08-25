@@ -41,5 +41,12 @@ service cloud.firestore {
     match /telegramLoginCodes/{phone} {
       allow read, write: if false;
     }
+    // Sliding-window rate-limit counters for the public (unauthenticated)
+    // functions - see netlify/functions/_lib/rateLimit.ts. Holds only
+    // request timestamps keyed by IP (+phone for the login endpoint), no
+    // user data - but still Admin-SDK-only like everything else above.
+    match /rateLimits/{key} {
+      allow read, write: if false;
+    }
   }
 }
