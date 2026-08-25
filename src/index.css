@@ -4,6 +4,14 @@
 
 html {
   scroll-behavior: smooth;
+  /* Reveal.tsx's left/right slide-in animation offsets elements via
+     `transform` before they scroll into view - that doesn't affect layout
+     size, but with no overflow-x rule anywhere the browser still counts it
+     toward the page's scrollable width, producing a few-px-to-40px
+     horizontal scrollbar on mobile even at the very top of the page. This
+     (+ the matching rule on body below, since not all browsers honor just
+     one of the two) closes that off as a blanket safety net. */
+  overflow-x: hidden;
 }
 
 body {
@@ -11,6 +19,7 @@ body {
   color: #1a2e22;
   background-color: #fafdfb;
   transition: background-color 0.2s ease, color 0.2s ease;
+  overflow-x: hidden;
 }
 
 html.dark body {

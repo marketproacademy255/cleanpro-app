@@ -62,13 +62,15 @@ export default function Navbar() {
           scrolled ? 'h-16' : 'h-20'
         }`}
       >
-        <Link to="/" className="flex shrink-0 items-center gap-3 whitespace-nowrap leading-none tracking-tight text-brand-700 dark:text-brand-400">
+        <Link to="/" className="flex min-w-0 items-center gap-3 leading-none tracking-tight text-brand-700 dark:text-brand-400 lg:shrink-0 lg:whitespace-nowrap">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-brand-600 text-lg font-extrabold text-white">
             {t('brand.initials')}
           </span>
-          <span className="flex flex-col justify-center gap-0.5">
-            <span className="text-lg font-extrabold leading-tight sm:text-xl">{t('brand.name')}</span>
-            <span className="text-[11px] font-semibold uppercase leading-none tracking-wide text-gray-400 dark:text-gray-500">
+          <span className="flex min-w-0 flex-col justify-center gap-0.5">
+            <span className="truncate text-lg font-extrabold leading-tight sm:text-xl">{t('brand.name')}</span>
+            {/* Tagline mayda ekranlarda joy tejash uchun yashirilsin - brend nomi
+                o'zi kifoya, "CLEANING SERVICES" faqat sm+ ekranlarda ko'rinsin. */}
+            <span className="hidden truncate text-[11px] font-semibold uppercase leading-none tracking-wide text-gray-400 dark:text-gray-500 sm:block">
               {t('brand.tagline')}
             </span>
           </span>
