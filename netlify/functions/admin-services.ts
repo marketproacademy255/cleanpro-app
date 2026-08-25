@@ -50,6 +50,7 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       code: body.code,
       name_uz: body.name_uz,
       name_en: body.name_en ?? null,
+      name_ru: body.name_ru ?? null,
       description_uz: body.description_uz ?? null,
       property_type: body.property_type,
       pricing_unit: body.pricing_unit,
@@ -59,6 +60,11 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       multiplier: Number(body.multiplier) || 1,
       is_active: body.is_active ?? true,
       sort_order: Number(body.sort_order) || 0,
+      // 'cleaning' or 'repair' - which tab the service shows under on the
+      // Booking page. Defaults to 'cleaning' for backward compatibility.
+      category: body.category === 'repair' ? 'repair' : 'cleaning',
+      image: body.image ?? null,
+      floor_multiplier: body.floor_multiplier ? Number(body.floor_multiplier) : null,
       created_at: now,
     }
     const ref = await db.collection('serviceTypes').add(doc)
@@ -80,6 +86,7 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     const allowed = [
       'name_uz',
       'name_en',
+      'name_ru',
       'description_uz',
       'base_price',
       'extra_unit_price',
@@ -87,6 +94,9 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       'multiplier',
       'is_active',
       'sort_order',
+      'category',
+      'image',
+      'floor_multiplier',
     ] as const
     const patch: Record<string, unknown> = {}
     for (const key of allowed) if (key in body) patch[key] = body[key]
