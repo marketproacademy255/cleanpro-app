@@ -31,3 +31,53 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Security headers (see SECURITY_AUDIT_2026-08-25.md). The CSP below is
+# deliberately scoped to exactly what this app actually loads, not a generic
+# template - traced by grepping every https:// URL referenced in src/:
+#   - script-src: only self + Google Tag Manager (src/lib/analytics.ts
+#     dynamically injects <script src="https://www.googletagmanager.com/...">
+#     when VITE_GA_MEASUREMENT_ID is set - no-op otherwise). No inline
+#     <script> anywhere in index.html or the Vite build output.
+#   - style-src: 'unsafe-inline' is required - Tailwind's utility classes are
+#     fine (external stylesheet), but src/components/Reveal.tsx sets an
+#     inline `style={{ transitionDelay }}` for the scroll-reveal animation,
+#     which the browser checks against style-src same as a <style> tag.
+#     Google Fonts' CSS is loaded via <link> (index.html).
+#   - font-src: fonts.gstatic.com serves the actual .woff2 files linked from
+#     the fonts.googleapis.com stylesheet above.
+#   - img-src: 'self' + data: (a few tiny inline data-URL icons) + https:
+#     broadly, since service/blog images come from images.unsplash.com and
+#     admins can paste arbitrary photo URLs into the Admin > Xizmatlar panel
+#     (src/pages/admin/AdminServices.tsx `image` field) - locking this to one
+#     specific host would break that feature the moment someone uses a
+#     different image host.
+#   - connect-src: 'self' covers every backend call (src/lib/api.ts always
+#     fetches relative /.netlify/functions/* paths, same-origin) plus
+#     *.googleapis.com/*.firebaseio.com for the Firebase Auth/Firestore
+#     client SDK, and Google Analytics' beacon endpoints. Note Telegram
+#     (api.telegram.org) and OpenRouter are NOT called from the browser at
+#     all - those requests happen server-side inside the Netlify Functions
+#     (netlify/functions/_lib/telegram.ts, ai-chat.ts), so they don't belong
+#     in a browser CSP.
+#   - Payme/Click checkout (business.payme.uz, checkout.paycom.uz,
+#     my.click.uz) and Telegram/WhatsApp deep links (t.me, wa.me) are all
+#     full-page redirects (window.location.href / <a href>), which CSP does
+#     not restrict - no entries needed for those.
+#
+# Shipped as Report-Only first on purpose (see task plan) - it logs
+# violations to the browser console without blocking anything. After
+# deploying, click through every flow (home, booking, login/register, AI
+# chat, admin panel, starting a Payme/Click payment) with devtools open and
+# confirm the console shows no CSP violation reports, then flip the header
+# name below from `Content-Security-Policy-Report-Only` to
+# `Content-Security-Policy` in a follow-up commit to start enforcing it.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), camera=(), microphone=()"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains"
+    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
