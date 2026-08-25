@@ -47,12 +47,22 @@ export default function Navbar() {
         scrolled ? 'border-gray-200 shadow-sm dark:border-gray-800' : 'border-transparent shadow-none'
       }`}
     >
+      {/*
+        Deliberately NOT using the shared `.section` (max-w-6xl) container
+        here - on wide monitors that squeezed the brand block + 5 nav links
+        + auth actions + language/theme toggles into a ~1150px-wide box in
+        the middle of the screen, forcing nav labels and the "Buyurtma
+        berish" button to wrap onto two lines. The header gets its own,
+        wider max-width plus `whitespace-nowrap` everywhere so nothing
+        wraps, with `shrink-0` on the brand/actions groups so only the nav
+        links (which have room to spare) would ever be asked to compress.
+      */}
       <div
-        className={`section flex items-center justify-between gap-4 transition-[height] duration-300 ${
+        className={`mx-auto flex w-full max-w-[1600px] items-center justify-between gap-6 px-4 transition-[height] duration-300 sm:px-6 lg:px-10 ${
           scrolled ? 'h-16' : 'h-20'
         }`}
       >
-        <Link to="/" className="flex shrink-0 items-center gap-3 leading-none tracking-tight text-brand-700 dark:text-brand-400">
+        <Link to="/" className="flex shrink-0 items-center gap-3 whitespace-nowrap leading-none tracking-tight text-brand-700 dark:text-brand-400">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-brand-600 text-lg font-extrabold text-white">
             {t('brand.initials')}
           </span>
@@ -75,7 +85,7 @@ export default function Navbar() {
               key={l.to}
               to={l.to}
               className={({ isActive }) =>
-                `group relative py-1 text-sm font-medium transition-colors duration-200 hover:text-brand-700 dark:hover:text-brand-400 ${
+                `group relative whitespace-nowrap py-1 text-sm font-medium transition-colors duration-200 hover:text-brand-700 dark:hover:text-brand-400 ${
                   isActive ? 'text-brand-700 dark:text-brand-400' : 'text-gray-600 dark:text-gray-300'
                 }`
               }
@@ -96,34 +106,34 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden shrink-0 items-center gap-3 lg:flex">
           {user ? (
             <>
               {isAdmin && (
-                <Link to="/admin" className="text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
+                <Link to="/admin" className="whitespace-nowrap text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
                   {t('nav.adminPanel')}
                 </Link>
               )}
-              <Link to="/kabinet" className="text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
+              <Link to="/kabinet" className="whitespace-nowrap text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
                 {profile?.full_name || t('nav.myAccount')}
               </Link>
-              <button onClick={handleSignOut} className="btn-secondary py-2">
+              <button onClick={handleSignOut} className="btn-secondary whitespace-nowrap py-2">
                 {t('nav.signOut')}
               </button>
             </>
           ) : (
             <>
-              <Link to="/kirish" className="text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
+              <Link to="/kirish" className="whitespace-nowrap text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
                 {t('nav.login')}
               </Link>
-              <Link to="/band-qilish" className="btn-primary py-2">
+              <Link to="/band-qilish" className="btn-primary whitespace-nowrap py-2">
                 {t('nav.bookNow')}
               </Link>
             </>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <LanguageSwitcher compact />
           <button
             className="grid h-10 w-10 place-items-center rounded-md border border-gray-200 text-gray-500 transition hover:border-brand-600 hover:text-brand-700 dark:border-gray-700 dark:text-gray-400 dark:hover:border-brand-500 dark:hover:text-brand-400"
