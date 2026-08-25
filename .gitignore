@@ -11,6 +11,10 @@ dist
 *.tsbuildinfo
 /vite.config.js
 /vite.config.d.ts
+# Vite's temporary ESM-interop copy of the config file, created (and
+# normally auto-deleted) when it needs to load vite.config.ts as ESM -
+# occasionally survives if a build gets interrupted.
+vite.config.js.timestamp-*.mjs
 
 # Unrelated nested project that ended up inside this repo folder with its
 # own .git directory - Git tracked it as a broken submodule reference

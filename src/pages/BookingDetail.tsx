@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
-import { CheckCircle2 } from 'lucide-react'
+import { Check, CheckCircle2, XCircle } from 'lucide-react'
 import { apiFetch, ApiError } from '@/lib/api'
 import { useTranslation } from '@/context/LanguageContext'
 import { getServiceName } from '@/lib/i18nHelpers'
 import { formatUZS } from '@/lib/pricing'
+import { bookingStatusMeta, STATUS_STEPS } from '@/lib/bookingStatus'
 import { buildClickCheckoutUrl, buildPaymeCheckoutUrl, paymentGatewaysConfigured } from '@/lib/payments'
 import { fileToReceiptDataUrl } from '@/lib/receiptFile'
-import type { Booking, BookingTier } from '@/lib/types'
+import StarRating from '@/components/StarRating'
+import type { Booking, BookingStatus, BookingTier } from '@/lib/types'
 
 export default function BookingDetail() {
   const { id } = useParams<{ id: string }>()
@@ -101,6 +103,28 @@ export default function BookingDetail() {
     <div className="section max-w-2xl py-14">
       <h1 className="text-2xl font-bold text-gray-900">{t('bookingDetail.title')}</h1>
 
+      <StatusStepper status={booking.status} />
+
+      {booking.cleaners && (
+        <div className="card mt-6">
+          <h3 className="mb-4 text-sm font-semibold text-gray-900">{t('bookingDetail.assignedCleaner')}</h3>
+          <div className="flex items-center gap-4">
+            <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
+              {booking.cleaners.full_name.charAt(0)}
+            </div>
+            <div>
+              <div className="font-semibold text-gray-900">{booking.cleaners.full_name}</div>
+              <div className="mt-1">
+                <StarRating rating={booking.cleaners.rating} />
+              </div>
+              <div className="mt-1 text-xs text-gray-500">
+                {booking.cleaners.years_experience} {t('home.teamExperience')}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card mt-6 space-y-2 text-sm">
         <Row label={t('bookingDetail.service')} value={booking.service_types ? getServiceName(booking.service_types, lang) : '-'} />
         <Row label={t('bookingDetail.tier')} value={tierLabels[booking.tier] ?? tierLabels.standard} />
@@ -180,6 +204,55 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
     <div className="flex items-center justify-between gap-4">
       <span className="text-gray-500">{label}</span>
       <span className="text-right text-gray-900">{value}</span>
+    </div>
+  )
+}
+
+/** Horizontal progress stepper for pending -> confirmed -> assigned ->
+ *  in_progress -> completed. `cancelled` can happen from any point in the
+ *  flow, so it's shown as its own banner instead of trying to place it on
+ *  the same line. */
+function StatusStepper({ status }: { status: BookingStatus }) {
+  const { t } = useTranslation()
+  const meta = bookingStatusMeta(t)
+
+  if (status === 'cancelled') {
+    return (
+      <div className="card mt-6 flex items-start gap-2.5 border-red-200 bg-red-50 text-red-600">
+        <XCircle className="mt-0.5 h-5 w-5 shrink-0" />
+        {t('bookingDetail.cancelledMessage')}
+      </div>
+    )
+  }
+
+  const currentIndex = STATUS_STEPS.indexOf(status)
+
+  return (
+    <div className="card mt-6">
+      <div className="flex items-start">
+        {STATUS_STEPS.map((step, i) => {
+          const done = i <= currentIndex
+          return (
+            <div key={step} className="flex flex-1 items-start last:flex-none">
+              <div className="flex w-16 flex-col items-center gap-2 sm:w-20">
+                <div
+                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold ${
+                    done ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-400'
+                  }`}
+                >
+                  {done ? <Check className="h-4 w-4" /> : i + 1}
+                </div>
+                <span className={`text-center text-[11px] font-medium leading-tight ${done ? 'text-brand-700' : 'text-gray-400'}`}>
+                  {meta[step].label}
+                </span>
+              </div>
+              {i < STATUS_STEPS.length - 1 && (
+                <div className={`mt-4 h-0.5 flex-1 ${i < currentIndex ? 'bg-brand-600' : 'bg-gray-200'}`} />
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
