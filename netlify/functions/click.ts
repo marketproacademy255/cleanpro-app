@@ -16,6 +16,7 @@ import { createHash } from 'node:crypto'
 import { getDb } from './_lib/firebaseAdmin'
 import { parseFormOrJson } from './_lib/parseBody'
 import { formatPaymentConfirmedMessage, notifyTelegram } from './_lib/telegram'
+import { safeEqual } from './_lib/safeEqual'
 
 const CLICK_SECRET_KEY = process.env.CLICK_SECRET_KEY ?? ''
 
@@ -59,7 +60,7 @@ function verifySign(params: Record<string, string>, isComplete: boolean) {
         params.action,
         params.sign_time,
       ]
-  return md5(parts.join('')) === params.sign_string
+  return safeEqual(md5(parts.join('')), params.sign_string ?? '')
 }
 
 async function findBooking(db: FirebaseFirestore.Firestore, id: string) {

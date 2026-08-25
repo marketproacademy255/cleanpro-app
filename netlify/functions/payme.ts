@@ -19,6 +19,7 @@ import type { Handler } from '@netlify/functions'
 import { getDb } from './_lib/firebaseAdmin'
 import { rawBody } from './_lib/parseBody'
 import { formatPaymentConfirmedMessage, notifyTelegram } from './_lib/telegram'
+import { safeEqual } from './_lib/safeEqual'
 
 const PAYME_MERCHANT_KEY = process.env.PAYME_MERCHANT_KEY ?? ''
 
@@ -50,7 +51,7 @@ function checkAuth(authHeader: string | undefined): boolean {
   try {
     const decoded = Buffer.from(authHeader.slice(6), 'base64').toString('utf-8')
     const [login, key] = decoded.split(':')
-    return login === 'Paycom' && key === PAYME_MERCHANT_KEY
+    return login === 'Paycom' && safeEqual(key ?? '', PAYME_MERCHANT_KEY)
   } catch {
     return false
   }
