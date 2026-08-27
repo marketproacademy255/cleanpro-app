@@ -12,9 +12,7 @@ export default function Footer() {
       <div className="section grid gap-8 py-12 md:grid-cols-4">
         <div>
           <div className="mb-3 flex items-center gap-2 text-lg font-extrabold text-brand-700 dark:text-brand-400">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white">
-              {t('brand.initials')}
-            </span>
+            <img src="/logo-emblem.png" alt={t('brand.name')} className="h-8 w-8 shrink-0 object-contain" />
             <span className="flex flex-col leading-tight">
               <span>{t('brand.name')}</span>
               <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">

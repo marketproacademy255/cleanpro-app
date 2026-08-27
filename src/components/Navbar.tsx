@@ -63,9 +63,7 @@ export default function Navbar() {
         }`}
       >
         <Link to="/" className="flex min-w-0 items-center gap-3 leading-none tracking-tight text-brand-700 dark:text-brand-400 lg:shrink-0 lg:whitespace-nowrap">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-brand-600 text-lg font-extrabold text-white">
-            {t('brand.initials')}
-          </span>
+          <img src="/logo-emblem.png" alt={t('brand.name')} className="h-11 w-11 shrink-0 object-contain" />
           <span className="flex min-w-0 flex-col justify-center gap-0.5">
             <span className="truncate text-lg font-extrabold leading-tight sm:text-xl">{t('brand.name')}</span>
             {/* Tagline mayda ekranlarda joy tejash uchun yashirilsin - brend nomi
