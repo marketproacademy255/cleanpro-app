@@ -1,23 +1,56 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
   CheckCircle2,
   CreditCard,
+  Gift,
+  MapPin,
   MessageCircleQuestion,
   ShieldCheck,
   Sparkles,
+  Star,
   Zap,
 } from 'lucide-react'
 import DiscountBanner from '@/components/DiscountBanner'
 import PriceEstimator from '@/components/PriceEstimator'
 import Reveal from '@/components/Reveal'
+import StarRating from '@/components/StarRating'
 import TeamPreview from '@/components/TeamPreview'
+import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
+import { fetchApprovedReviews } from '@/lib/publicData'
+import type { Review } from '@/lib/types'
 
 const TRUST_ICONS = [ShieldCheck, CreditCard, Zap, Sparkles]
 
+const TASHKENT_DISTRICTS = [
+  'Bektemir',
+  'Chilonzor',
+  "Yashnobod",
+  'Mirzo Ulugʼbek',
+  'Mirobod',
+  'Sergeli',
+  'Shayxontohur',
+  'Olmazor',
+  'Uchtepa',
+  'Yakkasaroy',
+  'Yunusobod',
+  'Yangihayot',
+]
+
 export default function Home() {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const [reviews, setReviews] = useState<Review[]>([])
+
+  useEffect(() => {
+    fetchApprovedReviews().then(setReviews).catch(() => setReviews([]))
+  }, [])
+
+  const averageRating = reviews.length
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : 0
 
   const trustPoints: { label: string; desc: string }[] = t('home.trustPoints')
   const steps: { title: string; desc: string }[] = t('home.steps')
@@ -55,6 +88,22 @@ export default function Home() {
             {t('home.heroTitle')} <span className="text-brand-100">{t('home.heroTitleHighlight')}</span>
           </h1>
           <p className="mt-5 max-w-lg text-lg text-white/80">{t('home.heroDesc')}</p>
+
+          {/* Aggregate rating badge - the strongest first-glance trust
+              signal per the cleaning-industry research (real US cleaning
+              sites almost all show one). Renders nothing until there's at
+              least one real, admin-approved review (see reviews.ts /
+              Admin > Sharhlar) - never a fake placeholder number. */}
+          {reviews.length > 0 && (
+            <div className="mt-5 inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-2 text-white backdrop-blur">
+              <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+              <span className="text-lg font-bold">{averageRating.toFixed(1)}</span>
+              <span className="text-sm text-white/70">
+                ({reviews.length} {t('home.reviewsCount')})
+              </span>
+            </div>
+          )}
+
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to="/band-qilish"
@@ -197,6 +246,56 @@ export default function Home() {
 
       <TeamPreview />
 
+      {/* Customer reviews - manually collected, admin-approved (Admin >
+          Sharhlar), never fabricated. Renders nothing if there are none
+          yet, same principle as TeamPreview above. */}
+      {reviews.length > 0 && (
+        <section className="bg-white py-16 dark:bg-[#0c1512]">
+          <div className="section">
+            <div className="flex flex-col items-center gap-2 text-center">
+              <div className="flex items-center gap-2">
+                <StarRating rating={averageRating} />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('home.reviewsTitle')}</h2>
+              <p className="max-w-xl text-gray-500 dark:text-gray-400">{t('home.reviewsDesc')}</p>
+            </div>
+            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {reviews.slice(0, 6).map((r) => (
+                <div key={r.id} className="card">
+                  <StarRating rating={r.rating} />
+                  <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">&ldquo;{r.comment}&rdquo;</p>
+                  <div className="mt-3 text-sm font-semibold text-gray-900 dark:text-gray-100">{r.customer_name}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Service area - "which districts do we cover" is a standard trust
+          element on US cleaning-company sites (service area map/list).
+          We cover the whole city, so this lists Tashkent's actual
+          districts rather than a vague "everywhere" claim. */}
+      <section className="bg-gray-50 py-16 dark:bg-[#0f1a15]">
+        <div className="section text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
+            <MapPin className="h-6 w-6" />
+          </div>
+          <h2 className="mt-4 text-3xl font-bold text-gray-900 dark:text-gray-100">{t('home.areaTitle')}</h2>
+          <p className="mx-auto mt-2 max-w-xl text-gray-500 dark:text-gray-400">{t('home.areaDesc')}</p>
+          <div className="mx-auto mt-6 flex max-w-3xl flex-wrap justify-center gap-2">
+            {TASHKENT_DISTRICTS.map((d) => (
+              <span
+                key={d}
+                className="tag border border-gray-200 bg-white text-gray-600 dark:border-gray-700 dark:bg-[#101c17] dark:text-gray-300"
+              >
+                {d}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Gallery */}
       <section className="bg-white py-16 dark:bg-[#0c1512]">
         <div className="section">
@@ -238,6 +337,31 @@ export default function Home() {
               </details>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Referral program banner - large, colorful, placed near the
+          bottom of the page like most cleaning-industry referral
+          programs the research looked at. Links to the dashboard's
+          referral card if logged in (where the actual code/share button
+          lives), otherwise to registration. */}
+      <section className="section py-16">
+        <div className="card flex flex-col items-center justify-between gap-6 border-amber-200 bg-amber-50 text-center dark:border-amber-900/40 dark:bg-amber-900/10 md:flex-row md:text-left">
+          <div className="flex items-center gap-4">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+              <Gift className="h-6 w-6" />
+            </span>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('home.referralTitle')}</h3>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{t('home.referralDesc')}</p>
+            </div>
+          </div>
+          <Link
+            to={user ? '/kabinet' : '/royxatdan-otish'}
+            className="shrink-0 rounded-md bg-amber-500 px-6 py-3 font-semibold text-white transition hover:bg-amber-600"
+          >
+            {t('home.referralButton')}
+          </Link>
         </div>
       </section>
 

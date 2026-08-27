@@ -1,6 +1,6 @@
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from './firestoreClient'
-import type { Addon, Cleaner, ServiceType } from './types'
+import type { Addon, Cleaner, Review, ServiceType } from './types'
 
 /**
  * Public, non-sensitive catalog reads straight from Firestore (allowed by
@@ -31,4 +31,17 @@ export async function fetchActiveAddons(): Promise<Addon[]> {
 export async function fetchActiveCleaners(): Promise<Cleaner[]> {
   const rows = await fetchActive<Cleaner>('cleaners')
   return rows.sort((a, b) => b.rating - a.rating)
+}
+
+/**
+ * Approved customer reviews (Admin > Sharhlar) for the Home page's
+ * aggregate rating badge + quote cards. Returns [] if there's no backend
+ * or simply no reviews yet - callers should render nothing rather than a
+ * placeholder, same principle as TeamPreview.tsx.
+ */
+export async function fetchApprovedReviews(): Promise<Review[]> {
+  if (!db) return []
+  const snap = await getDocs(query(collection(db, 'reviews'), where('is_approved', '==', true)))
+  const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Review, 'id'>) }))
+  return rows.sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
 }

@@ -27,6 +27,7 @@ import AdminBookings from '@/pages/admin/AdminBookings'
 import AdminStaff from '@/pages/admin/AdminStaff'
 import AdminServices from '@/pages/admin/AdminServices'
 import AdminAddons from '@/pages/admin/AdminAddons'
+import AdminReviews from '@/pages/admin/AdminReviews'
 
 export default function App() {
   const { pathname } = useLocation()
@@ -87,6 +88,7 @@ export default function App() {
             <Route path="xizmatchilar" element={<AdminStaff />} />
             <Route path="xizmatlar" element={<AdminServices />} />
             <Route path="qoshimchalar" element={<AdminAddons />} />
+            <Route path="sharhlar" element={<AdminReviews />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
