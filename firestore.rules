@@ -48,5 +48,25 @@ service cloud.firestore {
     match /rateLimits/{key} {
       allow read, write: if false;
     }
+    // Referral program (see netlify/functions/referrals.ts). `referrals/{code}`
+    // is a code -> owner_uid lookup; `referralRedemptions/{id}` tracks each
+    // redemption's reward status. Both Admin-SDK-only, same as everything
+    // else above - the backend does its own ownership checks.
+    match /referrals/{code} {
+      allow read, write: if false;
+    }
+    match /referralRedemptions/{id} {
+      allow read, write: if false;
+    }
+    // Manually-collected customer reviews (Admin > Sharhlar - see
+    // netlify/functions/admin-reviews.ts). Unlike profiles/bookings, these
+    // ARE meant to be publicly readable once approved - the Home page's
+    // aggregate rating badge reads them directly via the client SDK, same
+    // pattern as serviceTypes/addons/cleaners above. Writes still go only
+    // through the Admin-SDK-backed admin-reviews.ts endpoint.
+    match /reviews/{id} {
+      allow read: if resource.data.is_approved == true;
+      allow write: if false;
+    }
   }
 }

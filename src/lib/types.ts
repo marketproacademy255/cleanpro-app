@@ -27,6 +27,24 @@ export interface Profile {
   // devices/sessions once logged in - see LanguageContext + App.tsx's sync
   // effect. Optional/nullable since older profiles won't have it yet.
   language?: string | null
+  // Referral program (see netlify/functions/referrals.ts). This user's own
+  // shareable code - lazily generated the first time they open the
+  // referral card or the referrals endpoint, so older profiles won't have
+  // one until then.
+  referral_code?: string | null
+  // uid of whoever referred this user in, if any (set once, at redemption
+  // time - see referrals.ts POST). Prevents redeeming a second code.
+  referred_by?: string | null
+  // True from the moment this user redeems someone else's referral code
+  // until their next booking is created - bookings.ts POST consumes this
+  // flag to apply REFERRAL_REFERRED_DISCOUNT, then clears it.
+  referral_discount_pending?: boolean
+  // Running total of referral rewards earned as a referrer, in so'm.
+  // There's no wallet/auto-payout rail on this project (see the Click
+  // payout discussion) - this is a running ledger the admin applies
+  // manually to a future invoice/payout, not money the user can withdraw
+  // through the app itself.
+  referral_credits_uzs?: number
 }
 
 export interface Cleaner {
@@ -114,9 +132,30 @@ export interface Booking {
   status: BookingStatus
   created_at: string
   updated_at: string
+  // Optional project photos + free-text description, collected on the
+  // Booking page only for repair/renovation services (large repair jobs
+  // don't price accurately from a flat per-sqm formula alone - see
+  // REPAIR_TIER_MULTIPLIER). Photos are compressed data: URLs (same
+  // approach as payment receipts - no Storage bucket on this project).
+  repair_photos?: string[]
+  repair_notes?: string | null
   service_types?: ServiceType
   cleaners?: Cleaner
   payments?: Payment[]
+}
+
+/** A manually-collected customer review, shown (once approved) as the
+ * aggregate star rating + a few quote cards on the Home page. Added via
+ * the admin panel (Admin > Sharhlar) after asking real customers - never
+ * auto-generated, per this project's "don't show fake trust signals"
+ * principle (see TeamPreview.tsx). */
+export interface Review {
+  id: string
+  customer_name: string
+  rating: number
+  comment: string
+  is_approved: boolean
+  created_at: string
 }
 
 export interface Payment {

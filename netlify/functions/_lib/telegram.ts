@@ -80,9 +80,11 @@ export function formatBookingCreatedMessage(params: {
   time: string
   totalAmountUZS: number
   bookingId: string
+  repairNotes?: string
+  repairPhotoCount?: number
 }): string {
   const amount = new Intl.NumberFormat('uz-UZ').format(Math.round(params.totalAmountUZS))
-  return [
+  const lines = [
     '🆕 <b>Yangi buyurtma</b>',
     `Xizmat: ${esc(params.serviceName)}`,
     `Mijoz: ${esc(params.contactName)} (${esc(params.contactPhone)})`,
@@ -91,6 +93,31 @@ export function formatBookingCreatedMessage(params: {
     `Summa: ${amount} so'm`,
     "To'lov: kutilmoqda",
     `ID: ${esc(params.bookingId)}`,
+  ]
+  // Repair/renovation bookings can include a project description + up to 2
+  // photos (data: URLs - too long for a Telegram message, see
+  // formatReceiptUploadedMessage's same tradeoff) - point the admin at the
+  // panel to view them and adjust the flat estimate into a real quote.
+  if (params.repairNotes) {
+    lines.push(`Loyiha tavsifi: ${esc(params.repairNotes)}`)
+  }
+  if (params.repairPhotoCount) {
+    lines.push(`Loyiha rasmlari: ${params.repairPhotoCount} ta (admin panelda ko'ring, narxni moslashtiring)`)
+  }
+  return lines.join('\n')
+}
+
+export function formatReferralRewardMessage(params: {
+  referrerUid: string
+  rewardUZS: number
+  bookingId: string
+}): string {
+  const amount = new Intl.NumberFormat('uz-UZ').format(Math.round(params.rewardUZS))
+  return [
+    "🎁 <b>Referral mukofoti tayyor</b>",
+    `Taklif qilingan mijozning buyurtmasi (ID: ${esc(params.bookingId)}) bajarildi.`,
+    `Taklif qiluvchi (uid: ${esc(params.referrerUid)}) hisobiga ${amount} so'm kredit yozildi.`,
+    "Eslatma: bu faqat hisob-kitob yozuvi - to'lovni/chegirmani mijozga qo'lda qo'llang (avtomatik pul o'tkazish yo'q).",
   ].join('\n')
 }
 

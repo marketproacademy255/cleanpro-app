@@ -7,6 +7,25 @@ export const FREQUENCY_DISCOUNT: Record<BookingFrequency, number> = {
   monthly: 0.1,
 }
 
+/**
+ * Automatic new-customer incentive (no promo code needed) - applied to a
+ * customer's very first booking, on top of whatever frequency discount
+ * they picked. See netlify/functions/bookings.ts, which determines
+ * eligibility server-side (queries for any prior booking by this
+ * customer_id) - never trust a client-sent flag for a discount.
+ */
+export const FIRST_BOOKING_DISCOUNT = 0.1
+
+/**
+ * Referral program reward for the *referred* friend's first booking -
+ * bigger than the plain first-booking discount above (and replaces it,
+ * they're not stacked) since the referrer also earns
+ * REFERRAL_REWARD_UZS (see netlify/functions/_lib/referral.ts) once that
+ * booking completes. See netlify/functions/referrals.ts for the
+ * redeem/reward flow.
+ */
+export const REFERRAL_REFERRED_DISCOUNT = 0.2
+
 export const FREQUENCY_LABEL_UZ: Record<BookingFrequency, string> = {
   once: 'Bir martalik',
   weekly: 'Har hafta (-20%)',
@@ -76,6 +95,11 @@ export interface PriceBreakdown {
   addonsAmount: number
   subtotal: number
   discountAmount: number
+  /** Portion of discountAmount coming from FIRST_BOOKING_DISCOUNT or
+   *  REFERRAL_REFERRED_DISCOUNT (see extraDiscountRate param), shown as its
+   *  own line on the Booking page so it doesn't get confused with the
+   *  frequency discount. Already included in discountAmount/totalAmount. */
+  extraDiscountAmount: number
   totalAmount: number
 }
 
@@ -98,8 +122,12 @@ export function calculatePrice(params: {
   /** Floor number the property is on (1 = ground). Only affects price when
    *  the service has a `floor_multiplier` set (repair-category services). */
   floor?: number | null
+  /** FIRST_BOOKING_DISCOUNT or REFERRAL_REFERRED_DISCOUNT (0 if neither
+   *  applies) - the caller (bookings.ts, or Booking.tsx for preview only)
+   *  decides which one applies; calculatePrice just applies the number. */
+  extraDiscountRate?: number
 }): PriceBreakdown {
-  const { service, rooms, areaSqm, selectedAddons, frequency, tier = 'standard', floor } = params
+  const { service, rooms, areaSqm, selectedAddons, frequency, tier = 'standard', floor, extraDiscountRate = 0 } = params
 
   let base = 0
   if (service.pricing_unit === 'per_room') {
@@ -134,7 +162,9 @@ export function calculatePrice(params: {
   const addonsAmount = selectedAddons.reduce((sum, a) => sum + a.price, 0)
   const subtotal = baseWithTier + addonsAmount
   const discountRate = FREQUENCY_DISCOUNT[frequency] ?? 0
-  const discountAmount = Math.round(subtotal * discountRate)
+  const frequencyDiscountAmount = Math.round(subtotal * discountRate)
+  const extraDiscountAmount = Math.round(subtotal * Math.max(0, extraDiscountRate))
+  const discountAmount = frequencyDiscountAmount + extraDiscountAmount
   const totalAmount = subtotal - discountAmount
 
   return {
@@ -143,6 +173,7 @@ export function calculatePrice(params: {
     addonsAmount: Math.round(addonsAmount),
     subtotal: Math.round(subtotal),
     discountAmount,
+    extraDiscountAmount,
     totalAmount: Math.round(totalAmount),
   }
 }
