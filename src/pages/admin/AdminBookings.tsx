@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
+import { ImageIcon } from 'lucide-react'
 import { fetchActiveCleaners } from '@/lib/publicData'
 import { apiFetch } from '@/lib/api'
 import { formatUZS } from '@/lib/pricing'
@@ -10,6 +11,7 @@ export default function AdminBookings() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [cleaners, setCleaners] = useState<Cleaner[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   async function load() {
     const [b, c] = await Promise.all([apiFetch<Booking[]>('bookings').catch(() => []), fetchActiveCleaners()])
@@ -37,6 +39,22 @@ export default function AdminBookings() {
     load()
   }
 
+  // Manual price override - mainly for repair/renovation quotes: the flat
+  // per-sqm formula is a starting estimate, the admin reviews the
+  // customer's uploaded photos/description (repair_photos/repair_notes)
+  // and adjusts total_amount to the real quote.
+  async function overridePrice(id: string, currentAmount: number) {
+    const input = window.prompt("Yangi umumiy summa (so'm):", String(currentAmount))
+    if (input === null) return
+    const amount = Number(input.replace(/\s/g, ''))
+    if (!Number.isFinite(amount) || amount < 0) {
+      window.alert("Noto'g'ri summa.")
+      return
+    }
+    await apiFetch(`bookings?id=${id}`, { method: 'PATCH', body: JSON.stringify({ total_amount: amount }) })
+    load()
+  }
+
   if (loading) return <div className="text-gray-400">Yuklanmoqda…</div>
 
   return (
@@ -60,16 +78,40 @@ export default function AdminBookings() {
             {bookings.map((b) => {
               const paid = b.payments?.some((p) => p.status === 'paid')
               const manualPending = b.payments?.find((p) => p.provider === 'manual' && p.status === 'pending' && p.receipt_url)
+              const hasRepairInfo = !!(b.repair_notes || (b.repair_photos && b.repair_photos.length > 0))
+              const expanded = expandedId === b.id
               return (
-                <tr key={b.id}>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{b.contact_name}</div>
-                    <div className="text-xs text-gray-400">{b.contact_phone}</div>
-                  </td>
-                  <td className="px-4 py-3">{b.service_types?.name_uz}</td>
-                  <td className="px-4 py-3 text-gray-500">{b.scheduled_date} {b.scheduled_time}</td>
-                  <td className="px-4 py-3 font-medium">{formatUZS(b.total_amount)}</td>
-                  <td className="px-4 py-3">
+                <Fragment key={b.id}>
+                  <tr>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <div className="font-medium text-gray-900">{b.contact_name}</div>
+                        {hasRepairInfo && (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedId(expanded ? null : b.id)}
+                            title="Loyiha rasmlari/tavsifi"
+                            className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600 hover:bg-brand-100"
+                          >
+                            <ImageIcon className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-400">{b.contact_phone}</div>
+                    </td>
+                    <td className="px-4 py-3">{b.service_types?.name_uz}</td>
+                    <td className="px-4 py-3 text-gray-500">{b.scheduled_date} {b.scheduled_time}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => overridePrice(b.id, b.total_amount)}
+                        title="Narxni qo'lda o'zgartirish"
+                        className="font-medium text-gray-900 underline decoration-dotted underline-offset-2 hover:text-brand-700"
+                      >
+                        {formatUZS(b.total_amount)}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-1 text-xs font-semibold ${paid ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
                       {paid ? "To'landi" : 'Kutilmoqda'}
                     </span>
@@ -116,7 +158,29 @@ export default function AdminBookings() {
                       ))}
                     </select>
                   </td>
-                </tr>
+                  </tr>
+                  {expanded && hasRepairInfo && (
+                    <tr>
+                      <td colSpan={8} className="bg-gray-50 px-4 py-3">
+                        {b.repair_notes && (
+                          <p className="text-xs text-gray-600">
+                            <span className="font-semibold text-gray-900">Loyiha tavsifi: </span>
+                            {b.repair_notes}
+                          </p>
+                        )}
+                        {b.repair_photos && b.repair_photos.length > 0 && (
+                          <div className="mt-2 flex gap-2">
+                            {b.repair_photos.map((src, i) => (
+                              <a key={i} href={src} target="_blank" rel="noreferrer" className="block h-20 w-20 overflow-hidden rounded-md border border-gray-200">
+                                <img src={src} alt="" className="h-full w-full object-cover" />
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               )
             })}
           </tbody>

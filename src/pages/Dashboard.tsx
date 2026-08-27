@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Calendar, CreditCard, ShieldCheck, Sparkles, Zap } from 'lucide-react'
+import { Calendar, CreditCard, Gift, ShieldCheck, Sparkles, Zap } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
@@ -10,6 +10,13 @@ import { formatUZS } from '@/lib/pricing'
 import { bookingStatusMeta } from '@/lib/bookingStatus'
 import Reveal from '@/components/Reveal'
 import type { Booking, ServiceType } from '@/lib/types'
+
+interface ReferralInfo {
+  referralCode: string
+  referralLink: string
+  creditsUzs: number
+  stats: { totalReferred: number; pendingCount: number; rewardedCount: number }
+}
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80'
@@ -26,6 +33,8 @@ export default function Dashboard() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [services, setServices] = useState<ServiceType[]>([])
   const [loading, setLoading] = useState(true)
+  const [referral, setReferral] = useState<ReferralInfo | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const statusMeta = bookingStatusMeta(t)
   const trustPoints: { label: string; desc: string }[] = t('home.trustPoints')
@@ -42,7 +51,16 @@ export default function Dashboard() {
       setLoading(false)
     }
     load()
+    apiFetch<ReferralInfo>('referrals').then(setReferral).catch(() => {})
   }, [user])
+
+  function copyReferralLink() {
+    if (!referral) return
+    navigator.clipboard.writeText(referral.referralLink).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
 
   return (
     <div className="section py-14">
@@ -50,6 +68,35 @@ export default function Dashboard() {
         {t('dashboard.greeting')}, {profile?.full_name || t('dashboard.defaultName')}
       </h1>
       <p className="mt-2 text-gray-500">{t('dashboard.subtitle')}</p>
+
+      {referral && (
+        <div className="card mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-amber-50 text-amber-600">
+              <Gift className="h-5 w-5" />
+            </span>
+            <div>
+              <div className="font-semibold text-gray-900">{t('dashboard.referralTitle')}</div>
+              <p className="mt-0.5 max-w-md text-xs text-gray-500">{t('dashboard.referralDesc')}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                <span>
+                  {t('dashboard.referralYourCode')}: <span className="font-mono font-semibold text-gray-900">{referral.referralCode}</span>
+                </span>
+                <span>{t('dashboard.referralInvited')}: <strong className="text-gray-900">{referral.stats.totalReferred}</strong></span>
+                {referral.creditsUzs > 0 && (
+                  <span>{t('dashboard.referralCredits')}: <strong className="text-brand-700">{formatUZS(referral.creditsUzs)}</strong></span>
+                )}
+              </div>
+              {referral.creditsUzs > 0 && (
+                <p className="mt-1 text-[11px] text-gray-400">{t('dashboard.referralCreditsNote')}</p>
+              )}
+            </div>
+          </div>
+          <button type="button" onClick={copyReferralLink} className="btn-secondary shrink-0 py-2">
+            {copied ? t('dashboard.referralCopied') : t('dashboard.referralCopyLink')}
+          </button>
+        </div>
+      )}
 
       <div className="mt-8 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">{t('dashboard.myBookings')}</h2>

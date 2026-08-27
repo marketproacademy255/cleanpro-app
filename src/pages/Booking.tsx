@@ -1,12 +1,20 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check } from 'lucide-react'
+import { Camera, Check, X } from 'lucide-react'
 import { fetchActiveAddons, fetchActiveServiceTypes } from '@/lib/publicData'
 import { apiFetch, ApiError } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
 import { getServiceName } from '@/lib/i18nHelpers'
-import { calculatePrice, formatUZS, REPAIR_TIER_MULTIPLIER, TIER_MULTIPLIER } from '@/lib/pricing'
+import {
+  calculatePrice,
+  formatUZS,
+  FIRST_BOOKING_DISCOUNT,
+  REFERRAL_REFERRED_DISCOUNT,
+  REPAIR_TIER_MULTIPLIER,
+  TIER_MULTIPLIER,
+} from '@/lib/pricing'
+import { fileToProjectPhotoDataUrl, MAX_PROJECT_PHOTOS, ProjectPhotoTooLargeError } from '@/lib/projectPhoto'
 import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, ServiceCategory, ServiceType } from '@/lib/types'
 
 const TIERS: BookingTier[] = ['standard', 'premium', 'elite']
@@ -63,6 +71,25 @@ export default function Booking() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isFirstBooking, setIsFirstBooking] = useState(false)
+  const [repairPhotos, setRepairPhotos] = useState<string[]>([])
+  const [repairNotes, setRepairNotes] = useState('')
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+
+  // Client-side preview only, purely cosmetic - the server (bookings.ts)
+  // independently re-checks prior-booking count and the profile's
+  // referral_discount_pending flag before ever computing a real discount,
+  // so nothing here needs to be trusted.
+  useEffect(() => {
+    if (!user) return
+    apiFetch<BookingRow[]>('bookings')
+      .then((rows) => setIsFirstBooking(rows.length === 0))
+      .catch(() => {})
+  }, [user])
+
+  const isReferred = !!profile?.referral_discount_pending
+  const extraDiscountRate = isReferred ? REFERRAL_REFERRED_DISCOUNT : isFirstBooking ? FIRST_BOOKING_DISCOUNT : 0
 
   useEffect(() => {
     async function load() {
@@ -136,8 +163,31 @@ export default function Booking() {
       frequency: form.frequency,
       tier: form.tier,
       floor: form.floor ? Number(form.floor) : null,
+      extraDiscountRate,
     })
-  }, [selectedService, form.rooms, form.areaSqm, form.floor, selectedAddons, form.frequency, form.tier])
+  }, [selectedService, form.rooms, form.areaSqm, form.floor, selectedAddons, form.frequency, form.tier, extraDiscountRate])
+
+  async function handlePhotoSelected(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setPhotoError(null)
+    setUploadingPhoto(true)
+    try {
+      const dataUrl = await fileToProjectPhotoDataUrl(file)
+      setRepairPhotos((prev) => [...prev, dataUrl].slice(0, MAX_PROJECT_PHOTOS))
+    } catch (err) {
+      setPhotoError(
+        err instanceof ProjectPhotoTooLargeError || err instanceof Error ? err.message : t('booking.repairPhotoError'),
+      )
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
+  function removePhoto(index: number) {
+    setRepairPhotos((prev) => prev.filter((_, i) => i !== index))
+  }
 
   function updateField<K extends keyof DraftForm>(key: K, value: DraftForm[K]) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -190,6 +240,8 @@ export default function Booking() {
           contactName: form.contactName,
           contactPhone: form.contactPhone,
           notes: form.notes,
+          repairPhotos: isRepair ? repairPhotos : undefined,
+          repairNotes: isRepair ? repairNotes : undefined,
         }),
       })
       navigate(`/kabinet/buyurtma/${data.id}`)
@@ -210,7 +262,7 @@ export default function Booking() {
   }
 
   return (
-    <div className="section py-14">
+    <div className="section py-14 pb-24 lg:pb-14">
       <h1 className="text-3xl font-bold text-gray-900">{t('booking.title')}</h1>
       <p className="mt-2 text-gray-500">{t('booking.subtitle')}</p>
 
@@ -399,6 +451,45 @@ export default function Booking() {
             </div>
           </div>
 
+          {isRepair && (
+            <div className="card">
+              <label className="label">{t('booking.repairPhotosLabel')}</label>
+              <p className="text-xs text-gray-400">{t('booking.repairPhotosDesc')}</p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                {repairPhotos.map((src, i) => (
+                  <div key={i} className="relative h-24 w-24 overflow-hidden rounded-lg border border-gray-200">
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(i)}
+                      aria-label={t('booking.repairPhotosRemove')}
+                      className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-white"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {repairPhotos.length < MAX_PROJECT_PHOTOS && (
+                  <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-gray-300 text-xs text-gray-400 hover:border-brand-400 hover:text-brand-600">
+                    <Camera className="h-5 w-5" />
+                    {uploadingPhoto ? t('booking.submitting') : t('booking.repairPhotosAdd')}
+                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoSelected} disabled={uploadingPhoto} />
+                  </label>
+                )}
+              </div>
+              {photoError && <p className="mt-2 text-xs text-red-600">{photoError}</p>}
+
+              <label className="label mt-4">{t('booking.repairNotesLabel')}</label>
+              <textarea
+                className="input"
+                rows={3}
+                placeholder={t('booking.repairNotesPlaceholder')}
+                value={repairNotes}
+                onChange={(e) => setRepairNotes(e.target.value)}
+              />
+            </div>
+          )}
+
           <div className="card grid gap-4 sm:grid-cols-2">
             <div>
               <label className="label">{t('booking.nameLabel')}</label>
@@ -418,6 +509,13 @@ export default function Booking() {
         <div className="lg:col-span-1">
           <div className="card lg:sticky lg:top-24">
             <h3 className="text-lg font-semibold text-gray-900">{t('booking.priceDetailsTitle')}</h3>
+
+            {(isReferred || isFirstBooking) && (
+              <p className="mt-3 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-700">
+                {isReferred ? t('booking.referralBanner') : t('booking.firstBookingBanner')}
+              </p>
+            )}
+
             {priceBreakdown ? (
               <div className="mt-4 space-y-2 text-sm">
                 <div className="flex justify-between text-gray-600">
@@ -436,10 +534,16 @@ export default function Booking() {
                     <span>{formatUZS(priceBreakdown.addonsAmount)}</span>
                   </div>
                 )}
-                {priceBreakdown.discountAmount > 0 && (
+                {priceBreakdown.discountAmount - priceBreakdown.extraDiscountAmount > 0 && (
                   <div className="flex justify-between text-brand-700">
                     <span>{t('booking.discount')}</span>
-                    <span>-{formatUZS(priceBreakdown.discountAmount)}</span>
+                    <span>-{formatUZS(priceBreakdown.discountAmount - priceBreakdown.extraDiscountAmount)}</span>
+                  </div>
+                )}
+                {priceBreakdown.extraDiscountAmount > 0 && (
+                  <div className="flex justify-between text-brand-700">
+                    <span>{isReferred ? t('pricing.referralDiscountLabel') : t('pricing.firstBookingDiscountLabel')}</span>
+                    <span>-{formatUZS(priceBreakdown.extraDiscountAmount)}</span>
                   </div>
                 )}
                 <hr />
@@ -460,6 +564,22 @@ export default function Booking() {
             <p className="mt-3 text-center text-xs text-gray-400">{t('booking.nextStepNote')}</p>
           </div>
         </div>
+
+        {/* Mobile-only sticky mini price bar - the price card above is
+            lg:sticky so desktop never loses sight of the total, but on
+            mobile it's stacked at the bottom of a long form. This mirrors
+            it in a slim always-visible bar (MobileBookingBar is hidden on
+            this route - see MOBILE_BAR_HIDDEN_PREFIXES - so there's no
+            overlap). Extra bottom padding on the form keeps the submit
+            button from being covered. */}
+        {priceBreakdown && (
+          <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-gray-800 dark:bg-[#101c17]/95 lg:hidden">
+            <div className="mx-auto flex max-w-lg items-center justify-between">
+              <span className="text-sm text-gray-500 dark:text-gray-400">{t('booking.total')}</span>
+              <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatUZS(priceBreakdown.totalAmount)}</span>
+            </div>
+          </div>
+        )}
       </form>
     </div>
   )

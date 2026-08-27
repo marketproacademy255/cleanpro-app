@@ -1,13 +1,16 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
 import { TELEGRAM_BOT_USERNAME } from '@/lib/config'
+import { apiFetch } from '@/lib/api'
 
 export default function Register() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const [searchParams] = useSearchParams()
+  const referralCode = searchParams.get('ref')
 
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
@@ -26,6 +29,13 @@ export default function Register() {
     if (signUpError) {
       setError(signUpError)
       return
+    }
+    // Redeem a referral code from the ?ref= link, if present (see
+    // Dashboard.tsx's share link + netlify/functions/referrals.ts). Best
+    // effort - a failure here (e.g. invalid/expired code) shouldn't block
+    // the signup that already succeeded.
+    if (referralCode) {
+      await apiFetch('referrals', { method: 'POST', body: JSON.stringify({ code: referralCode }) }).catch(() => {})
     }
     setDone(true)
     setTimeout(() => navigate('/kirish'), 1500)
@@ -49,7 +59,12 @@ export default function Register() {
       <div className="card w-full max-w-md">
         <h1 className="text-2xl font-bold text-gray-900">{t('register.title')}</h1>
         {done ? (
-          <p className="mt-4 rounded-lg bg-brand-50 p-3 text-sm text-brand-700">{t('register.successMessage')}</p>
+          <div className="mt-4 space-y-2">
+            <p className="rounded-lg bg-brand-50 p-3 text-sm text-brand-700">{t('register.successMessage')}</p>
+            {referralCode && (
+              <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">{t('register.referralApplied')}</p>
+            )}
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
