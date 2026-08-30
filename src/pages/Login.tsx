@@ -35,7 +35,7 @@ export default function Login() {
       setError(signInError)
       return
     }
-    navigate(location.state?.from ?? '/kabinet')
+    navigate(location.state?.from ?? '/dashboard')
   }
 
   async function requestTelegramCode(e: FormEvent) {
@@ -66,7 +66,7 @@ export default function Login() {
         body: JSON.stringify({ phone: tgPhone, code: tgCode }),
       })
       await signInWithCustomToken(auth, token)
-      navigate(location.state?.from ?? '/kabinet')
+      navigate(location.state?.from ?? '/dashboard')
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -178,7 +178,7 @@ export default function Login() {
 
         <p className="mt-6 text-center text-sm text-gray-500">
           {t('login.noAccount')}{' '}
-          <Link to="/royxatdan-otish" className="font-medium text-brand-700">
+          <Link to="/register" className="font-medium text-brand-700">
             {t('login.registerLink')}
           </Link>
         </p>

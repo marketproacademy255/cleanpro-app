@@ -19,7 +19,7 @@ export default function Blog() {
           return (
             <Link
               key={post.slug}
-              to={`/maslahatlar/${post.slug}`}
+              to={`/blog/${post.slug}`}
               className="group overflow-hidden rounded-lg border border-gray-200 transition hover:border-brand-300 hover:shadow-md dark:border-gray-800 dark:hover:border-brand-700"
             >
               <div className="h-40 overflow-hidden">

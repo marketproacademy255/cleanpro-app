@@ -106,14 +106,14 @@ export default function Home() {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              to="/band-qilish"
+              to="/booking"
               className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-5 py-3 font-semibold tracking-tight text-brand-700 transition hover:bg-brand-50"
             >
               {t('home.ctaBook')}
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              to="/xizmatlar"
+              to="/services"
               className="inline-flex items-center justify-center gap-2 rounded-md border border-white/30 px-5 py-3 font-semibold tracking-tight text-white transition hover:bg-white/10"
             >
               {t('home.ctaPrices')}
@@ -192,7 +192,7 @@ export default function Home() {
             {serviceTiles.map((tile, i) => (
               <Reveal key={tile.title} delayMs={i * 100}>
                 <Link
-                  to="/xizmatlar"
+                  to="/services"
                   className="group block h-full overflow-hidden rounded-lg border border-gray-200 transition hover:border-brand-300 hover:shadow-md dark:border-gray-800 dark:hover:border-brand-700"
                 >
                   <div className="h-40 overflow-hidden">
@@ -357,7 +357,7 @@ export default function Home() {
             </div>
           </div>
           <Link
-            to={user ? '/kabinet' : '/royxatdan-otish'}
+            to={user ? '/dashboard' : '/register'}
             className="shrink-0 rounded-md bg-amber-500 px-6 py-3 font-semibold text-white transition hover:bg-amber-600"
           >
             {t('home.referralButton')}
@@ -373,7 +373,7 @@ export default function Home() {
             <p className="mt-1 text-white/80">{t('home.ctaDesc')}</p>
           </div>
           <Link
-            to="/band-qilish"
+            to="/booking"
             className="rounded-md bg-white px-6 py-3 font-semibold text-brand-700 transition hover:bg-brand-50"
           >
             {t('home.ctaButton')}

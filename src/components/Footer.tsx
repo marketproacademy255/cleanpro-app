@@ -28,7 +28,7 @@ export default function Footer() {
           <ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
             {services.map((s) => (
               <li key={s}>
-                <Link to="/xizmatlar" className="hover:text-brand-700 dark:hover:text-brand-400">
+                <Link to="/services" className="hover:text-brand-700 dark:hover:text-brand-400">
                   {s}
                 </Link>
               </li>
@@ -39,10 +39,10 @@ export default function Footer() {
         <div>
           <h4 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">{t('footer.companyTitle')}</h4>
           <ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-            <li><Link to="/biz-haqimizda" className="hover:text-brand-700 dark:hover:text-brand-400">{t('footer.about')}</Link></li>
-            <li><Link to="/maslahatlar" className="hover:text-brand-700 dark:hover:text-brand-400">{t('footer.blog')}</Link></li>
-            <li><Link to="/aloqa" className="hover:text-brand-700 dark:hover:text-brand-400">{t('footer.contact')}</Link></li>
-            <li><Link to="/band-qilish" className="hover:text-brand-700 dark:hover:text-brand-400">{t('footer.bookNow')}</Link></li>
+            <li><Link to="/about" className="hover:text-brand-700 dark:hover:text-brand-400">{t('footer.about')}</Link></li>
+            <li><Link to="/blog" className="hover:text-brand-700 dark:hover:text-brand-400">{t('footer.blog')}</Link></li>
+            <li><Link to="/contact" className="hover:text-brand-700 dark:hover:text-brand-400">{t('footer.contact')}</Link></li>
+            <li><Link to="/booking" className="hover:text-brand-700 dark:hover:text-brand-400">{t('footer.bookNow')}</Link></li>
           </ul>
         </div>
 
@@ -72,8 +72,8 @@ export default function Footer() {
         <div className="section flex flex-col items-center justify-between gap-2 text-xs text-gray-400 sm:flex-row">
           <span>© {new Date().getFullYear()} {t('brand.name')}. {t('footer.rights')}</span>
           <div className="flex gap-4">
-            <Link to="/maxfiylik" className="hover:text-brand-700 dark:hover:text-brand-400">{t('footer.privacy')}</Link>
-            <Link to="/foydalanish-shartlari" className="hover:text-brand-700 dark:hover:text-brand-400">{t('footer.terms')}</Link>
+            <Link to="/privacy" className="hover:text-brand-700 dark:hover:text-brand-400">{t('footer.privacy')}</Link>
+            <Link to="/terms" className="hover:text-brand-700 dark:hover:text-brand-400">{t('footer.terms')}</Link>
           </div>
         </div>
       </div>

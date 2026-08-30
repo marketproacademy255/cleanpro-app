@@ -37,7 +37,7 @@ export default function DiscountBanner() {
             {t('discountBanner.pre') && `${t('discountBanner.pre')} `}
             <strong>{t('discountBanner.percent')}</strong> {t('discountBanner.mid')}{' '}
             <strong>{t('discountBanner.code')}</strong> {t('discountBanner.post')}{' '}
-            <Link to="/band-qilish" className="underline underline-offset-2 hover:text-brand-100">
+            <Link to="/booking" className="underline underline-offset-2 hover:text-brand-100">
               {t('discountBanner.cta')}
             </Link>
           </span>

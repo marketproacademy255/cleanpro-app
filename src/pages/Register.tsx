@@ -38,7 +38,7 @@ export default function Register() {
       await apiFetch('referrals', { method: 'POST', body: JSON.stringify({ code: referralCode }) }).catch(() => {})
     }
     setDone(true)
-    setTimeout(() => navigate('/kirish'), 1500)
+    setTimeout(() => navigate('/login'), 1500)
   }
 
   return (
@@ -103,7 +103,7 @@ export default function Register() {
 
         <p className="mt-6 text-center text-sm text-gray-500">
           {t('register.haveAccount')}{' '}
-          <Link to="/kirish" className="font-medium text-brand-700">
+          <Link to="/login" className="font-medium text-brand-700">
             {t('register.loginLink')}
           </Link>
         </p>

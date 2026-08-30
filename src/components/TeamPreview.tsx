@@ -46,7 +46,7 @@ export default function TeamPreview() {
           ))}
         </div>
         <div className="mt-8 text-center">
-          <Link to="/xizmatlar" className="text-sm font-medium text-brand-700 hover:underline dark:text-brand-400">
+          <Link to="/services" className="text-sm font-medium text-brand-700 hover:underline dark:text-brand-400">
             {t('home.teamSeeAll')}
           </Link>
         </div>

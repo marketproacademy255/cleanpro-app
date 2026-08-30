@@ -215,7 +215,7 @@ export default function Booking() {
 
     if (!user) {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify(form))
-      navigate('/kirish', { state: { from: '/band-qilish', message: 'Buyurtmani yakunlash uchun tizimga kiring' } })
+      navigate('/login', { state: { from: '/booking', message: 'Buyurtmani yakunlash uchun tizimga kiring' } })
       return
     }
 
@@ -244,7 +244,7 @@ export default function Booking() {
           repairNotes: isRepair ? repairNotes : undefined,
         }),
       })
-      navigate(`/kabinet/buyurtma/${data.id}`)
+      navigate(`/dashboard/booking/${data.id}`)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('booking.submitError'))
     } finally {

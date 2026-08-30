@@ -7,7 +7,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const location = useLocation()
 
   if (loading) return <FullPageLoader />
-  if (!user) return <Navigate to="/kirish" state={{ from: location }} replace />
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />
   return <>{children}</>
 }
 
@@ -16,8 +16,8 @@ export function AdminRoute({ children }: { children: ReactNode }) {
   const location = useLocation()
 
   if (loading) return <FullPageLoader />
-  if (!user) return <Navigate to="/kirish" state={{ from: location }} replace />
-  if (!isAdmin) return <Navigate to="/kabinet" replace />
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />
+  if (!isAdmin) return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
 

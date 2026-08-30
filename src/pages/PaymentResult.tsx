@@ -66,7 +66,7 @@ export default function PaymentResult() {
         </>
       )}
       {bookingId && (
-        <Link to={`/kabinet/buyurtma/${bookingId}`} className="btn-primary mt-6">
+        <Link to={`/dashboard/booking/${bookingId}`} className="btn-primary mt-6">
           {t('paymentResult.viewBooking')}
         </Link>
       )}

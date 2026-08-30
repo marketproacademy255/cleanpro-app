@@ -85,7 +85,7 @@ export default function BookingDetail() {
       body: JSON.stringify({ booking_id: booking.id, provider }),
     }).catch(() => null)
 
-    const returnUrl = `${import.meta.env.VITE_APP_URL}/tolov-natijasi?booking=${booking.id}`
+    const returnUrl = `${import.meta.env.VITE_APP_URL}/payment-result?booking=${booking.id}`
     const url =
       provider === 'payme'
         ? buildPaymeCheckoutUrl({ bookingId: booking.id, amountSom: booking.total_amount, returnUrl })

@@ -2,11 +2,11 @@ import { NavLink, Outlet } from 'react-router-dom'
 
 const links = [
   { to: '/admin', label: 'Umumiy holat', end: true },
-  { to: '/admin/buyurtmalar', label: 'Buyurtmalar' },
-  { to: '/admin/xizmatchilar', label: 'Xizmatchilar' },
-  { to: '/admin/xizmatlar', label: "Xizmatlar va narxlar" },
-  { to: '/admin/qoshimchalar', label: "Qo'shimcha xizmatlar" },
-  { to: '/admin/sharhlar', label: 'Sharhlar' },
+  { to: '/admin/bookings', label: 'Buyurtmalar' },
+  { to: '/admin/staff', label: 'Xizmatchilar' },
+  { to: '/admin/services', label: "Xizmatlar va narxlar" },
+  { to: '/admin/addons', label: "Qo'shimcha xizmatlar" },
+  { to: '/admin/reviews', label: 'Sharhlar' },
 ]
 
 export default function AdminLayout() {

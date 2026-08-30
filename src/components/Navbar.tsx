@@ -17,10 +17,10 @@ export default function Navbar() {
 
   const links = [
     { to: '/', label: t('nav.home') },
-    { to: '/xizmatlar', label: t('nav.services') },
-    { to: '/maslahatlar', label: t('nav.blog') },
-    { to: '/biz-haqimizda', label: t('nav.about') },
-    { to: '/aloqa', label: t('nav.contact') },
+    { to: '/services', label: t('nav.services') },
+    { to: '/blog', label: t('nav.blog') },
+    { to: '/about', label: t('nav.about') },
+    { to: '/contact', label: t('nav.contact') },
   ]
 
   // Header is `sticky` (see className below), so it already sits in normal
@@ -114,7 +114,7 @@ export default function Navbar() {
                   {t('nav.adminPanel')}
                 </Link>
               )}
-              <Link to="/kabinet" className="whitespace-nowrap text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
+              <Link to="/dashboard" className="whitespace-nowrap text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
                 {profile?.full_name || t('nav.myAccount')}
               </Link>
               <button onClick={handleSignOut} className="btn-secondary whitespace-nowrap py-2">
@@ -123,10 +123,10 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/kirish" className="whitespace-nowrap text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
+              <Link to="/login" className="whitespace-nowrap text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
                 {t('nav.login')}
               </Link>
-              <Link to="/band-qilish" className="btn-primary whitespace-nowrap py-2">
+              <Link to="/booking" className="btn-primary whitespace-nowrap py-2">
                 {t('nav.bookNow')}
               </Link>
             </>
@@ -186,7 +186,7 @@ export default function Navbar() {
                   </Link>
                 )}
                 <Link
-                  to="/kabinet"
+                  to="/dashboard"
                   onClick={() => setOpen(false)}
                   className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50 dark:text-gray-200 dark:active:bg-brand-900/40"
                 >
@@ -199,13 +199,13 @@ export default function Navbar() {
             ) : (
               <>
                 <Link
-                  to="/kirish"
+                  to="/login"
                   onClick={() => setOpen(false)}
                   className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50 dark:text-gray-200 dark:active:bg-brand-900/40"
                 >
                   {t('nav.login')}
                 </Link>
-                <Link to="/band-qilish" onClick={() => setOpen(false)} className="btn-primary mt-1 w-full">
+                <Link to="/booking" onClick={() => setOpen(false)} className="btn-primary mt-1 w-full">
                   {t('nav.bookNow')}
                 </Link>
               </>

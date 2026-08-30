@@ -39,27 +39,27 @@ export default function App() {
       <main className={`flex-1 ${showMobileBar ? 'pb-16 md:pb-0' : ''}`}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/xizmatlar" element={<Services />} />
+          <Route path="/services" element={<Services />} />
           <Route
-            path="/band-qilish"
+            path="/booking"
             element={
               <ProtectedRoute>
                 <Booking />
               </ProtectedRoute>
             }
           />
-          <Route path="/kirish" element={<Login />} />
-          <Route path="/royxatdan-otish" element={<Register />} />
-          <Route path="/biz-haqimizda" element={<About />} />
-          <Route path="/aloqa" element={<Contact />} />
-          <Route path="/maslahatlar" element={<Blog />} />
-          <Route path="/maslahatlar/:slug" element={<BlogPost />} />
-          <Route path="/maxfiylik" element={<Privacy />} />
-          <Route path="/foydalanish-shartlari" element={<Terms />} />
-          <Route path="/tolov-natijasi" element={<PaymentResult />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/payment-result" element={<PaymentResult />} />
 
           <Route
-            path="/kabinet"
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <Dashboard />
@@ -67,7 +67,7 @@ export default function App() {
             }
           />
           <Route
-            path="/kabinet/buyurtma/:id"
+            path="/dashboard/booking/:id"
             element={
               <ProtectedRoute>
                 <BookingDetail />
@@ -84,11 +84,11 @@ export default function App() {
             }
           >
             <Route index element={<AdminOverview />} />
-            <Route path="buyurtmalar" element={<AdminBookings />} />
-            <Route path="xizmatchilar" element={<AdminStaff />} />
-            <Route path="xizmatlar" element={<AdminServices />} />
-            <Route path="qoshimchalar" element={<AdminAddons />} />
-            <Route path="sharhlar" element={<AdminReviews />} />
+            <Route path="bookings" element={<AdminBookings />} />
+            <Route path="staff" element={<AdminStaff />} />
+            <Route path="services" element={<AdminServices />} />
+            <Route path="addons" element={<AdminAddons />} />
+            <Route path="reviews" element={<AdminReviews />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

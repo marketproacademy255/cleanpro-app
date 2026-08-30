@@ -5,7 +5,7 @@ import { apiFetch, ApiError } from '@/lib/api'
 import { COMPANY_PHONE_DISPLAY, COMPANY_PHONE_TEL, COMPANY_WHATSAPP_NUMBER, TELEGRAM_BOT_USERNAME } from '@/lib/config'
 import { useTranslation } from '@/context/LanguageContext'
 
-const HIDDEN_PREFIXES = ['/kirish', '/royxatdan-otish', '/admin']
+const HIDDEN_PREFIXES = ['/login', '/register', '/admin']
 
 interface ChatMessage {
   role: 'user' | 'assistant'

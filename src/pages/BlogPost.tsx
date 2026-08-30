@@ -10,7 +10,7 @@ export default function BlogPost() {
   const post = slug ? getBlogPost(slug) : undefined
   const { t, lang } = useTranslation()
 
-  if (!post) return <Navigate to="/maslahatlar" replace />
+  if (!post) return <Navigate to="/blog" replace />
 
   const content = getPostContent(post, lang)
 
@@ -22,7 +22,7 @@ export default function BlogPost() {
       </div>
 
       <div className="section max-w-2xl py-14">
-        <Link to="/maslahatlar" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 dark:text-brand-400">
+        <Link to="/blog" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 dark:text-brand-400">
           <ArrowLeft className="h-3.5 w-3.5" />
           {t('blog.allPosts')}
         </Link>
@@ -52,7 +52,7 @@ export default function BlogPost() {
             <h3 className="text-lg font-bold">{t('blog.ctaTitle')}</h3>
             <p className="mt-1 text-sm text-white/80">{t('blog.ctaDesc')}</p>
           </div>
-          <Link to="/band-qilish" className="rounded-md bg-white px-5 py-2.5 font-semibold text-brand-700 transition hover:bg-brand-50">
+          <Link to="/booking" className="rounded-md bg-white px-5 py-2.5 font-semibold text-brand-700 transition hover:bg-brand-50">
             {t('blog.ctaButton')}
           </Link>
         </div>

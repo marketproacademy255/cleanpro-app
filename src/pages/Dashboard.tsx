@@ -100,7 +100,7 @@ export default function Dashboard() {
 
       <div className="mt-8 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">{t('dashboard.myBookings')}</h2>
-        <Link to="/band-qilish" className="btn-primary py-2">
+        <Link to="/booking" className="btn-primary py-2">
           {t('dashboard.newBooking')}
         </Link>
       </div>
@@ -126,7 +126,7 @@ export default function Dashboard() {
               </div>
               <h3 className="mt-4 text-xl font-bold text-gray-900">{t('dashboard.emptyTitle')}</h3>
               <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500">{t('dashboard.emptyDesc')}</p>
-              <Link to="/band-qilish" className="btn-primary mt-6 inline-flex">
+              <Link to="/booking" className="btn-primary mt-6 inline-flex">
                 {t('dashboard.newBooking')}
               </Link>
             </div>
@@ -156,7 +156,7 @@ export default function Dashboard() {
           {bookings.map((b) => {
             const status = statusMeta[b.status] ?? statusMeta.pending
             return (
-              <Link to={`/kabinet/buyurtma/${b.id}`} key={b.id} className="card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Link to={`/dashboard/booking/${b.id}`} key={b.id} className="card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="font-semibold text-gray-900">
                     {b.service_types ? getServiceName(b.service_types, lang) : 'Xizmat'}
@@ -195,7 +195,7 @@ export default function Dashboard() {
                   <div className="p-4">
                     <div className="font-semibold text-gray-900">{getServiceName(s, lang)}</div>
                     <p className="mt-1 line-clamp-2 text-xs text-gray-500">{s.description_uz}</p>
-                    <Link to="/band-qilish" className="btn-secondary mt-3 inline-block w-full py-2 text-center text-sm">
+                    <Link to="/booking" className="btn-secondary mt-3 inline-block w-full py-2 text-center text-sm">
                       {t('dashboard.bookThis')}
                     </Link>
                   </div>

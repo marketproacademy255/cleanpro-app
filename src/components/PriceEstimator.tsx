@@ -51,7 +51,7 @@ export default function PriceEstimator() {
 
   function continueToBooking() {
     if (!selected) {
-      navigate('/band-qilish')
+      navigate('/booking')
       return
     }
     sessionStorage.setItem(
@@ -72,7 +72,7 @@ export default function PriceEstimator() {
         notes: '',
       }),
     )
-    navigate('/band-qilish')
+    navigate('/booking')
   }
 
   if (loading || services.length === 0) return null
