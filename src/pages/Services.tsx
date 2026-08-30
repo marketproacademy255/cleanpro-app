@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchActiveCleaners, fetchActiveServiceTypes } from '@/lib/publicData'
 import { formatUZS } from '@/lib/pricing'
-import { getServiceName } from '@/lib/i18nHelpers'
+import { getServiceDescription, getServiceName } from '@/lib/i18nHelpers'
 import type { Cleaner, ServiceType } from '@/lib/types'
 import StarRating from '@/components/StarRating'
 import { useTranslation } from '@/context/LanguageContext'
@@ -104,7 +104,6 @@ export default function Services() {
     }
   ])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -139,8 +138,6 @@ export default function Services() {
 
         {loading ? (
           <div className="mt-10 text-gray-400">{t('services.loading')}</div>
-        ) : error ? (
-          <div className="mt-10 rounded-lg bg-red-50 p-4 text-sm text-red-600">{error}</div>
         ) : (
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             {services.map((s) => (
@@ -151,7 +148,7 @@ export default function Services() {
                     {s.property_type === 'home' ? t('services.home') : t('services.office')}
                   </span>
                 </div>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{s.description_uz}</p>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{getServiceDescription(s, lang)}</p>
                 <div className="mt-4 text-2xl font-bold text-brand-700 dark:text-brand-400">
                   {s.pricing_unit === 'per_sqm' ? `${formatUZS(s.extra_unit_price)} / m²` : formatUZS(s.base_price)}
                   {s.pricing_unit === 'per_room' && (
