@@ -14,3 +14,13 @@ export function getServiceName(service: ServiceType, lang: Lang): string {
   if (lang === 'ru') return service.name_ru || service.name_en || service.name_uz
   return service.name_uz
 }
+
+/**
+ * Picks the right localized description for a ServiceType. Only
+ * description_uz is guaranteed to exist (it's the single field the Admin
+ * panel edits), so ru falls back to it when no translation was written.
+ */
+export function getServiceDescription(service: ServiceType, lang: Lang): string | null {
+  if (lang === 'ru') return service.description_ru || service.description_uz
+  return service.description_uz
+}

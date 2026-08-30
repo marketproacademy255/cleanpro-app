@@ -73,6 +73,11 @@ export interface ServiceType {
   // name_en, then name_uz (see getServiceName() in lib/i18nHelpers.ts).
   name_ru?: string | null
   description_uz: string | null
+  // Optional Russian description, mirroring name_ru: the Admin panel only
+  // edits description_uz, so rows written before/without a translation
+  // simply won't have it and fall back to description_uz (see
+  // getServiceDescription() in lib/i18nHelpers.ts).
+  description_ru?: string | null
   property_type: PropertyType
   pricing_unit: PricingUnit
   base_price: number
