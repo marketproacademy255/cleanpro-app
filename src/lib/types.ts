@@ -73,6 +73,10 @@ export interface ServiceType {
   // name_en, then name_uz (see getServiceName() in lib/i18nHelpers.ts).
   name_ru?: string | null
   description_uz: string | null
+  // Optional Russian description, mirroring name_ru: the Admin panel only
+  // edits description_uz, so records seeded before this field existed simply
+  // won't have it and readers fall back to description_uz.
+  description_ru?: string | null
   property_type: PropertyType
   pricing_unit: PricingUnit
   base_price: number
