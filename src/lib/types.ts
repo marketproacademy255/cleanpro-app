@@ -73,6 +73,7 @@ export interface ServiceType {
   // name_en, then name_uz (see getServiceName() in lib/i18nHelpers.ts).
   name_ru?: string | null
   description_uz: string | null
+  description_ru?: string | null
   property_type: PropertyType
   pricing_unit: PricingUnit
   base_price: number

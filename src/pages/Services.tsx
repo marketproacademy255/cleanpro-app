@@ -104,7 +104,7 @@ export default function Services() {
     }
   ])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
