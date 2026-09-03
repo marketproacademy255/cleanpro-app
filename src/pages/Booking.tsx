@@ -39,6 +39,19 @@ interface DraftForm {
   notes: string
 }
 
+const WORKING_HOURS = [
+  '09:00',
+  '10:00',
+  '11:00',
+  '12:00',
+  '13:00',
+  '14:00',
+  '15:00',
+  '16:00',
+  '17:00',
+  '18:00',
+]
+
 const emptyForm: DraftForm = {
   serviceId: '',
   rooms: 1,
@@ -47,7 +60,7 @@ const emptyForm: DraftForm = {
   address: '',
   city: 'Toshkent',
   date: '',
-  time: '10:00',
+  time: '09:00',
   frequency: 'once',
   tier: 'standard',
   addonCodes: [],
@@ -76,6 +89,27 @@ export default function Booking() {
   const [repairNotes, setRepairNotes] = useState('')
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+
+  const [bookedTimes, setBookedTimes] = useState<string[]>([])
+  const [loadingTimes, setLoadingTimes] = useState(false)
+
+  useEffect(() => {
+    if (!form.date) return
+    setLoadingTimes(true)
+    apiFetch<{ bookedTimes: string[] }>(`available-times?date=${form.date}`)
+      .then((res) => {
+        const booked = res.bookedTimes || []
+        setBookedTimes(booked)
+        if (booked.includes(form.time)) {
+          const firstAvailable = WORKING_HOURS.find((t) => !booked.includes(t))
+          if (firstAvailable) {
+            setForm((f) => ({ ...f, time: firstAvailable }))
+          }
+        }
+      })
+      .catch(() => setBookedTimes([]))
+      .finally(() => setLoadingTimes(false))
+  }, [form.date])
 
   // Client-side preview only, purely cosmetic - the server (bookings.ts)
   // independently re-checks prior-booking count and the profile's
@@ -394,9 +428,38 @@ export default function Booking() {
               <label className="label">{t('booking.date')}</label>
               <input type="date" className="input" value={form.date} min={new Date().toISOString().slice(0, 10)} onChange={(e) => updateField('date', e.target.value)} required />
             </div>
-            <div>
-              <label className="label">{t('booking.time')}</label>
-              <input type="time" className="input" value={form.time} onChange={(e) => updateField('time', e.target.value)} required />
+            <div className="sm:col-span-2">
+              <label className="label">{t('booking.time')} (Ish vaqti: 09:00 - 18:00)</label>
+              {!form.date ? (
+                <p className="mt-1 text-xs text-amber-600 bg-amber-50 rounded-md p-2">Avval buyurtma sanasini tanlang</p>
+              ) : loadingTimes ? (
+                <p className="mt-1 text-xs text-gray-400">Vaqtlar tekshirilmoqda...</p>
+              ) : (
+                <div className="mt-2 grid grid-cols-5 gap-2 sm:grid-cols-10">
+                  {WORKING_HOURS.map((tSlot) => {
+                    const isBooked = bookedTimes.includes(tSlot)
+                    const isSelected = form.time === tSlot
+                    return (
+                      <button
+                        type="button"
+                        key={tSlot}
+                        disabled={isBooked}
+                        onClick={() => updateField('time', tSlot)}
+                        className={`flex flex-col items-center justify-center rounded-lg border py-2 text-xs font-semibold transition ${
+                          isBooked
+                            ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 line-through'
+                            : isSelected
+                            ? 'border-brand-600 bg-brand-600 text-white shadow-sm ring-2 ring-brand-200'
+                            : 'border-gray-200 bg-white text-gray-700 hover:border-brand-300'
+                        }`}
+                      >
+                        <span>{tSlot}</span>
+                        {isBooked && <span className="text-[9px] no-underline font-normal text-red-500">Band</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
 

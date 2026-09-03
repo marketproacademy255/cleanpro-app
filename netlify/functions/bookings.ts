@@ -103,6 +103,22 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       return badRequest("Majburiy maydonlar to'ldirilmagan.")
     }
 
+    const WORKING_HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00']
+    if (!WORKING_HOURS.includes(body.time)) {
+      return badRequest("Ish vaqti faqat 09:00 dan 18:00 gacha bo'lishi kerak.")
+    }
+
+    const existingBookingSnap = await db
+      .collection('bookings')
+      .where('scheduled_date', '==', body.date)
+      .where('scheduled_time', '==', body.time)
+      .get()
+
+    const hasActiveBooking = existingBookingSnap.docs.some((doc) => doc.data().status !== 'cancelled')
+    if (hasActiveBooking) {
+      return badRequest("Ushbu vaqt allaqachon band qilingan. Iltimos, boshqa vaqtni tanlang.")
+    }
+
     const serviceSnap = await db.collection('serviceTypes').doc(body.serviceId).get()
     const service = docData<ServiceType>(serviceSnap)
     if (!service || !service.is_active) return badRequest('Xizmat turi topilmadi.')
