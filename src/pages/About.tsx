@@ -15,8 +15,8 @@ export default function About() {
 
       <div className="mt-8 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
         <img
-          src="https://images.unsplash.com/photo-1713110824336-f78c320dcf8e?auto=format&fit=crop&w=1200&q=80"
-          alt="Xizmatchi mebelni tozalamoqda"
+          src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80"
+          alt="Professional tozalash jamoasi"
           className="h-64 w-full object-cover sm:h-80"
           loading="lazy"
         />

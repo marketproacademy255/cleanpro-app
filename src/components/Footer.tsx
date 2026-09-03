@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Mail, MapPin, Phone } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
-import { COMPANY_EMAIL, COMPANY_PHONE_DISPLAY } from '@/lib/config'
+import { COMPANY_EMAIL, COMPANY_PHONE_DISPLAY, COMPANY_PHONE_TEL } from '@/lib/config'
 
 export default function Footer() {
   const { t } = useTranslation()
@@ -49,13 +49,17 @@ export default function Footer() {
         <div>
           <h4 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">{t('footer.contactTitle')}</h4>
           <ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-            <li className="flex items-center gap-2">
-              <Phone className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
-              {COMPANY_PHONE_DISPLAY}
+            <li>
+              <a href={`tel:${COMPANY_PHONE_TEL}`} className="flex items-center gap-2 hover:text-brand-700 dark:hover:text-brand-400 transition">
+                <Phone className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
+                {COMPANY_PHONE_DISPLAY}
+              </a>
             </li>
-            <li className="flex items-center gap-2">
-              <Mail className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
-              {COMPANY_EMAIL}
+            <li>
+              <a href={`mailto:${COMPANY_EMAIL}`} className="flex items-center gap-2 hover:text-brand-700 dark:hover:text-brand-400 transition">
+                <Mail className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
+                {COMPANY_EMAIL}
+              </a>
             </li>
             <li className="flex items-center gap-2">
               <MapPin className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />

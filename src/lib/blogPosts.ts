@@ -27,7 +27,7 @@ export const blogPosts: BlogPost[] = [
     slug: 'uy-tozalashda-kop-uchraydigan-xatolar',
     date: '2026-06-02',
     readMinutes: 4,
-    image: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=1200&q=80',
+    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80',
     uz: {
       title: "Uy tozalashda ko'p uchraydigan 7 ta xato",
       excerpt: "Tozalashga sarflagan vaqtingiz behuda ketmasligi uchun odamlar ko'p qiladigan xatolardan saqlaning.",
@@ -75,7 +75,7 @@ export const blogPosts: BlogPost[] = [
     slug: 'chuqur-tozalashni-qachon-buyurtma-qilish-kerak',
     date: '2026-06-18',
     readMinutes: 3,
-    image: 'https://images.unsplash.com/photo-1742483359033-13315b247c74?auto=format&fit=crop&w=1200&q=80',
+    image: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=1200&q=80',
     uz: {
       title: 'Chuqur tozalashni qachon buyurtma qilish kerak?',
       excerpt: 'Oddiy tozalash va chuqur tozalash orasidagi farq hamda qaysi holatlarda qaysi birini tanlash kerakligi.',
@@ -117,7 +117,7 @@ export const blogPosts: BlogPost[] = [
     slug: 'ofisni-muntazam-tozalash-nima-uchun-muhim',
     date: '2026-07-05',
     readMinutes: 3,
-    image: 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=1200&q=80',
+    image: 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=1200&q=80',
     uz: {
       title: 'Ofisni muntazam tozalash nima uchun muhim?',
       excerpt: "Toza ish joyi nafaqat estetik, balki xodimlar salomatligi va samaradorligiga ham bevosita ta'sir qiladi.",

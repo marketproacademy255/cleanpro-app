@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Mail, MapPin, Phone } from 'lucide-react'
 import { apiFetch, ApiError } from '@/lib/api'
-import { COMPANY_EMAIL, COMPANY_PHONE_DISPLAY } from '@/lib/config'
+import { COMPANY_EMAIL, COMPANY_PHONE_DISPLAY, COMPANY_PHONE_TEL } from '@/lib/config'
 import { useTranslation } from '@/context/LanguageContext'
 
 export default function Contact() {
@@ -33,14 +33,14 @@ export default function Contact() {
       <p className="mt-2 text-gray-500 dark:text-gray-400">{t('contact.desc')}</p>
 
       <div className="card mt-6 space-y-3 text-sm text-gray-600 dark:text-gray-300">
-        <div className="flex items-center gap-2.5">
+        <a href={`tel:${COMPANY_PHONE_TEL}`} className="flex items-center gap-2.5 hover:text-brand-700 dark:hover:text-brand-400 transition">
           <Phone className="h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
           {COMPANY_PHONE_DISPLAY}
-        </div>
-        <div className="flex items-center gap-2.5">
+        </a>
+        <a href={`mailto:${COMPANY_EMAIL}`} className="flex items-center gap-2.5 hover:text-brand-700 dark:hover:text-brand-400 transition">
           <Mail className="h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
           {COMPANY_EMAIL}
-        </div>
+        </a>
         <div className="flex items-center gap-2.5">
           <MapPin className="h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
           {t('contact.address')}
