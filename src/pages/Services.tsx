@@ -65,44 +65,7 @@ export default function Services() {
       created_at: new Date().toISOString()
     }
   ])
-  const [cleaners, setCleaners] = useState<Cleaner[]>([
-    {
-      id: 'c1',
-      profile_id: null,
-      full_name: 'Malika Karimova',
-      phone: null,
-      photo_url: null,
-      bio: null,
-      years_experience: 3,
-      rating: 4.8,
-      is_active: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 'c2',
-      profile_id: null,
-      full_name: 'Dilnoza Aliyeva',
-      phone: null,
-      photo_url: null,
-      bio: null,
-      years_experience: 5,
-      rating: 5.0,
-      is_active: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 'c3',
-      profile_id: null,
-      full_name: 'Ziyoda Rustamova',
-      phone: null,
-      photo_url: null,
-      bio: null,
-      years_experience: 2,
-      rating: 4.5,
-      is_active: true,
-      created_at: new Date().toISOString()
-    }
-  ])
+  const [cleaners, setCleaners] = useState<Cleaner[]>([])
   const [loading, setLoading] = useState(true)
   const [error] = useState<string | null>(null)
 
@@ -111,7 +74,7 @@ export default function Services() {
       try {
         const [svc, staff] = await Promise.all([fetchActiveServiceTypes(), fetchActiveCleaners()])
         if (svc.length > 0) setServices(svc)
-        if (staff.length > 0) setCleaners(staff)
+        setCleaners(staff)
       } catch (err) {
         // Fallback ishlayveradi
         console.error(err)
@@ -126,8 +89,8 @@ export default function Services() {
     <div>
       <div className="relative h-48 overflow-hidden sm:h-64">
         <img
-          src="https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=1800&q=80"
-          alt="Tozalangan zamonaviy oshxona"
+          src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1800&q=80"
+          alt="Professional tozalash xizmati"
           className="h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-brand-900/70 via-brand-900/20 to-transparent" />
@@ -176,22 +139,26 @@ export default function Services() {
           </div>
         )}
 
-        <h2 className="mt-16 text-2xl font-bold text-gray-900 dark:text-gray-100">{t('services.teamTitle')}</h2>
-        <p className="mt-2 text-gray-500 dark:text-gray-400">{t('services.teamDesc')}</p>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 md:grid-cols-4">
-          {cleaners.map((c) => (
-            <div key={c.id} className="card text-center">
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-brand-100 text-xl font-bold text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
-                {c.full_name.charAt(0)}
-              </div>
-              <div className="mt-3 font-semibold text-gray-900 dark:text-gray-100">{c.full_name}</div>
-              <div className="mt-1 flex justify-center"><StarRating rating={c.rating} /></div>
-              <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                {c.years_experience} {t('services.yearsExperience')}
-              </div>
+        {cleaners.length > 0 && (
+          <>
+            <h2 className="mt-16 text-2xl font-bold text-gray-900 dark:text-gray-100">{t('services.teamTitle')}</h2>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">{t('services.teamDesc')}</p>
+            <div className="mt-8 grid gap-6 sm:grid-cols-2 md:grid-cols-4">
+              {cleaners.map((c) => (
+                <div key={c.id} className="card text-center">
+                  <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-brand-100 text-xl font-bold text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
+                    {c.full_name.charAt(0)}
+                  </div>
+                  <div className="mt-3 font-semibold text-gray-900 dark:text-gray-100">{c.full_name}</div>
+                  <div className="mt-1 flex justify-center"><StarRating rating={c.rating} /></div>
+                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    {c.years_experience} {t('services.yearsExperience')}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
       </div>
     </div>
   )
