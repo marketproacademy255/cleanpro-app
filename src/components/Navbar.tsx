@@ -4,7 +4,7 @@ import { Menu, Moon, Phone, Sun, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useTheme } from '@/context/ThemeContext'
 import { useTranslation } from '@/context/LanguageContext'
-import { IS_DEMO } from '@/lib/config'
+import { COMPANY_PHONE_DISPLAY, COMPANY_PHONE_TEL, IS_DEMO } from '@/lib/config'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 export default function Navbar() {
@@ -167,11 +167,11 @@ export default function Navbar() {
               </Link>
             ))}
             <a
-              href="tel:+998901112233"
+              href={`tel:${COMPANY_PHONE_TEL}`}
               className="flex items-center gap-1.5 rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50 dark:text-gray-200 dark:active:bg-brand-900/40"
             >
               <Phone className="h-3.5 w-3.5" />
-              +998 90 111 22 33
+              {COMPANY_PHONE_DISPLAY}
             </a>
             <hr className="my-1 dark:border-gray-800" />
             {user ? (

@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
-import { Mail, MapPin, Phone } from 'lucide-react'
+import { ExternalLink, Mail, MapPin, Phone } from 'lucide-react'
 import { useTranslation } from '@/context/LanguageContext'
-import { COMPANY_EMAIL, COMPANY_PHONE_DISPLAY, COMPANY_PHONE_TEL } from '@/lib/config'
+import { BRANCH_LOCATIONS, COMPANY_EMAIL, COMPANY_PHONE_DISPLAY, COMPANY_PHONE_TEL } from '@/lib/config'
 
 export default function Footer() {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const services: string[] = t('footer.services')
 
   return (
@@ -50,7 +50,7 @@ export default function Footer() {
           <h4 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">{t('footer.contactTitle')}</h4>
           <ul className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
             <li>
-              <a href={`tel:${COMPANY_PHONE_TEL}`} className="flex items-center gap-2 hover:text-brand-700 dark:hover:text-brand-400 transition">
+              <a href={`tel:${COMPANY_PHONE_TEL}`} className="flex items-center gap-2 hover:text-brand-700 dark:hover:text-brand-400 transition font-medium text-gray-900 dark:text-gray-100">
                 <Phone className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
                 {COMPANY_PHONE_DISPLAY}
               </a>
@@ -61,9 +61,25 @@ export default function Footer() {
                 {COMPANY_EMAIL}
               </a>
             </li>
-            <li className="flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
-              {t('footer.address')}
+            <li className="pt-1">
+              <div className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300">
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
+                Filiallar xaritasi:
+              </div>
+              <div className="ml-5 mt-1 flex flex-col gap-1 text-xs">
+                {BRANCH_LOCATIONS.map((b) => (
+                  <a
+                    key={b.id}
+                    href={b.yandexMapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-brand-600 hover:underline dark:text-brand-400"
+                  >
+                    <span>{lang === 'ru' ? b.name_ru : lang === 'en' ? b.name_en : b.name_uz}</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                ))}
+              </div>
             </li>
           </ul>
           <div className="mt-3 flex gap-2">
