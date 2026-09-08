@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
-import { Crosshair, MapPin, Loader2, Check, ExternalLink } from 'lucide-react'
+import { Crosshair, MapPin, Loader2, Check, ExternalLink, AlertCircle } from 'lucide-react'
 
 interface MapLocationPickerProps {
   city?: string
@@ -49,6 +49,7 @@ export default function MapLocationPicker({ city = 'Toshkent', initialAddress = 
   const [geocoding, setGeocoding] = useState(false)
   const [locating, setLocating] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
+  const [gpsNotice, setGpsNotice] = useState<string | null>(null)
 
   // Initialize Leaflet map
   useEffect(() => {
@@ -139,31 +140,63 @@ export default function MapLocationPicker({ city = 'Toshkent', initialAddress = 
     }
   }
 
-  // Handle current GPS location
+  // Handle current GPS location with robust fallbacks
   function handleUseGPS() {
+    setGpsNotice(null)
     if (!navigator.geolocation) {
-      alert("Qurilmangizda geolokatsiya qo'llab-quvvatlanmaydi.")
+      setGpsNotice("Qurilmangizda geolokatsiya qo'llab-quvvatlanmaydi. Xaritaning istalgan joyiga bosib manzilni belgilashingiz mumkin.")
       return
     }
 
     setLocating(true)
+
+    const applyCoords = (lat: number, lng: number) => {
+      if (mapRef.current && markerRef.current) {
+        mapRef.current.setView([lat, lng], 16)
+        markerRef.current.setLatLng([lat, lng])
+      }
+      updateLocation(lat, lng)
+      setLocating(false)
+    }
+
+    // Attempt 1: High accuracy GPS
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const lat = pos.coords.latitude
-        const lng = pos.coords.longitude
-        if (mapRef.current && markerRef.current) {
-          mapRef.current.setView([lat, lng], 16)
-          markerRef.current.setLatLng([lat, lng])
-        }
-        updateLocation(lat, lng)
-        setLocating(false)
+        applyCoords(pos.coords.latitude, pos.coords.longitude)
       },
-      (err) => {
-        console.error(err)
-        alert("Joylashuvingizni aniqlashga ruxsat berilmadi yoki xatolik yuz berdi.")
-        setLocating(false)
+      () => {
+        // Attempt 2: Low accuracy (network/cell IP location - works on laptops/desktops)
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            applyCoords(pos.coords.latitude, pos.coords.longitude)
+          },
+          async (err) => {
+            console.warn('Geolocation fallback error:', err)
+            if (err.code === 1) {
+              setGpsNotice("Brauzeringizda joylashuvga ruxsat berilmagan. Brauzer manzil satridagi qulon/sozlash belgisini bosib joylashuvga ruxsat bering yoki xaritadagi belgini suring.")
+              setLocating(false)
+            } else {
+              // Attempt 3: IP geolocation fallback
+              try {
+                const res = await fetch('https://ipapi.co/json/')
+                if (res.ok) {
+                  const data = await res.json()
+                  if (data && data.latitude && data.longitude) {
+                    applyCoords(data.latitude, data.longitude)
+                    return
+                  }
+                }
+              } catch {
+                // Ignore fallback error
+              }
+              setGpsNotice("Joylashuvingizni avtomatik aniqlab bo'lmadi. Xaritadagi yashil belgini surib kerakli manzilni tanlang.")
+              setLocating(false)
+            }
+          },
+          { enableHighAccuracy: false, timeout: 8000 }
+        )
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 4000 }
     )
   }
 
@@ -184,6 +217,19 @@ export default function MapLocationPicker({ city = 'Toshkent', initialAddress = 
           <span>Joriy joylashuvim</span>
         </button>
       </div>
+
+      {/* Friendly GPS notice banner instead of disruptive browser alert */}
+      {gpsNotice && (
+        <div className="flex items-start justify-between gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:border-amber-800/40 dark:text-amber-300">
+          <div className="flex items-start gap-1.5">
+            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <span>{gpsNotice}</span>
+          </div>
+          <button type="button" onClick={() => setGpsNotice(null)} className="font-semibold text-amber-700 hover:underline dark:text-amber-300">
+            Yopish
+          </button>
+        </div>
+      )}
 
       {/* Map Container */}
       <div className="relative h-56 w-full overflow-hidden rounded-lg border border-gray-200 shadow-inner dark:border-gray-700">
