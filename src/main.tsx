@@ -7,6 +7,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { initAnalytics } from './lib/analytics'
 import './index.css'
+import 'leaflet/dist/leaflet.css'
 
 initAnalytics()
 

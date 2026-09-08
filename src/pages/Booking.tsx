@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, Check, X } from 'lucide-react'
+import MapLocationPicker from '@/components/MapLocationPicker'
 import { fetchActiveAddons, fetchActiveServiceTypes } from '@/lib/publicData'
 import { apiFetch, ApiError } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -28,6 +29,7 @@ interface DraftForm {
   areaSqm: string
   floor: string
   address: string
+  addressNotes: string
   city: string
   date: string
   time: string
@@ -58,6 +60,7 @@ const emptyForm: DraftForm = {
   areaSqm: '',
   floor: '',
   address: '',
+  addressNotes: '',
   city: 'Toshkent',
   date: '',
   time: '09:00',
@@ -264,7 +267,7 @@ export default function Booking() {
           rooms: form.rooms,
           areaSqm: form.areaSqm ? Number(form.areaSqm) : null,
           floor: form.floor ? Number(form.floor) : null,
-          address: form.address,
+          address: form.addressNotes ? `${form.address} (Mo'ljal/Izoh: ${form.addressNotes})` : form.address,
           city: form.city,
           date: form.date,
           time: form.time,
@@ -400,19 +403,51 @@ export default function Booking() {
                 <p className="mt-1 text-xs text-gray-400">{t('booking.floorHelp')}</p>
               </div>
             )}
-            <div className="sm:col-span-2">
-              <label className="label">{t('booking.address')}</label>
-              <input
-                className="input"
-                placeholder={t('booking.addressPlaceholder')}
-                value={form.address}
-                onChange={(e) => updateField('address', e.target.value)}
-                required
+            <div className="sm:col-span-2 space-y-3">
+              <div>
+                <label className="label">{t('booking.city')}</label>
+                <select
+                  className="input"
+                  value={form.city}
+                  onChange={(e) => updateField('city', e.target.value)}
+                >
+                  <option value="Toshkent">Toshkent</option>
+                  <option value="Samarqand">Samarqand</option>
+                </select>
+              </div>
+
+              {/* Interactive Leaflet Map location picker */}
+              <MapLocationPicker
+                city={form.city}
+                initialAddress={form.address}
+                onLocationSelect={(loc) => {
+                  updateField('address', loc.address)
+                }}
               />
-            </div>
-            <div>
-              <label className="label">{t('booking.city')}</label>
-              <input className="input" value={form.city} onChange={(e) => updateField('city', e.target.value)} />
+
+              <div>
+                <label className="label">{t('booking.address')}</label>
+                <input
+                  className="input"
+                  placeholder={t('booking.addressPlaceholder')}
+                  value={form.address}
+                  onChange={(e) => updateField('address', e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="label">Manzilga qo'shimcha izoh / Mo'ljallash (pod'yezd, etaj, kod)</label>
+                <input
+                  className="input"
+                  placeholder="Mo'ljal: korzinka ro'parasidagi bino, 2-pod'yezd, 4-qavat, kod: 1234..."
+                  value={form.addressNotes}
+                  onChange={(e) => updateField('addressNotes', e.target.value)}
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  Xizmatchimiz uyingizni osongina topib borishi uchun qo'shimcha ko'rsatma yozishingiz mumkin.
+                </p>
+              </div>
             </div>
             {!isRepair && (
               <div>
