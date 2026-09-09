@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
-import { Crosshair, MapPin, Loader2, Check, ExternalLink, AlertCircle } from 'lucide-react'
+import { Crosshair, MapPin, Loader2, Check, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react'
 
 interface MapLocationPickerProps {
   city?: string
@@ -140,7 +140,7 @@ export default function MapLocationPicker({ city = 'Toshkent', initialAddress = 
     }
   }
 
-  // Handle current GPS location with robust fallbacks
+  // Handle current GPS location with generous timeout and fallback
   function handleUseGPS() {
     setGpsNotice(null)
     if (!navigator.geolocation) {
@@ -159,44 +159,35 @@ export default function MapLocationPicker({ city = 'Toshkent', initialAddress = 
       setLocating(false)
     }
 
-    // Attempt 1: High accuracy GPS
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         applyCoords(pos.coords.latitude, pos.coords.longitude)
       },
-      () => {
-        // Attempt 2: Low accuracy (network/cell IP location - works on laptops/desktops)
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            applyCoords(pos.coords.latitude, pos.coords.longitude)
-          },
-          async (err) => {
-            console.warn('Geolocation fallback error:', err)
-            if (err.code === 1) {
-              setGpsNotice("Brauzeringizda joylashuvga ruxsat berilmagan. Brauzer manzil satridagi qulon/sozlash belgisini bosib joylashuvga ruxsat bering yoki xaritadagi belgini suring.")
-              setLocating(false)
-            } else {
-              // Attempt 3: IP geolocation fallback
-              try {
-                const res = await fetch('https://ipapi.co/json/')
-                if (res.ok) {
-                  const data = await res.json()
-                  if (data && data.latitude && data.longitude) {
-                    applyCoords(data.latitude, data.longitude)
-                    return
-                  }
-                }
-              } catch {
-                // Ignore fallback error
+      async (err) => {
+        console.warn('Geolocation error:', err)
+        if (err.code === 1) {
+          // Permission denied / permission setting changed
+          setGpsNotice("Brauzerda ruxsat o'zgartirildi. Iltimos tepadagi yashil 'Reload' tugmasini bosing yoki sahifani yangilang (F5).")
+          setLocating(false)
+        } else {
+          // IP fallback if GPS unavailable
+          try {
+            const res = await fetch('https://ipapi.co/json/')
+            if (res.ok) {
+              const data = await res.json()
+              if (data && data.latitude && data.longitude) {
+                applyCoords(data.latitude, data.longitude)
+                return
               }
-              setGpsNotice("Joylashuvingizni avtomatik aniqlab bo'lmadi. Xaritadagi yashil belgini surib kerakli manzilni tanlang.")
-              setLocating(false)
             }
-          },
-          { enableHighAccuracy: false, timeout: 8000 }
-        )
+          } catch {
+            // Ignore IP fetch error
+          }
+          setGpsNotice("Joylashuvni avtomatik aniqlab bo'lmadi. Xaritaning istalgan nuqtasiga bosib manzilni belgilang.")
+          setLocating(false)
+        }
       },
-      { enableHighAccuracy: true, timeout: 4000 }
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 }
     )
   }
 
@@ -218,15 +209,19 @@ export default function MapLocationPicker({ city = 'Toshkent', initialAddress = 
         </button>
       </div>
 
-      {/* Friendly GPS notice banner instead of disruptive browser alert */}
+      {/* Friendly GPS notice banner */}
       {gpsNotice && (
         <div className="flex items-start justify-between gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:border-amber-800/40 dark:text-amber-300">
           <div className="flex items-start gap-1.5">
             <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
             <span>{gpsNotice}</span>
           </div>
-          <button type="button" onClick={() => setGpsNotice(null)} className="font-semibold text-amber-700 hover:underline dark:text-amber-300">
-            Yopish
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="shrink-0 inline-flex items-center gap-1 font-semibold text-brand-700 underline hover:text-brand-800 dark:text-brand-300"
+          >
+            <RefreshCw className="h-3 w-3" /> Sahifani yangilash
           </button>
         </div>
       )}
