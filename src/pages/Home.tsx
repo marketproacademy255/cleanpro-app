@@ -223,8 +223,8 @@ export default function Home() {
         <div className="section grid items-center gap-12 md:grid-cols-2">
           <Reveal direction="left" className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
             <img
-              src="https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=1200&q=80"
-              alt="Tozalangan yorug' xona"
+              src="https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?auto=format&fit=crop&w=1200&q=80"
+              alt="Professional tozalash xizmati"
               className="h-full w-full object-cover"
               loading="lazy"
             />

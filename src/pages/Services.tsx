@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Check } from 'lucide-react'
 import { fetchActiveCleaners, fetchActiveServiceTypes } from '@/lib/publicData'
 import { formatUZS } from '@/lib/pricing'
 import { getServiceName } from '@/lib/i18nHelpers'
-import type { Cleaner, ServiceType } from '@/lib/types'
+import type { BookingTier, Cleaner, ServiceType } from '@/lib/types'
 import StarRating from '@/components/StarRating'
 import { useTranslation } from '@/context/LanguageContext'
 
 export default function Services() {
   const { t, lang } = useTranslation()
+  const tierLabels = t('pricing.tierLabels') as Record<BookingTier, string>
+  const tierPerks = t('pricing.tierPerks') as Record<BookingTier, string[]>
   const [services, setServices] = useState<ServiceType[]>([
     {
       id: 'demo-1',
@@ -127,46 +130,140 @@ export default function Services() {
       </div>
 
       <div className="section py-10">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('services.heroTitle')}</h1>
-        <p className="mt-2 max-w-2xl text-gray-500 dark:text-gray-400">{t('services.heroDesc')}</p>
-
         {loading ? (
-          <div className="mt-10 text-gray-400">{t('services.loading')}</div>
+          <div className="mt-6 text-gray-400">{t('services.loading')}</div>
         ) : error ? (
-          <div className="mt-10 rounded-lg bg-red-50 p-4 text-sm text-red-600">{error}</div>
+          <div className="mt-6 rounded-lg bg-red-50 p-4 text-sm text-red-600">{error}</div>
         ) : (
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            {services.map((s) => (
-              <div key={s.id} className="card">
-                <div className="flex items-start justify-between">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{getServiceName(s, lang)}</h3>
-                  <span className="tag bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
-                    {s.property_type === 'home' ? t('services.home') : t('services.office')}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{s.description_uz}</p>
-                <div className="mt-4 text-2xl font-bold text-brand-700 dark:text-brand-400">
-                  {s.pricing_unit === 'per_sqm' ? `${formatUZS(s.extra_unit_price)} / m²` : formatUZS(s.base_price)}
+          <>
+            <div className="grid gap-6 md:grid-cols-2">
+              {services.map((s) => (
+                <div key={s.id} className="card">
+                  <div className="flex items-start justify-between">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{getServiceName(s, lang)}</h3>
+                    <span className="tag bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
+                      {s.property_type === 'home' ? t('services.home') : t('services.office')}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{s.description_uz}</p>
+                  <div className="mt-4 text-2xl font-bold text-brand-700 dark:text-brand-400">
+                    {s.pricing_unit === 'per_sqm' ? `${formatUZS(s.extra_unit_price)} / m²` : formatUZS(s.base_price)}
+                    {s.pricing_unit === 'per_room' && (
+                      <span className="ml-1 text-sm font-normal text-gray-400">{t('services.startingPrice')}</span>
+                    )}
+                  </div>
                   {s.pricing_unit === 'per_room' && (
-                    <span className="ml-1 text-sm font-normal text-gray-400">{t('services.startingPrice')}</span>
+                    <div className="mt-1 text-xs text-gray-400">
+                      + {formatUZS(s.extra_unit_price)} {t('services.perExtraRoom')}
+                    </div>
                   )}
+                  {s.pricing_unit === 'per_sqm' && (
+                    <div className="mt-1 text-xs text-gray-400">
+                      {t('services.min')} {formatUZS(s.min_price)}
+                    </div>
+                  )}
+                  <Link to="/booking" className="btn-primary mt-5 w-full">
+                    {t('services.bookThis')}
+                  </Link>
                 </div>
-                {s.pricing_unit === 'per_room' && (
-                  <div className="mt-1 text-xs text-gray-400">
-                    + {formatUZS(s.extra_unit_price)} {t('services.perExtraRoom')}
-                  </div>
-                )}
-                {s.pricing_unit === 'per_sqm' && (
-                  <div className="mt-1 text-xs text-gray-400">
-                    {t('services.min')} {formatUZS(s.min_price)}
-                  </div>
-                )}
-                <Link to="/booking" className="btn-primary mt-5 w-full">
-                  {t('services.bookThis')}
-                </Link>
+              ))}
+            </div>
+
+            {/* Tariff Tiers section with example pricing */}
+            <div className="mt-14 rounded-2xl border border-gray-200 bg-gray-50/50 p-6 dark:border-gray-800 dark:bg-gray-900/40 sm:p-8">
+              <div className="text-center max-w-2xl mx-auto">
+                <span className="tag bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+                  {t('services.tariffsTitle')}
+                </span>
+                <h2 className="mt-3 text-2xl font-extrabold text-gray-900 dark:text-gray-100 sm:text-3xl">
+                  {t('services.tariffsTitle')}
+                </h2>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  {t('services.tariffsDesc')}
+                </p>
               </div>
-            ))}
-          </div>
+
+              <div className="mt-8 grid gap-6 md:grid-cols-3">
+                {/* Standart Tariff */}
+                <div className="card flex flex-col justify-between border-gray-200 shadow-sm dark:border-gray-800">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{tierLabels.standard}</h3>
+                      <span className="tag bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">1.0x</span>
+                    </div>
+                    <div className="mt-4">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{t('services.example1Room')}</span>
+                      <div className="text-3xl font-extrabold text-brand-700 dark:text-brand-400">{formatUZS(150000)}</div>
+                    </div>
+                    <ul className="mt-6 space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
+                      {tierPerks.standard.map((perk) => (
+                        <li key={perk} className="flex items-start gap-2">
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
+                          <span>{perk}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <Link to="/booking" className="btn-primary mt-6 w-full py-2.5 text-center text-sm font-semibold">
+                    {t('services.bookThis')}
+                  </Link>
+                </div>
+
+                {/* Premium Tariff */}
+                <div className="card relative flex flex-col justify-between border-brand-500 ring-2 ring-brand-500/20 shadow-md dark:border-brand-600">
+                  <span className="absolute -top-3 right-4 rounded-full bg-brand-600 px-3 py-0.5 text-[11px] font-bold text-white uppercase tracking-wider">
+                    Popular
+                  </span>
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{tierLabels.premium}</h3>
+                      <span className="tag bg-brand-100 text-brand-700 dark:bg-brand-900/60 dark:text-brand-300">+30%</span>
+                    </div>
+                    <div className="mt-4">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{t('services.example1Room')}</span>
+                      <div className="text-3xl font-extrabold text-brand-700 dark:text-brand-400">{formatUZS(195000)}</div>
+                    </div>
+                    <ul className="mt-6 space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
+                      {tierPerks.premium.map((perk) => (
+                        <li key={perk} className="flex items-start gap-2">
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
+                          <span>{perk}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <Link to="/booking" className="btn-primary mt-6 w-full py-2.5 text-center text-sm font-semibold">
+                    {t('services.bookThis')}
+                  </Link>
+                </div>
+
+                {/* Elite Tariff */}
+                <div className="card flex flex-col justify-between border-amber-200 bg-amber-50/20 shadow-sm dark:border-amber-900/40 dark:bg-amber-950/10">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{tierLabels.elite}</h3>
+                      <span className="tag bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">+65%</span>
+                    </div>
+                    <div className="mt-4">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{t('services.example1Room')}</span>
+                      <div className="text-3xl font-extrabold text-amber-600 dark:text-amber-400">{formatUZS(247500)}</div>
+                    </div>
+                    <ul className="mt-6 space-y-2.5 text-xs text-gray-600 dark:text-gray-300">
+                      {tierPerks.elite.map((perk) => (
+                        <li key={perk} className="flex items-start gap-2">
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                          <span>{perk}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <Link to="/booking" className="btn-primary mt-6 w-full bg-amber-600 hover:bg-amber-700 py-2.5 text-center text-sm font-semibold border-amber-600">
+                    {t('services.bookThis')}
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </>
         )}
 
         {cleaners.length > 0 && (
