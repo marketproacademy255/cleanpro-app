@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
-import { Crosshair, MapPin, Loader2, Check, ExternalLink } from 'lucide-react'
+import { Crosshair, MapPin, Loader2, Check, Search, AlertCircle } from 'lucide-react'
 
 interface MapLocationPickerProps {
   city?: string
@@ -35,7 +35,18 @@ const customIcon = L.divIcon({
   iconAnchor: [18, 18],
 })
 
-export default function MapLocationPicker({ city = 'Toshkent', initialAddress = '', onLocationSelect }: MapLocationPickerProps) {
+interface SearchResult {
+  place_id: number
+  display_name: string
+  lat: string
+  lon: string
+}
+
+export default function MapLocationPicker({
+  city = 'Toshkent',
+  initialAddress = '',
+  onLocationSelect,
+}: MapLocationPickerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const markerRef = useRef<L.Marker | null>(null)
@@ -49,6 +60,13 @@ export default function MapLocationPicker({ city = 'Toshkent', initialAddress = 
   const [geocoding, setGeocoding] = useState(false)
   const [locating, setLocating] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
+  const [gpsError, setGpsError] = useState<string | null>(null)
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Initialize Leaflet map
   useEffect(() => {
@@ -76,20 +94,17 @@ export default function MapLocationPicker({ city = 'Toshkent', initialAddress = 
     markerRef.current = marker
     mapRef.current = map
 
-    // Handle marker drag end
+    // Handle marker drag end (explicit user action)
     marker.on('dragend', () => {
       const latLng = marker.getLatLng()
-      updateLocation(latLng.lat, latLng.lng)
+      updateLocation(latLng.lat, latLng.lng, true)
     })
 
-    // Handle click on map
+    // Handle click on map (explicit user action)
     map.on('click', (e: L.LeafletMouseEvent) => {
       marker.setLatLng(e.latlng)
-      updateLocation(e.latlng.lat, e.latlng.lng)
+      updateLocation(e.latlng.lat, e.latlng.lng, true)
     })
-
-    // Initial reverse geocode
-    updateLocation(initialCoords[0], initialCoords[1])
 
     return () => {
       map.remove()
@@ -104,81 +119,136 @@ export default function MapLocationPicker({ city = 'Toshkent', initialAddress = 
     if (mapRef.current && markerRef.current) {
       mapRef.current.setView(targetCenter, 14)
       markerRef.current.setLatLng(targetCenter)
-      updateLocation(targetCenter[0], targetCenter[1])
+      setCoords({ lat: targetCenter[0], lng: targetCenter[1] })
     }
   }, [city])
 
   // Reverse geocode via OpenStreetMap Nominatim
-  async function updateLocation(lat: number, lng: number) {
+  async function updateLocation(lat: number, lng: number, notifyParent = true) {
     setCoords({ lat, lng })
     setGeocoding(true)
-    setConfirmed(false)
+    setConfirmed(notifyParent)
+    setGpsError(null)
 
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=uz`)
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=uz`,
+      )
       if (res.ok) {
         const data = await res.json()
         if (data && data.display_name) {
           const parts = data.display_name.split(', ')
-          // Keep first 4 main parts for cleaner address string
           const formatted = parts.slice(0, 4).join(', ')
           setAddressText(formatted)
-          onLocationSelect({ address: formatted, lat, lng })
+          if (notifyParent) {
+            onLocationSelect({ address: formatted, lat, lng })
+          }
         } else {
           const fallback = `${city}, (${lat.toFixed(5)}, ${lng.toFixed(5)})`
           setAddressText(fallback)
-          onLocationSelect({ address: fallback, lat, lng })
+          if (notifyParent) {
+            onLocationSelect({ address: fallback, lat, lng })
+          }
         }
       }
     } catch {
       const fallback = `${city}, (${lat.toFixed(5)}, ${lng.toFixed(5)})`
       setAddressText(fallback)
-      onLocationSelect({ address: fallback, lat, lng })
+      if (notifyParent) {
+        onLocationSelect({ address: fallback, lat, lng })
+      }
     } finally {
       setGeocoding(false)
     }
   }
 
-  // Direct Browser Native Geolocation Call - triggers Chrome native "wants to Know your location" prompt directly
-  function handleUseGPS() {
-    setLocating(true)
+  // Handle Search Input Change
+  function handleSearchChange(q: string) {
+    setSearchQuery(q)
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
 
-    const applyCoords = (lat: number, lng: number) => {
-      if (mapRef.current && markerRef.current) {
-        mapRef.current.setView([lat, lng], 16)
-        markerRef.current.setLatLng([lat, lng])
-      }
-      updateLocation(lat, lng)
-      setLocating(false)
+    if (q.trim().length < 3) {
+      setSearchResults([])
+      setIsSearching(false)
+      return
     }
 
+    setIsSearching(true)
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+            `${city} ${q}`,
+          )}&countrycodes=uz&accept-language=uz&limit=5`,
+        )
+        if (res.ok) {
+          const data: SearchResult[] = await res.json()
+          setSearchResults(data)
+        }
+      } catch {
+        setSearchResults([])
+      } finally {
+        setIsSearching(false)
+      }
+    }, 350)
+  }
+
+  // Handle selecting a search result
+  function handleSelectResult(item: SearchResult) {
+    const lat = parseFloat(item.lat)
+    const lng = parseFloat(item.lon)
+
+    if (mapRef.current && markerRef.current) {
+      mapRef.current.flyTo([lat, lng], 16)
+      markerRef.current.setLatLng([lat, lng])
+    }
+
+    const parts = item.display_name.split(', ')
+    const formatted = parts.slice(0, 4).join(', ')
+    setAddressText(formatted)
+    setCoords({ lat, lng })
+    setSearchResults([])
+    setSearchQuery('')
+    setConfirmed(true)
+    onLocationSelect({ address: formatted, lat, lng })
+  }
+
+  // Direct Browser Native Geolocation Call
+  function handleUseGPS() {
+    setLocating(true)
+    setGpsError(null)
+
     if (!navigator.geolocation) {
+      setGpsError("Qurilmangizda GPS qo'llab-quvvatlanmaydi.")
       setLocating(false)
       return
     }
 
-    // Trigger Chrome native prompt directly
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        applyCoords(pos.coords.latitude, pos.coords.longitude)
-      },
-      async () => {
-        // If GPS is unavailable (e.g. desktop), fallback to IP geolocation seamlessly
-        try {
-          const res = await fetch('https://ipapi.co/json/')
-          if (res.ok) {
-            const data = await res.json()
-            if (data && data.latitude && data.longitude) {
-              applyCoords(data.latitude, data.longitude)
-              return
-            }
-          }
-        } catch {
-          // Ignore
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+
+        if (mapRef.current && markerRef.current) {
+          mapRef.current.flyTo([lat, lng], 16)
+          markerRef.current.setLatLng([lat, lng])
         }
+        updateLocation(lat, lng, true)
         setLocating(false)
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      (err) => {
+        setLocating(false)
+        if (err.code === err.PERMISSION_DENIED) {
+          setGpsError(
+            "Brauzerda GPS joylashuvga ruxsat berilmadi. Iltimos, xaritadan o'zingiz belgilang yoki qidiruvdan foydalaning.",
+          )
+        } else {
+          setGpsError(
+            "GPS orqali joylashuvni aniqlab bo'lmadi. Iltimos, xaritadan belgilang.",
+          )
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     )
   }
 
@@ -187,21 +257,60 @@ export default function MapLocationPicker({ city = 'Toshkent', initialAddress = 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 font-semibold text-sm text-gray-900 dark:text-gray-100">
           <MapPin className="h-4 w-4 text-brand-600 dark:text-brand-400" />
-          <span>Xaritadan aniq manzilingizni belgilang:</span>
+          <span>Xaritadan manzilni belgilang:</span>
         </div>
         <button
           type="button"
           onClick={handleUseGPS}
           disabled={locating}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-brand-700 shadow-sm transition hover:bg-brand-50 disabled:opacity-50 dark:bg-gray-800 dark:text-brand-400 dark:hover:bg-gray-700"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50 disabled:opacity-50 dark:bg-gray-800 dark:text-brand-400 dark:hover:bg-gray-700"
         >
           {locating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crosshair className="h-3.5 w-3.5" />}
-          <span>Joriy joylashuvim</span>
+          <span>Joriy joylashuvim (GPS)</span>
         </button>
       </div>
 
+      {gpsError && (
+        <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+          <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+          <span>{gpsError}</span>
+        </div>
+      )}
+
+      {/* Address Search Box */}
+      <div className="relative">
+        <div className="relative flex items-center">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder={`${city} bo'ylab ko'cha, mahalla yoki mo'ljalni qidiring...`}
+            className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-8 text-xs text-gray-900 shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          />
+          <Search className="absolute left-2.5 h-4 w-4 text-gray-400" />
+          {isSearching && <Loader2 className="absolute right-2.5 h-4 w-4 animate-spin text-brand-600" />}
+        </div>
+
+        {/* Search Results Dropdown */}
+        {searchResults.length > 0 && (
+          <div className="absolute z-[1000] mt-1 w-full rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+            {searchResults.map((item) => (
+              <button
+                key={item.place_id}
+                type="button"
+                onClick={() => handleSelectResult(item)}
+                className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-brand-50 dark:text-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-2"
+              >
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-brand-600" />
+                <span className="truncate">{item.display_name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Map Container */}
-      <div className="relative h-56 w-full overflow-hidden rounded-lg border border-gray-200 shadow-inner dark:border-gray-700">
+      <div className="relative h-60 w-full overflow-hidden rounded-lg border border-gray-200 shadow-inner dark:border-gray-700">
         <div ref={mapContainerRef} className="h-full w-full z-0" />
         <div className="absolute bottom-2 left-2 z-[1000] rounded bg-white/90 px-2 py-1 text-[11px] font-mono text-gray-600 shadow backdrop-blur dark:bg-gray-900/90 dark:text-gray-300">
           {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
@@ -217,35 +326,34 @@ export default function MapLocationPicker({ city = 'Toshkent', initialAddress = 
               <span className="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-normal">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Manzil aniqlanmoqda…
               </span>
+            ) : addressText ? (
+              addressText
             ) : (
-              addressText || `${city}, Koordinata: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
+              <span className="text-gray-400 font-normal text-xs">
+                Xaritadagi nuqtaga bosing, belgini suring yoki yuqorida qidiring.
+              </span>
             )}
           </p>
-          {!geocoding && (
+          {addressText && !geocoding && (
             <button
               type="button"
-              onClick={() => setConfirmed(true)}
-              className={`shrink-0 inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition ${
+              onClick={() => {
+                setConfirmed(true)
+                onLocationSelect({ address: addressText, lat: coords.lat, lng: coords.lng })
+              }}
+              className={`shrink-0 inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold transition ${
                 confirmed
                   ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
                   : 'bg-brand-600 text-white hover:bg-brand-700'
               }`}
             >
               <Check className="h-3 w-3" />
-              {confirmed ? 'Manzil tasdiqlandi' : 'Shu manzilni tanlash'}
+              {confirmed ? 'Tasdiqlandi' : 'Shu manzilni tanlash'}
             </button>
           )}
         </div>
-        <div className="mt-2 text-[11px] text-gray-400 dark:text-gray-500 flex items-center justify-between">
-          <span>💡 Xaritadagi belgini surib yoki istalgan nuqtaga bosib aniqroq joyni tanlashingiz mumkin.</span>
-          <a
-            href={`https://yandex.uz/maps/?pt=${coords.lng},${coords.lat}&z=17&l=map`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-0.5 text-brand-600 hover:underline dark:text-brand-400"
-          >
-            Yandex Maps <ExternalLink className="h-2.5 w-2.5" />
-          </a>
+        <div className="mt-2 text-[11px] text-gray-400 dark:text-gray-500">
+          💡 Xaritadagi belgini surib yoki istalgan nuqtaga bosib aniq joyni tanlashingiz mumkin.
         </div>
       </div>
     </div>
