@@ -60,7 +60,7 @@ export interface Cleaner {
   created_at: string
 }
 
-export type ServiceCategory = 'cleaning' | 'repair'
+export type ServiceCategory = 'cleaning'
 
 export interface ServiceType {
   id: string

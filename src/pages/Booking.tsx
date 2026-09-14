@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Camera, Check, X } from 'lucide-react'
+import { Check } from 'lucide-react'
 import MapLocationPicker from '@/components/MapLocationPicker'
 import { fetchActiveAddons, fetchActiveServiceTypes } from '@/lib/publicData'
 import { apiFetch, ApiError } from '@/lib/api'
@@ -12,14 +12,11 @@ import {
   formatUZS,
   FIRST_BOOKING_DISCOUNT,
   REFERRAL_REFERRED_DISCOUNT,
-  REPAIR_TIER_MULTIPLIER,
   TIER_MULTIPLIER,
 } from '@/lib/pricing'
-import { fileToProjectPhotoDataUrl, MAX_PROJECT_PHOTOS, ProjectPhotoTooLargeError } from '@/lib/projectPhoto'
-import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, ServiceCategory, ServiceType } from '@/lib/types'
+import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, ServiceType } from '@/lib/types'
 
 const TIERS: BookingTier[] = ['standard', 'premium', 'elite']
-const CATEGORIES: ServiceCategory[] = ['cleaning', 'repair']
 
 export const DRAFT_KEY = 'primestandard_booking_draft'
 
@@ -83,15 +80,10 @@ export default function Booking() {
   const [services, setServices] = useState<ServiceType[]>([])
   const [addons, setAddons] = useState<Addon[]>([])
   const [form, setForm] = useState<DraftForm>(emptyForm)
-  const [category, setCategory] = useState<ServiceCategory>('cleaning')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isFirstBooking, setIsFirstBooking] = useState(false)
-  const [repairPhotos, setRepairPhotos] = useState<string[]>([])
-  const [repairNotes, setRepairNotes] = useState('')
-  const [photoError, setPhotoError] = useState<string | null>(null)
-  const [uploadingPhoto, setUploadingPhoto] = useState(false)
 
   const [bookedTimes, setBookedTimes] = useState<string[]>([])
   const [loadingTimes, setLoadingTimes] = useState(false)
@@ -139,8 +131,6 @@ export default function Booking() {
         if (draftRaw) {
           const draft: DraftForm = JSON.parse(draftRaw)
           setForm({ ...draft, floor: draft.floor ?? '' })
-          const draftService = serviceList.find((s) => s.id === draft.serviceId)
-          if (draftService) setCategory((draftService.category as ServiceCategory) ?? 'cleaning')
           sessionStorage.removeItem(DRAFT_KEY)
         } else {
           const firstCleaning = serviceList.find((s) => (s.category ?? 'cleaning') === 'cleaning')
@@ -164,31 +154,22 @@ export default function Booking() {
   }, [profile])
 
   const servicesInCategory = useMemo(
-    () => services.filter((s) => (s.category ?? 'cleaning') === category),
-    [services, category],
+    () => services.filter((s) => (s.category ?? 'cleaning') === 'cleaning'),
+    [services],
   )
 
-  // Keep the selected service (and a couple of category-only settings) in
-  // sync with the active category tab - if the user switches tabs and the
-  // currently-selected service isn't in the new list, fall back to the
-  // first service of that category. Renovation work is one-off (not a
-  // recurring weekly/monthly visit like cleaning), so the frequency picker
-  // makes no sense there - reset it to "once" whenever repair is selected.
   useEffect(() => {
     if (!services.length) return
     const stillValid = servicesInCategory.some((s) => s.id === form.serviceId)
-    setForm((f) => ({
-      ...f,
-      ...(!stillValid && servicesInCategory[0] ? { serviceId: servicesInCategory[0].id } : {}),
-      ...(category === 'repair' ? { frequency: 'once' as BookingFrequency } : {}),
-    }))
+    if (!stillValid && servicesInCategory[0]) {
+      setForm((f) => ({ ...f, serviceId: servicesInCategory[0].id }))
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, services])
+  }, [services])
 
   const selectedService = services.find((s) => s.id === form.serviceId)
   const selectedAddons = addons.filter((a) => form.addonCodes.includes(a.code))
   const showFloorInput = !!selectedService?.floor_multiplier
-  const isRepair = category === 'repair'
 
   const priceBreakdown = useMemo(() => {
     if (!selectedService) return null
@@ -203,28 +184,6 @@ export default function Booking() {
       extraDiscountRate,
     })
   }, [selectedService, form.rooms, form.areaSqm, form.floor, selectedAddons, form.frequency, form.tier, extraDiscountRate])
-
-  async function handlePhotoSelected(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    setPhotoError(null)
-    setUploadingPhoto(true)
-    try {
-      const dataUrl = await fileToProjectPhotoDataUrl(file)
-      setRepairPhotos((prev) => [...prev, dataUrl].slice(0, MAX_PROJECT_PHOTOS))
-    } catch (err) {
-      setPhotoError(
-        err instanceof ProjectPhotoTooLargeError || err instanceof Error ? err.message : t('booking.repairPhotoError'),
-      )
-    } finally {
-      setUploadingPhoto(false)
-    }
-  }
-
-  function removePhoto(index: number) {
-    setRepairPhotos((prev) => prev.filter((_, i) => i !== index))
-  }
 
   function updateField<K extends keyof DraftForm>(key: K, value: DraftForm[K]) {
     setForm((f) => ({ ...f, [key]: value }))
@@ -277,8 +236,6 @@ export default function Booking() {
           contactName: form.contactName,
           contactPhone: form.contactPhone,
           notes: form.notes,
-          repairPhotos: isRepair ? repairPhotos : undefined,
-          repairNotes: isRepair ? repairNotes : undefined,
         }),
       })
       navigate(`/dashboard/booking/${data.id}`)
@@ -289,9 +246,9 @@ export default function Booking() {
     }
   }
 
-  const tierLabels = (isRepair ? t('pricing.repairTierLabels') : t('pricing.tierLabels')) as Record<BookingTier, string>
-  const tierPerks = (isRepair ? t('pricing.repairTierPerks') : t('pricing.tierPerks')) as Record<BookingTier, string[]>
-  const tierMultiplierMap = isRepair ? REPAIR_TIER_MULTIPLIER : TIER_MULTIPLIER
+  const tierLabels = t('pricing.tierLabels') as Record<BookingTier, string>
+  const tierPerks = t('pricing.tierPerks') as Record<BookingTier, string[]>
+  const tierMultiplierMap = TIER_MULTIPLIER
   const frequencyLabels = t('pricing.frequencyLabels') as Record<BookingFrequency, string>
 
   if (loading) {
@@ -306,25 +263,6 @@ export default function Booking() {
       <form onSubmit={handleSubmit} className="mt-8 grid gap-8 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <div className="card">
-            <label className="label">{t('booking.categoryLabel')}</label>
-            <div className="flex gap-2">
-              {CATEGORIES.map((c) => (
-                <button
-                  type="button"
-                  key={c}
-                  onClick={() => setCategory(c)}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    category === c ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {c === 'cleaning' ? t('booking.categoryCleaning') : t('booking.categoryRepair')}
-                </button>
-              ))}
-            </div>
-
-            {isRepair && (
-              <p className="mt-4 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-700">{t('booking.repairPromo')}</p>
-            )}
 
             <label className="label mt-5">{t('booking.serviceType')}</label>
             {servicesInCategory.length === 0 ? (
@@ -449,16 +387,14 @@ export default function Booking() {
                 </p>
               </div>
             </div>
-            {!isRepair && (
-              <div>
-                <label className="label">{t('booking.frequency')}</label>
-                <select className="input" value={form.frequency} onChange={(e) => updateField('frequency', e.target.value as BookingFrequency)}>
-                  {Object.entries(frequencyLabels).map(([value, label]) => (
-                    <option key={value} value={value}>{label as string}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <div>
+              <label className="label">{t('booking.frequency')}</label>
+              <select className="input" value={form.frequency} onChange={(e) => updateField('frequency', e.target.value as BookingFrequency)}>
+                {Object.entries(frequencyLabels).map(([value, label]) => (
+                  <option key={value} value={value}>{label as string}</option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="label">{t('booking.date')}</label>
               <input type="date" className="input" value={form.date} min={new Date().toISOString().slice(0, 10)} onChange={(e) => updateField('date', e.target.value)} required />
@@ -499,7 +435,7 @@ export default function Booking() {
           </div>
 
           <div className="card">
-            <label className="label">{isRepair ? t('booking.repairTier') : t('booking.tier')}</label>
+            <label className="label">{t('booking.tier')}</label>
             <div className="grid gap-3 sm:grid-cols-3">
               {TIERS.map((tier) => {
                 const pct = Math.round((tierMultiplierMap[tier] - 1) * 100)
@@ -548,45 +484,6 @@ export default function Booking() {
               ))}
             </div>
           </div>
-
-          {isRepair && (
-            <div className="card">
-              <label className="label">{t('booking.repairPhotosLabel')}</label>
-              <p className="text-xs text-gray-400">{t('booking.repairPhotosDesc')}</p>
-              <div className="mt-3 flex flex-wrap gap-3">
-                {repairPhotos.map((src, i) => (
-                  <div key={i} className="relative h-24 w-24 overflow-hidden rounded-lg border border-gray-200">
-                    <img src={src} alt="" className="h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(i)}
-                      aria-label={t('booking.repairPhotosRemove')}
-                      className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-white"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-                {repairPhotos.length < MAX_PROJECT_PHOTOS && (
-                  <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-gray-300 text-xs text-gray-400 hover:border-brand-400 hover:text-brand-600">
-                    <Camera className="h-5 w-5" />
-                    {uploadingPhoto ? t('booking.submitting') : t('booking.repairPhotosAdd')}
-                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoSelected} disabled={uploadingPhoto} />
-                  </label>
-                )}
-              </div>
-              {photoError && <p className="mt-2 text-xs text-red-600">{photoError}</p>}
-
-              <label className="label mt-4">{t('booking.repairNotesLabel')}</label>
-              <textarea
-                className="input"
-                rows={3}
-                placeholder={t('booking.repairNotesPlaceholder')}
-                value={repairNotes}
-                onChange={(e) => setRepairNotes(e.target.value)}
-              />
-            </div>
-          )}
 
           <div className="card grid gap-4 sm:grid-cols-2">
             <div>

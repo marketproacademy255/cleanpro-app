@@ -126,71 +126,58 @@ const serviceTypes = [
     image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80',
   },
   {
-    // Repair/renovation category (added per business request): newly built
-    // multi-story residential buildings need interior finishing work, not
-    // just cleaning. These services use floor_multiplier since higher
-    // floors cost more to service (material/equipment lifting, logistics).
-    //
-    // extra_unit_price/base_price below target the "Standart" tier
-    // (REPAIR_TIER_MULTIPLIER.premium = 1.0x, see src/lib/pricing.ts) - the
-    // Kosmetik tier is 0.6x that and Evroremont is 1.9x, roughly matching
-    // real Tashkent renovation market bands (cosmetic vs. capital vs.
-    // design-grade repair), per market research done August 2026.
-    code: 'repair_painting',
-    name_uz: "Bo'yash ishlari",
-    name_en: 'Painting Services',
-    name_ru: 'Малярные работы',
+    code: 'window_cleaning',
+    name_uz: 'Deraza va oynalarni yuvish',
+    name_en: 'Window Cleaning',
+    name_ru: 'Мойка окон',
     description_uz:
-      "Devor va shift bo'yash: shpaklash, primer va yakuniy bo'yoq qatlami. Yangi qurilgan xonadonlar uchun ideal.",
+      "Oyna va derazalarni ichki hamda tashqi tomondan professional tozalash, ramalar va tokchalarni yuvish.",
     property_type: 'home',
     pricing_unit: 'per_sqm',
     base_price: 0,
-    extra_unit_price: 32000,
-    min_price: 500000,
+    extra_unit_price: 15000,
+    min_price: 150000,
     multiplier: 1.0,
     is_active: true,
     sort_order: 6,
-    category: 'repair',
-    floor_multiplier: 0.03,
-    image: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=800&q=80',
+    category: 'cleaning',
+    image: 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=800&q=80',
   },
   {
-    code: 'repair_furniture',
-    name_uz: 'Mebel yig\'ish va o\'rnatish',
-    name_en: 'Furniture Assembly & Installation',
-    name_ru: 'Сборка и установка мебели',
+    code: 'kitchen_deep',
+    name_uz: 'Oshxonani chuqur tozalash',
+    name_en: 'Kitchen Deep Clean',
+    name_ru: 'Генеральная уборка кухни',
     description_uz:
-      "Oshxona va shkaf garniturasi, karavot, stol-stul yig'ish hamda o'rnatish. Tajribali ustalar jamoasi.",
+      "Oshxona yuzalari, gaz plitasi, duxovka va barcha yog' izlarini maxsus professional vositalar bilan tozalash.",
     property_type: 'home',
     pricing_unit: 'flat',
-    base_price: 450000,
+    base_price: 180000,
     extra_unit_price: 0,
-    min_price: 450000,
+    min_price: 180000,
     multiplier: 1.0,
     is_active: true,
     sort_order: 7,
-    category: 'repair',
-    floor_multiplier: 0.03,
-    image: 'https://images.unsplash.com/photo-1581539250439-c96689b516dd?auto=format&fit=crop&w=800&q=80',
+    category: 'cleaning',
+    image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80',
   },
   {
-    code: 'repair_renovation',
-    name_uz: "To'liq remont",
-    name_en: 'Full Renovation',
-    name_ru: 'Полный ремонт',
+    code: 'carpet_clean',
+    name_uz: 'Gilamlarni kimyoviy tozalash',
+    name_en: 'Carpet & Upholstery Cleaning',
+    name_ru: 'Химчистка ковров',
     description_uz:
-      "Yangi qavatli uylar uchun to'liq ichki remont: elektr, santexnika, gips karton, pol qoplamasi va bo'yash ishlari birgalikda.",
+      "Gilamlar va pol qoplamalarini maxsus ekstraktor uskunalari hamda gipoallergenik vositalar yordamida chuqur tozalash.",
     property_type: 'home',
     pricing_unit: 'per_sqm',
     base_price: 0,
-    extra_unit_price: 150000,
-    min_price: 4000000,
+    extra_unit_price: 15000,
+    min_price: 150000,
     multiplier: 1.0,
     is_active: true,
     sort_order: 8,
-    category: 'repair',
-    floor_multiplier: 0.04,
-    image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80',
+    category: 'cleaning',
+    image: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=800&q=80',
   },
 ]
 

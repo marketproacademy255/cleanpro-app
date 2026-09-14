@@ -84,7 +84,7 @@ export default function Login() {
     <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-2">
       <div className="relative hidden lg:block">
         <img
-          src="https://images.unsplash.com/photo-1647381518264-97ff1835026f?auto=format&fit=crop&w=1200&q=80"
+          src="https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?auto=format&fit=crop&w=1200&q=80"
           alt="Xizmatchi uyni tozalamoqda"
           className="h-full w-full object-cover"
         />

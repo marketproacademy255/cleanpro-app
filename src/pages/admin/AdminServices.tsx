@@ -21,69 +21,6 @@ const emptyForm = {
   floor_multiplier: 0,
 }
 
-// One-click starter data for the Repair/Renovation category, matching
-// scripts/seed-firestore.mjs (the local seed script requires Firebase admin
-// credentials most people only have set up in Netlify's env vars, not
-// locally - this button lets an already-logged-in admin create the same
-// rows straight from the live site instead). Safe to click more than once:
-// createRepairTemplates() below skips any code that already exists.
-const REPAIR_TEMPLATES: (typeof emptyForm)[] = [
-  {
-    code: 'repair_painting',
-    name_uz: "Bo'yash ishlari",
-    name_en: 'Painting Services',
-    name_ru: 'Малярные работы',
-    description_uz:
-      "Devor va shift bo'yash: shpaklash, primer va yakuniy bo'yoq qatlami. Yangi qurilgan xonadonlar uchun ideal.",
-    property_type: 'home',
-    pricing_unit: 'per_sqm',
-    base_price: 0,
-    extra_unit_price: 32000,
-    min_price: 500000,
-    multiplier: 1,
-    sort_order: 6,
-    category: 'repair',
-    image: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=800&q=80',
-    floor_multiplier: 0.03,
-  },
-  {
-    code: 'repair_furniture',
-    name_uz: "Mebel yig'ish va o'rnatish",
-    name_en: 'Furniture Assembly & Installation',
-    name_ru: 'Сборка и установка мебели',
-    description_uz:
-      "Oshxona va shkaf garniturasi, karavot, stol-stul yig'ish hamda o'rnatish. Tajribali ustalar jamoasi.",
-    property_type: 'home',
-    pricing_unit: 'flat',
-    base_price: 450000,
-    extra_unit_price: 0,
-    min_price: 450000,
-    multiplier: 1,
-    sort_order: 7,
-    category: 'repair',
-    image: 'https://images.unsplash.com/photo-1581539250439-c96689b516dd?auto=format&fit=crop&w=800&q=80',
-    floor_multiplier: 0.03,
-  },
-  {
-    code: 'repair_renovation',
-    name_uz: "To'liq remont",
-    name_en: 'Full Renovation',
-    name_ru: 'Полный ремонт',
-    description_uz:
-      "Yangi qavatli uylar uchun to'liq ichki remont: elektr, santexnika, gips karton, pol qoplamasi va bo'yash ishlari birgalikda.",
-    property_type: 'home',
-    pricing_unit: 'per_sqm',
-    base_price: 0,
-    extra_unit_price: 150000,
-    min_price: 4000000,
-    multiplier: 1,
-    sort_order: 8,
-    category: 'repair',
-    image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80',
-    floor_multiplier: 0.04,
-  },
-]
-
 export default function AdminServices() {
   const [services, setServices] = useState<ServiceType[]>([])
   const [loading, setLoading] = useState(true)
@@ -91,7 +28,6 @@ export default function AdminServices() {
   const [form, setForm] = useState(emptyForm)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
-  const [loadingTemplates, setLoadingTemplates] = useState(false)
 
   async function load() {
     const data = await apiFetch<ServiceType[]>('admin-services').catch(() => [])
@@ -130,20 +66,6 @@ export default function AdminServices() {
     setSavingId(null)
   }
 
-  async function createRepairTemplates() {
-    setLoadingTemplates(true)
-    try {
-      const existingCodes = new Set(services.map((s) => s.code))
-      for (const tpl of REPAIR_TEMPLATES) {
-        if (existingCodes.has(tpl.code)) continue
-        await apiFetch('admin-services', { method: 'POST', body: JSON.stringify(tpl) }).catch(() => null)
-      }
-      await load()
-    } finally {
-      setLoadingTemplates(false)
-    }
-  }
-
   async function toggleActive(s: ServiceType) {
     updateLocal(s.id, { is_active: !s.is_active })
     await apiFetch(`admin-services?id=${s.id}`, {
@@ -180,18 +102,6 @@ export default function AdminServices() {
       <p className="mt-2 text-sm text-gray-500">
         Narxlarni istalgan vaqtda tahrirlashingiz mumkin — o'zgarishlar saytda darhol ko'rinadi.
       </p>
-
-      {!services.some((s) => s.category === 'repair') && (
-        <div className="mt-6 flex flex-col items-start gap-3 rounded-lg bg-brand-50 p-4 text-sm text-brand-700 sm:flex-row sm:items-center sm:justify-between">
-          <span>
-            Ta'mirlash (bo'yash, mebel o'rnatish, to'liq remont) xizmatlari hali qo'shilmagan — Booking sahifasidagi
-            "Ta'mirlash" bo'limi shu tugma bosilgunga qadar bo'sh ko'rinadi.
-          </span>
-          <button type="button" onClick={createRepairTemplates} disabled={loadingTemplates} className="btn-primary shrink-0 py-2 text-sm">
-            {loadingTemplates ? 'Yuklanmoqda…' : "Ta'mirlash xizmatlarini qo'shish"}
-          </button>
-        </div>
-      )}
 
       {services.length === 0 && (
         <div className="mt-6 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
@@ -232,14 +142,7 @@ export default function AdminServices() {
             </div>
             <div>
               <label className="label text-xs">Yo'nalish</label>
-              <select
-                className="input"
-                value={s.category ?? 'cleaning'}
-                onChange={(e) => updateLocal(s.id, { category: e.target.value as ServiceCategory })}
-              >
-                <option value="cleaning">Tozalash</option>
-                <option value="repair">Ta'mirlash</option>
-              </select>
+              <input className="input bg-gray-50" disabled value="Tozalash" />
             </div>
             <div className="sm:col-span-3">
               <label className="label text-xs">Rasm URL manzili</label>
@@ -319,17 +222,14 @@ export default function AdminServices() {
         </div>
         <div>
           <label className="label text-xs">Yo'nalish</label>
-          <select className="input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as ServiceCategory })}>
-            <option value="cleaning">Tozalash</option>
-            <option value="repair">Ta'mirlash</option>
-          </select>
+          <input className="input bg-gray-50" disabled value="Tozalash" />
         </div>
         <div className="sm:col-span-2">
           <label className="label text-xs">Rasm URL manzili</label>
           <input className="input" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://…" />
         </div>
         <div>
-          <label className="label text-xs">Qavat narxi (%/qavat, faqat ta'mirlash uchun)</label>
+          <label className="label text-xs">Qavat narxi (%/qavat)</label>
           <input
             type="number"
             step="0.01"

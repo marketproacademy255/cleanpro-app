@@ -144,7 +144,7 @@ const translations = {
         {
           title: 'Qurilishdan keyingi tozalash',
           desc: "Yangi qurilgan ko'p qavatli uylar va ofislar uchun to'liq remontdan keyingi tozalash.",
-          img: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=800&q=80',
+          img: 'https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?auto=format&fit=crop&w=800&q=80',
         },
       ],
       detail: 'Batafsil',
@@ -651,7 +651,7 @@ const translations = {
         {
           title: 'Post-Construction Cleaning',
           desc: 'Complete post-renovation cleanup for new apartments and offices.',
-          img: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=800&q=80',
+          img: 'https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?auto=format&fit=crop&w=800&q=80',
         },
       ],
       detail: 'Details',
@@ -1143,22 +1143,22 @@ const translations = {
         {
           title: 'Стандартная уборка',
           desc: 'Повседневная чистота — уборка пыли, санузел и кухня.',
-          img: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=800&q=80',
+          img: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80',
         },
         {
           title: 'Генеральная уборка',
           desc: 'Уборка при переезде или сезонная генеральная уборка.',
-          img: 'https://images.unsplash.com/photo-1742483359033-13315b247c74?auto=format&fit=crop&w=800&q=80',
+          img: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=800&q=80',
         },
         {
           title: 'Уборка офисов',
           desc: 'Регулярная или разовая уборка вашего рабочего места.',
-          img: 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&w=800&q=80',
+          img: 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=800&q=80',
         },
         {
           title: 'Уборка после строительства',
           desc: 'Полная уборка после ремонта для новостроек и офисов.',
-          img: 'https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=800&q=80',
+          img: 'https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?auto=format&fit=crop&w=800&q=80',
         },
       ],
       detail: 'Подробнее',

@@ -26,6 +26,7 @@ export default function Services() {
       multiplier: 1,
       is_active: true,
       sort_order: 1,
+      category: 'cleaning',
       created_at: new Date().toISOString()
     },
     {
@@ -44,6 +45,7 @@ export default function Services() {
       multiplier: 1.2,
       is_active: true,
       sort_order: 2,
+      category: 'cleaning',
       created_at: new Date().toISOString()
     },
     {
@@ -62,6 +64,26 @@ export default function Services() {
       multiplier: 1,
       is_active: true,
       sort_order: 3,
+      category: 'cleaning',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'demo-4',
+      code: 'window_cleaning',
+      name_uz: 'Deraza va oynalarni yuvish',
+      name_ru: 'Мойка окон',
+      name_en: 'Window Cleaning',
+      description_uz: 'Oyna va derazalarni ichki hamda tashqi tomondan professional tozalash.',
+      description_ru: 'Профессиональная мойка окон и витражей.',
+      property_type: 'home',
+      pricing_unit: 'per_sqm',
+      base_price: 0,
+      extra_unit_price: 15000,
+      min_price: 150000,
+      multiplier: 1,
+      is_active: true,
+      sort_order: 4,
+      category: 'cleaning',
       created_at: new Date().toISOString()
     }
   ])
@@ -73,10 +95,12 @@ export default function Services() {
     async function load() {
       try {
         const [svc, staff] = await Promise.all([fetchActiveServiceTypes(), fetchActiveCleaners()])
-        if (svc.length > 0) setServices(svc)
+        if (svc.length > 0) {
+          // Filter out any leftover repair services from DB
+          setServices(svc.filter((s) => (s.category ?? 'cleaning') === 'cleaning'))
+        }
         setCleaners(staff)
       } catch (err) {
-        // Fallback ishlayveradi
         console.error(err)
       } finally {
         setLoading(false)
@@ -87,16 +111,22 @@ export default function Services() {
 
   return (
     <div>
-      <div className="relative h-48 overflow-hidden sm:h-64">
-        <img
-          src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1800&q=80"
-          alt="Professional tozalash xizmati"
-          className="h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-900/70 via-brand-900/20 to-transparent" />
+      <div className="section pt-6">
+        <div className="relative h-56 sm:h-72 w-full overflow-hidden rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800">
+          <img
+            src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1800&q=80"
+            alt="Professional tozalash xizmati"
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-900/80 via-brand-900/30 to-transparent" />
+          <div className="absolute bottom-6 left-6 right-6 text-white">
+            <h1 className="text-2xl font-extrabold sm:text-4xl">{t('services.heroTitle')}</h1>
+            <p className="mt-2 max-w-xl text-xs sm:text-sm text-white/90">{t('services.heroDesc')}</p>
+          </div>
+        </div>
       </div>
 
-      <div className="section py-14">
+      <div className="section py-10">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('services.heroTitle')}</h1>
         <p className="mt-2 max-w-2xl text-gray-500 dark:text-gray-400">{t('services.heroDesc')}</p>
 

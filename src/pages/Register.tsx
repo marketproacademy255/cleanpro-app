@@ -45,7 +45,7 @@ export default function Register() {
     <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-2">
       <div className="relative hidden lg:block">
         <img
-          src="https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=1200&q=80"
+          src="https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=1200&q=80"
           alt="Tozalangan yorug' xona"
           className="h-full w-full object-cover"
         />
