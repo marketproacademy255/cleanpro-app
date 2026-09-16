@@ -8,12 +8,12 @@ import {
   MapPin,
   MessageCircleQuestion,
   ShieldCheck,
-  Sparkles,
   Star,
   Zap,
 } from 'lucide-react'
 import DiscountBanner from '@/components/DiscountBanner'
 import PriceEstimator from '@/components/PriceEstimator'
+import BeforeAfterSlider from '@/components/BeforeAfterSlider'
 import Reveal from '@/components/Reveal'
 import StarRating from '@/components/StarRating'
 import TeamPreview from '@/components/TeamPreview'
@@ -21,8 +21,6 @@ import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
 import { fetchApprovedReviews } from '@/lib/publicData'
 import type { Review } from '@/lib/types'
-
-const TRUST_ICONS = [ShieldCheck, CreditCard, Zap, Sparkles]
 
 const TASHKENT_DISTRICTS = [
   'Bektemir',
@@ -52,7 +50,6 @@ export default function Home() {
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
     : 0
 
-  const trustPoints: { label: string; desc: string }[] = t('home.trustPoints')
   const steps: { title: string; desc: string }[] = t('home.steps')
   const serviceTiles: { title: string; desc: string; img: string }[] = t('home.serviceTiles')
   const whyUs: string[] = t('home.whyUs')
@@ -83,7 +80,14 @@ export default function Home() {
         </div>
 
         <div className="section relative max-w-2xl py-20 md:py-28">
-          <span className="tag bg-white/10 text-white">{t('home.heroTag')}</span>
+          {/* Social Proof Trust Badge */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-4 backdrop-blur-sm shadow-sm">
+            <span className="flex text-amber-400">★★★★★</span>
+            <span>4.9/5 (1,200+ xonadonlar ishonchi)</span>
+          </div>
+          <div>
+            <span className="tag bg-white/10 text-white">{t('home.heroTag')}</span>
+          </div>
           <h1 className="mt-4 text-4xl font-extrabold leading-tight text-white md:text-5xl">
             {t('home.heroTitle')} <span className="text-brand-100">{t('home.heroTitleHighlight')}</span>
           </h1>
@@ -136,23 +140,30 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trust bar */}
-      <section className="border-b border-gray-100 bg-white py-10 dark:border-gray-800 dark:bg-[#0c1512]">
-        <div className="section grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {trustPoints.map((t2, i) => {
-            const Icon = TRUST_ICONS[i] ?? ShieldCheck
-            return (
-              <div key={t2.label} className="flex items-start gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
-                  <Icon className="h-5 w-5" />
-                </span>
-                <div>
-                  <div className="font-semibold text-gray-900 dark:text-gray-100">{t2.label}</div>
-                  <div className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{t2.desc}</div>
-                </div>
-              </div>
-            )
-          })}
+      {/* 3 Trust Pillars */}
+      <section className="bg-slate-50 py-8 border-y border-slate-200 dark:border-slate-800 dark:bg-[#0c1512]">
+        <div className="section grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-2xl shrink-0">🛡️</div>
+            <div>
+              <h4 className="font-semibold text-slate-900 dark:text-white text-base">Tekshirilgan xodimlar</h4>
+              <p className="text-sm text-slate-500 dark:text-slate-400">100% shaxsiyati tekshirilgan mutaxassislar</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+            <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-2xl shrink-0">✨</div>
+            <div>
+              <h4 className="font-semibold text-slate-900 dark:text-white text-base">Qoniqish kafolati</h4>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Yoqmasa, qayta bepul tozalab beramiz</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+            <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-2xl shrink-0">💳</div>
+            <div>
+              <h4 className="font-semibold text-slate-900 dark:text-white text-base">Shaffof narxlar</h4>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Hech qanday yashirin komissiyalarsiz</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -179,6 +190,84 @@ export default function Home() {
           <p className="mx-auto mt-2 max-w-xl text-center text-gray-500 dark:text-gray-400">{t('home.estimateDesc')}</p>
           <div className="mt-8">
             <PriceEstimator />
+          </div>
+        </div>
+      </section>
+
+      {/* Interactive Before/After Comparison */}
+      <section className="bg-white py-16 dark:bg-[#0c1512]">
+        <div className="section max-w-4xl">
+          <div className="text-center mb-10">
+            <span className="tag bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">Real Natijalar</span>
+            <h2 className="mt-3 text-3xl font-bold text-gray-900 dark:text-gray-100">Oldin va Keyin Taqqoslash</h2>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">Slayderni surib tozalash sifatiga o'zingiz baho bering</p>
+          </div>
+          <BeforeAfterSlider
+            beforeImg="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80"
+            afterImg="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80"
+            beforeLabel="Tozalashdan oldin"
+            afterLabel="Tozalashdan keyin"
+          />
+        </div>
+      </section>
+
+      {/* 3-Tier Pricing Section (Silicon Valley Style with MOST POPULAR highlight) */}
+      <section className="bg-gray-50 py-16 dark:bg-[#0f1a15]">
+        <div className="section">
+          <div className="text-center max-w-xl mx-auto mb-12">
+            <span className="tag bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">Shaffof Tariflar</span>
+            <h2 className="mt-3 text-3xl font-bold text-gray-900 dark:text-gray-100">Mos Tarifni Tanlang</h2>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">Hech qanday yashirin komissiyalarsiz kafolatlangan narxlar</p>
+          </div>
+          <div className="grid gap-8 lg:grid-cols-3 items-stretch max-w-6xl mx-auto pt-4">
+            {/* Standart */}
+            <div className="card flex flex-col justify-between border border-gray-200 dark:border-gray-800">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Standart tozalash</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Kundalik tozalik va tartib uchun ideal</p>
+                <div className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-gray-100">180,000 UZS <span className="text-sm font-normal text-gray-500">/dan</span></div>
+                <ul className="mt-6 space-y-3 text-sm text-gray-600 dark:text-gray-300">
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Pol va gilam yuvish</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Changlarni artish</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Oshxona va hammom dezinfeksiyasi</li>
+                </ul>
+              </div>
+              <Link to="/booking" className="btn-secondary mt-8 w-full text-center">Tanlash</Link>
+            </div>
+
+            {/* Mukammal (Deep Clean) - MOST POPULAR */}
+            <div className="card relative flex flex-col justify-between border-2 border-brand-500 ring-2 ring-brand-500 shadow-xl shadow-brand-500/10 lg:scale-105 bg-white dark:bg-[#12211b] z-10">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-purple-600 to-brand-600 px-4 py-1 text-xs font-bold text-white uppercase tracking-wider shadow-md">
+                ✨ ENG MASHHUR (MOST POPULAR)
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-2">Mukammal tozalash (Deep Clean)</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Chuqur kir va qatlamlardan xalos bo'lish</p>
+                <div className="mt-6 text-3xl font-extrabold text-brand-600 dark:text-brand-400">280,000 UZS <span className="text-sm font-normal text-gray-500">/dan</span></div>
+                <ul className="mt-6 space-y-3 text-sm text-gray-600 dark:text-gray-300">
+                  <li className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Standart tozalashdagi barcha amallar</li>
+                  <li className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Mebellar orti va qiyin joylar</li>
+                  <li className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Kafel choklari va yog' dog'larini yo'qotish</li>
+                  <li className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Derazalarni ichki/tashqi yuvish</li>
+                </ul>
+              </div>
+              <Link to="/booking" className="btn-primary mt-8 w-full text-center py-3">Hoziroq bron qilish</Link>
+            </div>
+
+            {/* Move-in / out */}
+            <div className="card flex flex-col justify-between border border-gray-200 dark:border-gray-800">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Ko'chib kirish / chiqish</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Yangi uyga ko'chish yoki ta'mirdan so'ng</p>
+                <div className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-gray-100">350,000 UZS <span className="text-sm font-normal text-gray-500">/dan</span></div>
+                <ul className="mt-6 space-y-3 text-sm text-gray-600 dark:text-gray-300">
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> To'liq tozalash va zararsizlantirish</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Barcha shkaflar va tortmalarni ichidan yuvish</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Qurilish va bo'yoq qoldiqlarini tozalash</li>
+                </ul>
+              </div>
+              <Link to="/booking" className="btn-secondary mt-8 w-full text-center">Tanlash</Link>
+            </div>
           </div>
         </div>
       </section>
