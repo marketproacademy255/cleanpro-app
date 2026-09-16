@@ -1,25 +1,62 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, X } from 'lucide-react'
+import { useTranslation } from '@/context/LanguageContext'
 
-interface NotificationItem {
+interface NotificationRaw {
   id: string
-  city: string
-  district: string
+  city: Record<string, string>
+  district: Record<string, string>
   name: string
-  service: string
-  timeAgo: string
+  service: Record<string, string>
+  minutesAgo: number
 }
 
-const SAMPLE_NOTIFICATIONS: NotificationItem[] = [
-  { id: '1', city: 'Toshkent', district: 'Yunusobod', name: 'Jamshid', service: 'Standart tozalash', timeAgo: '2 daqiqa oldin' },
-  { id: '2', city: 'Toshkent', district: 'Mirzo Ulugʼbek', name: 'Malika', service: 'Mukammal (Deep Clean)', timeAgo: '5 daqiqa oldin' },
-  { id: '3', city: 'Samarqand', district: 'Markaz', name: 'Sardor', service: 'Ko\'chib kirish tozalashi', timeAgo: '12 daqiqa oldin' },
-  { id: '4', city: 'Toshkent', district: 'Chilonzor', name: 'Dilnoza', service: 'Standart tozalash', timeAgo: '18 daqiqa oldin' },
-  { id: '5', city: 'Toshkent', district: 'Yakkasaroy', name: 'Anvar', service: 'Mukammal (Deep Clean)', timeAgo: '25 daqiqa oldin' },
+const SAMPLE_NOTIFICATIONS: NotificationRaw[] = [
+  {
+    id: '1',
+    city: { uz: 'Toshkent', en: 'Tashkent', ru: 'Ташкент' },
+    district: { uz: 'Yunusobod', en: 'Yunusabad', ru: 'Юнусабад' },
+    name: 'Jamshid',
+    service: { uz: 'Standart tozalash', en: 'Standard Cleaning', ru: 'Стандартная уборка' },
+    minutesAgo: 2,
+  },
+  {
+    id: '2',
+    city: { uz: 'Toshkent', en: 'Tashkent', ru: 'Ташкент' },
+    district: { uz: 'Mirzo Ulugʼbek', en: 'Mirzo Ulugbek', ru: 'Мирзо Улугбек' },
+    name: 'Malika',
+    service: { uz: 'Mukammal (Deep Clean)', en: 'Deep Cleaning', ru: 'Генеральная уборка' },
+    minutesAgo: 5,
+  },
+  {
+    id: '3',
+    city: { uz: 'Samarqand', en: 'Samarkand', ru: 'Самарканд' },
+    district: { uz: 'Markaz', en: 'Center', ru: 'Центр' },
+    name: 'Sardor',
+    service: { uz: "Ko'chib kirish tozalashi", en: 'Move-in Cleaning', ru: 'Уборка при переезде' },
+    minutesAgo: 12,
+  },
+  {
+    id: '4',
+    city: { uz: 'Toshkent', en: 'Tashkent', ru: 'Ташкент' },
+    district: { uz: 'Chilonzor', en: 'Chilanzar', ru: 'Чиланзар' },
+    name: 'Dilnoza',
+    service: { uz: 'Standart tozalash', en: 'Standard Cleaning', ru: 'Стандартная уборка' },
+    minutesAgo: 18,
+  },
+  {
+    id: '5',
+    city: { uz: 'Toshkent', en: 'Tashkent', ru: 'Ташкент' },
+    district: { uz: 'Yakkasaroy', en: 'Yakkasaray', ru: 'Яккасарай' },
+    name: 'Anvar',
+    service: { uz: 'Mukammal (Deep Clean)', en: 'Deep Cleaning', ru: 'Генеральная уборка' },
+    minutesAgo: 25,
+  },
 ]
 
 export default function LiveNotification() {
+  const { lang } = useTranslation()
   const [index, setIndex] = useState(0)
   const [visible, setVisible] = useState(false)
   const [dismissed, setDismissed] = useState(false)
@@ -59,7 +96,14 @@ export default function LiveNotification() {
 
   if (dismissed) return null
 
-  const current = SAMPLE_NOTIFICATIONS[index]
+  const raw = SAMPLE_NOTIFICATIONS[index]
+  const currentCity = raw.city[lang] || raw.city.uz
+  const currentDistrict = raw.district[lang] || raw.district.uz
+  const currentService = raw.service[lang] || raw.service.uz
+
+  const actionText = lang === 'en' ? 'just booked' : lang === 'ru' ? 'забронировал(а)' : 'bron qildi'
+  const timeAgoText = lang === 'en' ? `${raw.minutesAgo} minutes ago` : lang === 'ru' ? `${raw.minutesAgo} мин. назад` : `${raw.minutesAgo} daqiqa oldin`
+  const closeAria = lang === 'en' ? 'Close' : lang === 'ru' ? 'Закрыть' : 'Yopish'
 
   return (
     <div className="fixed bottom-20 left-4 z-40 max-w-sm pointer-events-auto md:bottom-6">
@@ -78,13 +122,13 @@ export default function LiveNotification() {
 
             <div className="flex-1 text-xs">
               <div className="font-semibold text-slate-900 dark:text-white">
-                {current.city}, {current.district}: <span className="font-normal">{current.name}</span>
+                {currentCity}, {currentDistrict}: <span className="font-normal">{raw.name}</span>
               </div>
               <div className="mt-0.5 font-medium text-emerald-600 dark:text-emerald-400">
-                "{current.service}" <span className="text-slate-500 dark:text-slate-400">bron qildi</span>
+                "{currentService}" <span className="text-slate-500 dark:text-slate-400">{actionText}</span>
               </div>
               <div className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
-                ⚡ {current.timeAgo}
+                ⚡ {timeAgoText}
               </div>
             </div>
 
@@ -94,7 +138,7 @@ export default function LiveNotification() {
                 setDismissed(true)
               }}
               className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-              aria-label="Yopish"
+              aria-label={closeAria}
             >
               <X className="h-3.5 w-3.5" />
             </button>

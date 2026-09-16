@@ -102,7 +102,7 @@ export default function Home() {
             {/* Social Proof Trust Badge */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-4 backdrop-blur-sm shadow-sm">
               <span className="flex text-amber-400">★★★★★</span>
-              <span>4.9/5 (1,200+ xonadonlar ishonchi)</span>
+              <span>{t('home.socialProofBadge')}</span>
             </div>
             <div>
               <span className="tag bg-white/10 text-white">{t('home.heroTag')}</span>
@@ -159,12 +159,12 @@ export default function Home() {
             <div className="rounded-3xl border border-white/20 bg-white/15 p-6 backdrop-blur-xl shadow-2xl text-white">
               <div className="flex items-center gap-2 border-b border-white/10 pb-4">
                 <Calculator className="h-5 w-5 text-emerald-400" />
-                <h3 className="font-bold text-lg">Bir zumda narx hisoblash</h3>
+                <h3 className="font-bold text-lg">{t('home.instantQuoteTitle')}</h3>
               </div>
 
               <div className="mt-5 space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-white/80 block mb-1.5">Xonalar soni</label>
+                  <label className="text-xs font-semibold text-white/80 block mb-1.5">{t('home.roomsLabel')}</label>
                   <div className="grid grid-cols-5 gap-1.5">
                     {[1, 2, 3, 4, 5].map((n) => (
                       <button
@@ -187,7 +187,7 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-white/80 block mb-1.5">Tozalash turi</label>
+                  <label className="text-xs font-semibold text-white/80 block mb-1.5">{t('home.typeLabel')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -201,8 +201,8 @@ export default function Home() {
                           : 'bg-white/10 text-white hover:bg-white/20'
                       }`}
                     >
-                      <div className="font-bold">Standart</div>
-                      <div className="text-[10px] opacity-80">Kundalik tozalik</div>
+                      <div className="font-bold">{t('home.standardTitle')}</div>
+                      <div className="text-[10px] opacity-80">{t('home.standardSub')}</div>
                     </button>
                     <button
                       type="button"
@@ -216,15 +216,15 @@ export default function Home() {
                           : 'bg-white/10 text-white hover:bg-white/20'
                       }`}
                     >
-                      <div className="font-bold">Mukammal (Deep)</div>
-                      <div className="text-[10px] opacity-80">Chuqur tozalash</div>
+                      <div className="font-bold">{t('home.deepTitle')}</div>
+                      <div className="text-[10px] opacity-80">{t('home.deepSub')}</div>
                     </button>
                   </div>
                 </div>
 
                 <div className="rounded-2xl bg-black/20 p-4 mt-4 flex items-center justify-between">
                   <div>
-                    <div className="text-[11px] text-white/70">Taxminiy narx:</div>
+                    <div className="text-[11px] text-white/70">{t('home.estimatedPriceLabel')}</div>
                     <div className="text-2xl font-extrabold text-emerald-300">
                       {formatUZS(heroEstimatedPrice)}
                     </div>
@@ -234,7 +234,7 @@ export default function Home() {
                     onClick={handleHeroBook}
                     className="btn-primary py-2.5 px-4 text-xs font-bold shadow-lg"
                   >
-                    Bron qilish →
+                    {t('home.bookNowBtn')} →
                   </button>
                 </div>
               </div>
@@ -249,22 +249,22 @@ export default function Home() {
           <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 shadow-sm">
             <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-2xl shrink-0">🛡️</div>
             <div>
-              <h4 className="font-semibold text-slate-900 dark:text-white text-base">Tekshirilgan xodimlar</h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400">100% shaxsiyati tekshirilgan mutaxassislar</p>
+              <h4 className="font-semibold text-slate-900 dark:text-white text-base">{t('home.pillar1Title')}</h4>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t('home.pillar1Desc')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 shadow-sm">
             <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-2xl shrink-0">✨</div>
             <div>
-              <h4 className="font-semibold text-slate-900 dark:text-white text-base">Qoniqish kafolati</h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Yoqmasa, qayta bepul tozalab beramiz</p>
+              <h4 className="font-semibold text-slate-900 dark:text-white text-base">{t('home.pillar2Title')}</h4>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t('home.pillar2Desc')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 shadow-sm">
             <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-2xl shrink-0">💳</div>
             <div>
-              <h4 className="font-semibold text-slate-900 dark:text-white text-base">Shaffof narxlar</h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Hech qanday yashirin komissiyalarsiz</p>
+              <h4 className="font-semibold text-slate-900 dark:text-white text-base">{t('home.pillar3Title')}</h4>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t('home.pillar3Desc')}</p>
             </div>
           </div>
         </div>
@@ -301,15 +301,15 @@ export default function Home() {
       <section className="bg-white py-16 dark:bg-[#0c1512]">
         <div className="section max-w-4xl">
           <div className="text-center mb-10">
-            <span className="tag bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">Real Natijalar</span>
-            <h2 className="mt-3 text-3xl font-bold text-gray-900 dark:text-gray-100">Oldin va Keyin Taqqoslash</h2>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">Slayderni surib tozalash sifatiga o'zingiz baho bering</p>
+            <span className="tag bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">{t('home.resultsTag')}</span>
+            <h2 className="mt-3 text-3xl font-bold text-gray-900 dark:text-gray-100">{t('home.resultsTitle')}</h2>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">{t('home.resultsDesc')}</p>
           </div>
           <BeforeAfterSlider
-            beforeImg="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80"
-            afterImg="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80"
-            beforeLabel="Tozalashdan oldin"
-            afterLabel="Tozalashdan keyin"
+            beforeImg="/before-after/before.jpg"
+            afterImg="/before-after/after.jpg"
+            beforeLabel={t('home.beforeLabel')}
+            afterLabel={t('home.afterLabel')}
           />
         </div>
       </section>
@@ -318,58 +318,58 @@ export default function Home() {
       <section className="bg-gray-50 py-16 dark:bg-[#0f1a15]">
         <div className="section">
           <div className="text-center max-w-xl mx-auto mb-12">
-            <span className="tag bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">Shaffof Tariflar</span>
-            <h2 className="mt-3 text-3xl font-bold text-gray-900 dark:text-gray-100">Mos Tarifni Tanlang</h2>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">Hech qanday yashirin komissiyalarsiz kafolatlangan narxlar</p>
+            <span className="tag bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">{t('home.plansTag')}</span>
+            <h2 className="mt-3 text-3xl font-bold text-gray-900 dark:text-gray-100">{t('home.plansTitle')}</h2>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">{t('home.plansDesc')}</p>
           </div>
           <div className="grid gap-8 lg:grid-cols-3 items-stretch max-w-6xl mx-auto pt-4">
             {/* Standart */}
             <div className="card flex flex-col justify-between border border-gray-200 dark:border-gray-800">
               <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Standart tozalash</h3>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Kundalik tozalik va tartib uchun ideal</p>
-                <div className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-gray-100">180,000 UZS <span className="text-sm font-normal text-gray-500">/dan</span></div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('home.planStandardName')}</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('home.planStandardSub')}</p>
+                <div className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-gray-100">180,000 UZS <span className="text-sm font-normal text-gray-500">{t('home.fromSuffix')}</span></div>
                 <ul className="mt-6 space-y-3 text-sm text-gray-600 dark:text-gray-300">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Pol va gilam yuvish</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Changlarni artish</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Oshxona va hammom dezinfeksiyasi</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> {t('home.planStandardF1')}</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> {t('home.planStandardF2')}</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> {t('home.planStandardF3')}</li>
                 </ul>
               </div>
-              <Link to="/booking" className="btn-secondary mt-8 w-full text-center">Tanlash</Link>
+              <Link to="/booking" className="btn-secondary mt-8 w-full text-center">{t('home.selectBtn')}</Link>
             </div>
 
             {/* Mukammal (Deep Clean) - MOST POPULAR */}
             <div className="card relative flex flex-col justify-between border-2 border-brand-500 ring-2 ring-brand-500 shadow-xl shadow-brand-500/10 lg:scale-105 bg-white dark:bg-[#12211b] z-10">
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-purple-600 to-brand-600 px-4 py-1 text-xs font-bold text-white uppercase tracking-wider shadow-md">
-                ✨ ENG MASHHUR (MOST POPULAR)
+                ✨ {t('home.mostPopularBadge')}
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-2">Mukammal tozalash (Deep Clean)</h3>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Chuqur kir va qatlamlardan xalos bo'lish</p>
-                <div className="mt-6 text-3xl font-extrabold text-brand-600 dark:text-brand-400">280,000 UZS <span className="text-sm font-normal text-gray-500">/dan</span></div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-2">{t('home.planDeepName')}</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('home.planDeepSub')}</p>
+                <div className="mt-6 text-3xl font-extrabold text-brand-600 dark:text-brand-400">280,000 UZS <span className="text-sm font-normal text-gray-500">{t('home.fromSuffix')}</span></div>
                 <ul className="mt-6 space-y-3 text-sm text-gray-600 dark:text-gray-300">
-                  <li className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Standart tozalashdagi barcha amallar</li>
-                  <li className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Mebellar orti va qiyin joylar</li>
-                  <li className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Kafel choklari va yog' dog'larini yo'qotish</li>
-                  <li className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Derazalarni ichki/tashqi yuvish</li>
+                  <li className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> {t('home.planDeepF1')}</li>
+                  <li className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> {t('home.planDeepF2')}</li>
+                  <li className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> {t('home.planDeepF3')}</li>
+                  <li className="flex items-center gap-2 font-medium"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> {t('home.planDeepF4')}</li>
                 </ul>
               </div>
-              <Link to="/booking" className="btn-primary mt-8 w-full text-center py-3">Hoziroq bron qilish</Link>
+              <Link to="/booking" className="btn-primary mt-8 w-full text-center py-3">{t('home.bookNowBtn')}</Link>
             </div>
 
             {/* Move-in / out */}
             <div className="card flex flex-col justify-between border border-gray-200 dark:border-gray-800">
               <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Ko'chib kirish / chiqish</h3>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Yangi uyga ko'chish yoki ta'mirdan so'ng</p>
-                <div className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-gray-100">350,000 UZS <span className="text-sm font-normal text-gray-500">/dan</span></div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('home.planMoveName')}</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('home.planMoveSub')}</p>
+                <div className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-gray-100">350,000 UZS <span className="text-sm font-normal text-gray-500">{t('home.fromSuffix')}</span></div>
                 <ul className="mt-6 space-y-3 text-sm text-gray-600 dark:text-gray-300">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> To'liq tozalash va zararsizlantirish</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Barcha shkaflar va tortmalarni ichidan yuvish</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> Qurilish va bo'yoq qoldiqlarini tozalash</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> {t('home.planMoveF1')}</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> {t('home.planMoveF2')}</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-brand-600 shrink-0" /> {t('home.planMoveF3')}</li>
                 </ul>
               </div>
-              <Link to="/booking" className="btn-secondary mt-8 w-full text-center">Tanlash</Link>
+              <Link to="/booking" className="btn-secondary mt-8 w-full text-center">{t('home.selectBtn')}</Link>
             </div>
           </div>
         </div>
@@ -459,14 +459,14 @@ export default function Home() {
                       <StarRating rating={r.rating} />
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                         <BadgeCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                        Tasdiqlangan mijoz
+                        {t('home.verifiedCustomer')}
                       </span>
                     </div>
                     <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">&ldquo;{r.comment}&rdquo;</p>
                   </div>
                   <div className="mt-4 border-t border-gray-100 pt-3 dark:border-gray-800">
                     <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{r.customer_name}</div>
-                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Xonadon tozalash · Toshkent</div>
+                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{t('home.verifiedServiceMeta')}</div>
                   </div>
                 </div>
               ))}
