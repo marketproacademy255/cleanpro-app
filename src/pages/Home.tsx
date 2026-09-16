@@ -22,20 +22,7 @@ import { useTranslation } from '@/context/LanguageContext'
 import { fetchApprovedReviews } from '@/lib/publicData'
 import type { Review } from '@/lib/types'
 
-const TASHKENT_DISTRICTS = [
-  'Bektemir',
-  'Chilonzor',
-  "Yashnobod",
-  'Mirzo Ulugʼbek',
-  'Mirobod',
-  'Sergeli',
-  'Shayxontohur',
-  'Olmazor',
-  'Uchtepa',
-  'Yakkasaroy',
-  'Yunusobod',
-  'Yangihayot',
-]
+
 
 export default function Home() {
   const { t } = useTranslation()
@@ -372,16 +359,6 @@ export default function Home() {
           </div>
           <h2 className="mt-4 text-3xl font-bold text-gray-900 dark:text-gray-100">{t('home.areaTitle')}</h2>
           <p className="mx-auto mt-2 max-w-xl text-gray-500 dark:text-gray-400">{t('home.areaDesc')}</p>
-          <div className="mx-auto mt-6 flex max-w-3xl flex-wrap justify-center gap-2">
-            {TASHKENT_DISTRICTS.map((d) => (
-              <span
-                key={d}
-                className="tag border border-gray-200 bg-white text-gray-600 dark:border-gray-700 dark:bg-[#101c17] dark:text-gray-300"
-              >
-                {d}
-              </span>
-            ))}
-          </div>
         </div>
       </section>
 
