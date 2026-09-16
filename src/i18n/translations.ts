@@ -167,24 +167,24 @@ const translations = {
       faqTitle: "Ko'p so'raladigan savollar",
       faqs: [
         {
-          q: 'Xizmatchilar qanday tekshiriladi?',
-          a: "Har bir xizmatchi ishga qabul qilinishdan oldin shaxsan suhbatdan o'tadi, tajribasi va tavsiyalari tekshiriladi. Profilida tajriba yili va mijozlar bahosi ko'rsatiladi.",
+          q: "Xodimlar o'zlari bilan tozalash vositalarini olib kelishadimi?",
+          a: "Ha, mutaxassislarimiz to'liq professional tozalash vositalari, mikrofibra matolar va zamonaviy uskunalar bilan yetib kelishadi. Sizdan hech qanday qo'shimcha narsa talab etilmaydi.",
         },
         {
-          q: "To'lovni qachon amalga oshiraman?",
-          a: "Buyurtmani tasdiqlaganingizdan so'ng, Payme yoki Click orqali onlayn to'lov qilasiz. To'lov xizmatchi tayinlangandan keyin, xizmat ko'rsatilishidan oldin amalga oshiriladi.",
+          q: "Tozalash vaqtida uyda bo'lishim shartmi?",
+          a: "Shart emas. Xizmatchimizga kalitni topshirib o'z ishlaringiz bilan shug'ullanishingiz mumkin. Tozalash tugashidan 30 daqiqa oldin sizga qo'ng'iroq qilib xabar beramiz.",
         },
         {
-          q: 'Agar natijadan qoniqmasam nima qilishim kerak?',
-          a: "Aloqa sahifasi orqali yoki telefon raqamimiz bilan biz bilan bog'laning — muammoni tezkor hal qilishga harakat qilamiz.",
+          q: "Agar biror narsa sinib qolsa yoki zarar yetsa nima bo'ladi?",
+          a: "Barcha xizmatchilarimiz shaxsan va moddiy javobgarlik shartnomasi bilan ishlaydi. Qandaydir ko'ngilsizlik yuz bersa, kompaniyamiz yetkazilgan zararni 100% qoplab beradi.",
         },
         {
-          q: "Buyurtmani bekor qilish yoki ko'chirish mumkinmi?",
-          a: "Ha, shaxsiy kabinetingizdan buyurtma sanasini bekor qilish yoki o'zgartirish so'rovini yuborishingiz mumkin.",
+          q: "Xizmatchilar qanday tekshiriladi?",
+          a: "Har bir xizmatchi ishga qabul qilinishdan oldin shaxsan suhbatdan o'tadi, huquqni muhofaza qilish organlari bazasi va sobiq ish joylaridan tavsiflar tekshiriladi.",
         },
         {
-          q: "Qaysi hududlarda xizmat ko'rsatasiz?",
-          a: "Hozircha Toshkent shahri bo'ylab xizmat ko'rsatamiz. Manzilingizni band qilish formasida ko'rsating — hudud mos kelsa, xizmatchi tayinlanadi.",
+          q: "To'lovni qachon va qanday amalga oshiraman?",
+          a: "Buyurtma berish jarayonida Payme, Click yoki naqd pulda to'lashingiz mumkin. Yashirin komissiyalar yo'q — faqat kelishilgan narx to'lanadi.",
         },
       ],
       ctaTitle: 'Bugun tozalash xizmatini band qiling',

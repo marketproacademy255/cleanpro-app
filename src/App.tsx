@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import MobileBookingBar, { MOBILE_BAR_HIDDEN_PREFIXES } from '@/components/MobileBookingBar'
 import FloatingContact from '@/components/FloatingContact'
+import LiveNotification from '@/components/LiveNotification'
 import { ProtectedRoute, AdminRoute } from '@/components/ProtectedRoute'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { PageSkeleton } from '@/components/SkeletonLoaders'
@@ -104,6 +105,7 @@ export default function App() {
         <Footer />
         <MobileBookingBar />
         <FloatingContact />
+        <LiveNotification />
       </div>
     </ErrorBoundary>
   )
