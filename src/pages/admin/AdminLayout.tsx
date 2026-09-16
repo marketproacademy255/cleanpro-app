@@ -13,7 +13,7 @@ export default function AdminLayout() {
   return (
     <div className="section grid gap-8 py-10 md:grid-cols-[220px_1fr]">
       <aside>
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Admin panel</h2>
+        <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-gray-100">Admin panel</h2>
         <nav className="flex flex-col gap-1">
           {links.map((l) => (
             <NavLink
@@ -21,8 +21,10 @@ export default function AdminLayout() {
               to={l.to}
               end={l.end}
               className={({ isActive }) =>
-                `rounded-lg px-3 py-2 text-sm font-medium ${
-                  isActive ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-brand-50'
+                `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-brand-50 hover:text-brand-700 dark:text-gray-300 dark:hover:bg-brand-900/30 dark:hover:text-brand-300'
                 }`
               }
             >
