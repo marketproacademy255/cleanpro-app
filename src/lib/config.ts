@@ -56,3 +56,6 @@ export const COMPANY_EMAIL = 'info@cleaningpro.uz'
 // Google Analytics 4 measurement ID (e.g. "G-XXXXXXXXXX"). Optional - if
 // unset, src/lib/analytics.ts simply doesn't load anything.
 export const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID ?? ''
+
+export const BOOKING_DRAFT_KEY = 'primestandard_booking_draft'
+

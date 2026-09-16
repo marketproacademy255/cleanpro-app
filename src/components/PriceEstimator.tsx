@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Calculator } from 'lucide-react'
 import { fetchActiveServiceTypes } from '@/lib/publicData'
 import { calculatePrice, formatUZS } from '@/lib/pricing'
 import { getServiceName } from '@/lib/i18nHelpers'
-import { DRAFT_KEY } from '@/pages/Booking'
+import { BOOKING_DRAFT_KEY } from '@/lib/config'
 import type { ServiceType } from '@/lib/types'
 import { useTranslation } from '@/context/LanguageContext'
 
@@ -17,7 +17,7 @@ import { useTranslation } from '@/context/LanguageContext'
  * tariff and recurring discount) is always computed on the Booking page,
  * and re-verified server-side before payment.
  */
-export default function PriceEstimator() {
+const PriceEstimator = memo(function PriceEstimator() {
   const navigate = useNavigate()
   const { t, lang } = useTranslation()
   const [services, setServices] = useState<ServiceType[]>([])
@@ -35,7 +35,7 @@ export default function PriceEstimator() {
       .finally(() => setLoading(false))
   }, [])
 
-  const selected = services.find((s) => s.id === serviceId)
+  const selected = useMemo(() => services.find((s) => s.id === serviceId), [services, serviceId])
 
   const estimate = useMemo(() => {
     if (!selected) return null
@@ -49,13 +49,13 @@ export default function PriceEstimator() {
     })
   }, [selected, rooms, areaSqm])
 
-  function continueToBooking() {
+  const continueToBooking = useCallback(() => {
     if (!selected) {
       navigate('/booking')
       return
     }
     sessionStorage.setItem(
-      DRAFT_KEY,
+      BOOKING_DRAFT_KEY,
       JSON.stringify({
         serviceId: selected.id,
         rooms,
@@ -73,7 +73,7 @@ export default function PriceEstimator() {
       }),
     )
     navigate('/booking')
-  }
+  }, [selected, rooms, areaSqm, navigate])
 
   if (loading || services.length === 0) return null
 
@@ -135,4 +135,7 @@ export default function PriceEstimator() {
       </div>
     </div>
   )
-}
+})
+
+export default PriceEstimator
+

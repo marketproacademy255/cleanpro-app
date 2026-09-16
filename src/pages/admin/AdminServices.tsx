@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { apiFetch } from '@/lib/api'
 import { formatUZS } from '@/lib/pricing'
+import { triggerHaptic } from '@/lib/haptics'
+import { SkeletonCard } from '@/components/SkeletonLoaders'
 import type { PricingUnit, PropertyType, ServiceCategory, ServiceType } from '@/lib/types'
 
 const emptyForm = {
@@ -45,34 +47,47 @@ export default function AdminServices() {
 
   async function save(s: ServiceType) {
     setSavingId(s.id)
-    await apiFetch(`admin-services?id=${s.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        name_uz: s.name_uz,
-        name_en: s.name_en,
-        name_ru: s.name_ru,
-        description_uz: s.description_uz,
-        base_price: s.base_price,
-        extra_unit_price: s.extra_unit_price,
-        min_price: s.min_price,
-        multiplier: s.multiplier,
-        sort_order: s.sort_order,
-        is_active: s.is_active,
-        category: s.category ?? 'cleaning',
-        image: s.image,
-        floor_multiplier: s.floor_multiplier,
-      }),
-    }).catch(() => null)
-    setSavingId(null)
+    triggerHaptic('medium')
+    try {
+      await apiFetch(`admin-services?id=${s.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name_uz: s.name_uz,
+          name_en: s.name_en,
+          name_ru: s.name_ru,
+          description_uz: s.description_uz,
+          base_price: s.base_price,
+          extra_unit_price: s.extra_unit_price,
+          min_price: s.min_price,
+          multiplier: s.multiplier,
+          sort_order: s.sort_order,
+          is_active: s.is_active,
+          category: s.category ?? 'cleaning',
+          image: s.image,
+          floor_multiplier: s.floor_multiplier,
+        }),
+      })
+      triggerHaptic('success')
+    } catch {
+      triggerHaptic('error')
+    } finally {
+      setSavingId(null)
+    }
   }
 
   async function toggleActive(s: ServiceType) {
-    updateLocal(s.id, { is_active: !s.is_active })
-    await apiFetch(`admin-services?id=${s.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ is_active: !s.is_active }),
-    }).catch(() => null)
-    load()
+    const previousState = s.is_active
+    updateLocal(s.id, { is_active: !previousState })
+    triggerHaptic('light')
+    try {
+      await apiFetch(`admin-services?id=${s.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: !previousState }),
+      })
+    } catch {
+      triggerHaptic('error')
+      updateLocal(s.id, { is_active: previousState })
+    }
   }
 
   async function createService(e: FormEvent) {
@@ -83,18 +98,28 @@ export default function AdminServices() {
       return
     }
     setCreating(true)
+    triggerHaptic('medium')
     try {
       await apiFetch('admin-services', { method: 'POST', body: JSON.stringify(form) })
+      triggerHaptic('success')
       setForm(emptyForm)
       await load()
     } catch {
+      triggerHaptic('error')
       setCreateError("Xizmat qo'shilmadi. Kodi allaqachon band bo'lishi mumkin.")
     } finally {
       setCreating(false)
     }
   }
 
-  if (loading) return <div className="text-gray-400">Yuklanmoqda…</div>
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+    )
+  }
 
   return (
     <div>

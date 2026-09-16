@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Check, AlertCircle } from 'lucide-react'
 import MapLocationPicker from '@/components/MapLocationPicker'
+import { PageSkeleton } from '@/components/SkeletonLoaders'
 import { fetchActiveAddons, fetchActiveServiceTypes } from '@/lib/publicData'
 import { apiFetch, ApiError } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
 import { getServiceName } from '@/lib/i18nHelpers'
+import { triggerHaptic } from '@/lib/haptics'
+import { bookingFormSchema, type BookingFormValues } from '@/lib/validationSchemas'
 import {
   calculatePrice,
   formatUZS,
@@ -14,29 +19,11 @@ import {
   REFERRAL_REFERRED_DISCOUNT,
   TIER_MULTIPLIER,
 } from '@/lib/pricing'
+import { BOOKING_DRAFT_KEY } from '@/lib/config'
 import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, ServiceType } from '@/lib/types'
 
 const TIERS: BookingTier[] = ['standard', 'premium', 'elite']
-
-export const DRAFT_KEY = 'primestandard_booking_draft'
-
-interface DraftForm {
-  serviceId: string
-  rooms: number
-  areaSqm: string
-  floor: string
-  address: string
-  addressNotes: string
-  city: string
-  date: string
-  time: string
-  frequency: BookingFrequency
-  tier: BookingTier
-  addonCodes: string[]
-  contactName: string
-  contactPhone: string
-  notes: string
-}
+export const DRAFT_KEY = BOOKING_DRAFT_KEY
 
 const WORKING_HOURS = [
   '09:00',
@@ -51,24 +38,6 @@ const WORKING_HOURS = [
   '18:00',
 ]
 
-const emptyForm: DraftForm = {
-  serviceId: '',
-  rooms: 1,
-  areaSqm: '',
-  floor: '',
-  address: '',
-  addressNotes: '',
-  city: 'Toshkent',
-  date: '',
-  time: '09:00',
-  frequency: 'once',
-  tier: 'standard',
-  addonCodes: [],
-  contactName: '',
-  contactPhone: '',
-  notes: '',
-}
-
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80'
 
@@ -79,7 +48,6 @@ export default function Booking() {
 
   const [services, setServices] = useState<ServiceType[]>([])
   const [addons, setAddons] = useState<Addon[]>([])
-  const [form, setForm] = useState<DraftForm>(emptyForm)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -88,34 +56,72 @@ export default function Booking() {
   const [bookedTimes, setBookedTimes] = useState<string[]>([])
   const [loadingTimes, setLoadingTimes] = useState(false)
 
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<BookingFormValues>({
+    resolver: zodResolver(bookingFormSchema),
+    defaultValues: {
+      serviceId: '',
+      rooms: 1,
+      areaSqm: '',
+      floor: '',
+      address: '',
+      addressNotes: '',
+      city: 'Toshkent',
+      date: '',
+      time: '09:00',
+      frequency: 'once',
+      tier: 'standard',
+      addonCodes: [],
+      contactName: '',
+      contactPhone: '',
+      notes: '',
+    },
+  })
+
+  const formValues = watch()
+
+  // Fetch available times when date changes
   useEffect(() => {
-    if (!form.date) return
+    if (!formValues.date) return
     setLoadingTimes(true)
-    apiFetch<{ bookedTimes: string[] }>(`available-times?date=${form.date}`)
+    apiFetch<{ bookedTimes: string[] }>(`available-times?date=${formValues.date}`)
       .then((res) => {
         const booked = res.bookedTimes || []
         setBookedTimes(booked)
-        if (booked.includes(form.time)) {
+        if (booked.includes(formValues.time)) {
           const firstAvailable = WORKING_HOURS.find((t) => !booked.includes(t))
           if (firstAvailable) {
-            setForm((f) => ({ ...f, time: firstAvailable }))
+            setValue('time', firstAvailable)
           }
         }
       })
       .catch(() => setBookedTimes([]))
       .finally(() => setLoadingTimes(false))
-  }, [form.date])
+  }, [formValues.date, formValues.time, setValue])
 
-  // Client-side preview only, purely cosmetic - the server (bookings.ts)
-  // independently re-checks prior-booking count and the profile's
-  // referral_discount_pending flag before ever computing a real discount,
-  // so nothing here needs to be trusted.
+  // Check prior bookings for discount preview & address auto-fill
   useEffect(() => {
     if (!user) return
     apiFetch<BookingRow[]>('bookings')
-      .then((rows) => setIsFirstBooking(rows.length === 0))
+      .then((rows) => {
+        setIsFirstBooking(rows.length === 0)
+        // Auto-fill address from last booking if address field is currently empty
+        if (rows.length > 0 && !formValues.address) {
+          const lastBooking = rows[0]
+          if (lastBooking.address) {
+            // Strip out notes in parentheses if present
+            const cleanAddr = lastBooking.address.split(" (Mo'ljal")[0]
+            setValue('address', cleanAddr)
+          }
+        }
+      })
       .catch(() => {})
-  }, [user])
+  }, [user, setValue, formValues.address])
 
   const isReferred = !!profile?.referral_discount_pending
   const extraDiscountRate = isReferred ? REFERRAL_REFERRED_DISCOUNT : isFirstBooking ? FIRST_BOOKING_DISCOUNT : 0
@@ -129,12 +135,14 @@ export default function Booking() {
 
         const draftRaw = sessionStorage.getItem(DRAFT_KEY)
         if (draftRaw) {
-          const draft: DraftForm = JSON.parse(draftRaw)
-          setForm({ ...draft, floor: draft.floor ?? '' })
+          const draft = JSON.parse(draftRaw)
+          Object.keys(draft).forEach((key) => {
+            setValue(key as keyof BookingFormValues, draft[key])
+          })
           sessionStorage.removeItem(DRAFT_KEY)
         } else {
           const firstCleaning = serviceList.find((s) => (s.category ?? 'cleaning') === 'cleaning')
-          if (firstCleaning) setForm((f) => ({ ...f, serviceId: firstCleaning.id }))
+          if (firstCleaning) setValue('serviceId', firstCleaning.id)
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : t('booking.loadError'))
@@ -146,12 +154,17 @@ export default function Booking() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Auto-fill user profile info
   useEffect(() => {
-    if (profile && !form.contactName) {
-      setForm((f) => ({ ...f, contactName: profile.full_name ?? '', contactPhone: profile.phone ?? f.contactPhone }))
+    if (profile) {
+      if (!formValues.contactName && profile.full_name) {
+        setValue('contactName', profile.full_name)
+      }
+      if (!formValues.contactPhone && profile.phone) {
+        setValue('contactPhone', profile.phone)
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile])
+  }, [profile, setValue, formValues.contactName, formValues.contactPhone])
 
   const servicesInCategory = useMemo(
     () => services.filter((s) => (s.category ?? 'cleaning') === 'cleaning'),
@@ -160,86 +173,79 @@ export default function Booking() {
 
   useEffect(() => {
     if (!services.length) return
-    const stillValid = servicesInCategory.some((s) => s.id === form.serviceId)
+    const stillValid = servicesInCategory.some((s) => s.id === formValues.serviceId)
     if (!stillValid && servicesInCategory[0]) {
-      setForm((f) => ({ ...f, serviceId: servicesInCategory[0].id }))
+      setValue('serviceId', servicesInCategory[0].id)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [services])
+  }, [services, servicesInCategory, formValues.serviceId, setValue])
 
-  const selectedService = services.find((s) => s.id === form.serviceId)
-  const selectedAddons = addons.filter((a) => form.addonCodes.includes(a.code))
+  const selectedService = services.find((s) => s.id === formValues.serviceId)
+  const selectedAddons = addons.filter((a) => (formValues.addonCodes || []).includes(a.code))
   const showFloorInput = !!selectedService?.floor_multiplier
 
   const priceBreakdown = useMemo(() => {
     if (!selectedService) return null
     return calculatePrice({
       service: selectedService,
-      rooms: form.rooms,
-      areaSqm: form.areaSqm ? Number(form.areaSqm) : null,
+      rooms: formValues.rooms || 1,
+      areaSqm: formValues.areaSqm ? Number(formValues.areaSqm) : null,
       selectedAddons,
-      frequency: form.frequency,
-      tier: form.tier,
-      floor: form.floor ? Number(form.floor) : null,
+      frequency: formValues.frequency || 'once',
+      tier: formValues.tier || 'standard',
+      floor: formValues.floor ? Number(formValues.floor) : null,
       extraDiscountRate,
     })
-  }, [selectedService, form.rooms, form.areaSqm, form.floor, selectedAddons, form.frequency, form.tier, extraDiscountRate])
-
-  function updateField<K extends keyof DraftForm>(key: K, value: DraftForm[K]) {
-    setForm((f) => ({ ...f, [key]: value }))
-  }
+  }, [selectedService, formValues.rooms, formValues.areaSqm, formValues.floor, selectedAddons, formValues.frequency, formValues.tier, extraDiscountRate])
 
   function toggleAddon(code: string) {
-    setForm((f) => ({
-      ...f,
-      addonCodes: f.addonCodes.includes(code) ? f.addonCodes.filter((c) => c !== code) : [...f.addonCodes, code],
-    }))
+    triggerHaptic('light')
+    const current = formValues.addonCodes || []
+    const updated = current.includes(code)
+      ? current.filter((c) => c !== code)
+      : [...current, code]
+    setValue('addonCodes', updated)
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
+  async function onSubmit(data: BookingFormValues) {
     setError(null)
+    triggerHaptic('medium')
 
     if (!selectedService || !priceBreakdown) {
       setError(t('booking.selectServiceError'))
       return
     }
-    if (!form.address || !form.date || !form.contactPhone) {
-      setError(t('booking.requiredFieldsError'))
-      return
-    }
 
     if (!user) {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(form))
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(data))
       navigate('/login', { state: { from: '/booking', message: 'Buyurtmani yakunlash uchun tizimga kiring' } })
       return
     }
 
     setSubmitting(true)
     try {
-      // Price is recomputed server-side from service_types/addons (never
-      // trusts client-sent amounts) - see netlify/functions/bookings.ts.
-      const data = await apiFetch<BookingRow>('bookings', {
+      const resData = await apiFetch<BookingRow>('bookings', {
         method: 'POST',
         body: JSON.stringify({
           serviceId: selectedService.id,
-          rooms: form.rooms,
-          areaSqm: form.areaSqm ? Number(form.areaSqm) : null,
-          floor: form.floor ? Number(form.floor) : null,
-          address: form.addressNotes ? `${form.address} (Mo'ljal/Izoh: ${form.addressNotes})` : form.address,
-          city: form.city,
-          date: form.date,
-          time: form.time,
-          frequency: form.frequency,
-          tier: form.tier,
-          addonCodes: form.addonCodes,
-          contactName: form.contactName,
-          contactPhone: form.contactPhone,
-          notes: form.notes,
+          rooms: data.rooms,
+          areaSqm: data.areaSqm ? Number(data.areaSqm) : null,
+          floor: data.floor ? Number(data.floor) : null,
+          address: data.addressNotes ? `${data.address} (Mo'ljal/Izoh: ${data.addressNotes})` : data.address,
+          city: data.city,
+          date: data.date,
+          time: data.time,
+          frequency: data.frequency,
+          tier: data.tier,
+          addonCodes: data.addonCodes,
+          contactName: data.contactName,
+          contactPhone: data.contactPhone,
+          notes: data.notes,
         }),
       })
-      navigate(`/dashboard/booking/${data.id}`)
+      triggerHaptic('success')
+      navigate(`/dashboard/booking/${resData.id}`)
     } catch (err) {
+      triggerHaptic('error')
       setError(err instanceof ApiError ? err.message : t('booking.submitError'))
     } finally {
       setSubmitting(false)
@@ -252,52 +258,59 @@ export default function Booking() {
   const frequencyLabels = t('pricing.frequencyLabels') as Record<BookingFrequency, string>
 
   if (loading) {
-    return <div className="section py-20 text-center text-gray-400">{t('booking.loading')}</div>
+    return <PageSkeleton />
   }
 
   return (
     <div className="section py-14 pb-24 lg:pb-14">
-      <h1 className="text-3xl font-bold text-gray-900">{t('booking.title')}</h1>
-      <p className="mt-2 text-gray-500">{t('booking.subtitle')}</p>
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t('booking.title')}</h1>
+      <p className="mt-2 text-gray-500 dark:text-gray-400">{t('booking.subtitle')}</p>
 
-      <form onSubmit={handleSubmit} className="mt-8 grid gap-8 lg:grid-cols-3">
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 grid gap-8 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
+          {/* Service Selection */}
           <div className="card">
-
-            <label className="label mt-5">{t('booking.serviceType')}</label>
+            <label className="label text-base font-semibold">{t('booking.serviceType')}</label>
             {servicesInCategory.length === 0 ? (
               <p className="rounded-lg border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400">
                 {t('booking.noServicesInCategory')}
               </p>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {servicesInCategory.map((s) => (
                   <button
                     type="button"
                     key={s.id}
-                    onClick={() => updateField('serviceId', s.id)}
+                    onClick={() => {
+                      triggerHaptic('light')
+                      setValue('serviceId', s.id)
+                    }}
                     className={`overflow-hidden rounded-lg border text-left transition ${
-                      form.serviceId === s.id ? 'border-brand-600 ring-2 ring-brand-100' : 'border-gray-200 hover:border-brand-300'
+                      formValues.serviceId === s.id
+                        ? 'border-brand-600 ring-2 ring-brand-100 dark:ring-brand-900'
+                        : 'border-gray-200 hover:border-brand-300 dark:border-gray-800'
                     }`}
                   >
-                    <div className="h-28 w-full overflow-hidden bg-gray-100">
+                    <div className="h-28 w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
                       <img src={s.image || FALLBACK_IMAGE} alt={getServiceName(s, lang)} className="h-full w-full object-cover" />
                     </div>
                     <div className="p-3">
-                      <div className="font-semibold text-gray-900">{getServiceName(s, lang)}</div>
-                      <div className="mt-1 text-xs text-gray-500">{s.description_uz}</div>
+                      <div className="font-semibold text-gray-900 dark:text-gray-100">{getServiceName(s, lang)}</div>
+                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{s.description_uz}</div>
                     </div>
                   </button>
                 ))}
               </div>
             )}
+            {errors.serviceId && <p className="mt-2 text-xs text-red-500">{errors.serviceId.message}</p>}
           </div>
 
+          {/* Property details & Map */}
           <div className="card grid gap-4 sm:grid-cols-2">
             <div>
               <label className="label">{t('booking.propertyType')}</label>
               <input
-                className="input bg-gray-50"
+                className="input bg-gray-50 dark:bg-gray-800"
                 disabled
                 value={selectedService?.property_type === 'office' ? t('booking.office') : t('booking.home')}
               />
@@ -309,9 +322,7 @@ export default function Booking() {
                   type="number"
                   min={1}
                   className="input"
-                  value={form.areaSqm}
-                  onChange={(e) => updateField('areaSqm', e.target.value)}
-                  required
+                  {...register('areaSqm')}
                 />
               </div>
             ) : (
@@ -322,9 +333,9 @@ export default function Booking() {
                   min={1}
                   max={12}
                   className="input"
-                  value={form.rooms}
-                  onChange={(e) => updateField('rooms', Number(e.target.value))}
+                  {...register('rooms', { valueAsNumber: true })}
                 />
+                {errors.rooms && <p className="mt-1 text-xs text-red-500">{errors.rooms.message}</p>}
               </div>
             )}
             {showFloorInput && (
@@ -335,8 +346,7 @@ export default function Booking() {
                   min={1}
                   max={50}
                   className="input"
-                  value={form.floor}
-                  onChange={(e) => updateField('floor', e.target.value)}
+                  {...register('floor')}
                 />
                 <p className="mt-1 text-xs text-gray-400">{t('booking.floorHelp')}</p>
               </div>
@@ -346,20 +356,19 @@ export default function Booking() {
                 <label className="label">{t('booking.city')}</label>
                 <select
                   className="input"
-                  value={form.city}
-                  onChange={(e) => updateField('city', e.target.value)}
+                  {...register('city')}
                 >
                   <option value="Toshkent">Toshkent</option>
                   <option value="Samarqand">Samarqand</option>
                 </select>
               </div>
 
-              {/* Interactive Leaflet Map location picker */}
+              {/* Interactive Map Location Picker */}
               <MapLocationPicker
-                city={form.city}
-                initialAddress={form.address}
+                city={formValues.city}
+                initialAddress={formValues.address}
                 onLocationSelect={(loc) => {
-                  updateField('address', loc.address)
+                  setValue('address', loc.address, { shouldValidate: true })
                 }}
               />
 
@@ -368,40 +377,44 @@ export default function Booking() {
                 <input
                   className="input"
                   placeholder={t('booking.addressPlaceholder')}
-                  value={form.address}
-                  onChange={(e) => updateField('address', e.target.value)}
-                  required
+                  {...register('address')}
                 />
+                {errors.address && <p className="mt-1 text-xs text-red-500">{errors.address.message}</p>}
               </div>
 
               <div>
                 <label className="label">Manzilga qo'shimcha izoh / Mo'ljallash (pod'yezd, etaj, kod)</label>
                 <input
                   className="input"
-                  placeholder="Mo'ljal: korzinka ro'parasidagi bino, 2-pod'yezd, 4-qavat, kod: 1234..."
-                  value={form.addressNotes}
-                  onChange={(e) => updateField('addressNotes', e.target.value)}
+                  placeholder="Mo'ljal: korzinka ro'parasidagi bino, 2-pod'yezd, 4-qavat..."
+                  {...register('addressNotes')}
                 />
-                <p className="mt-1 text-xs text-gray-400">
-                  Xizmatchimiz uyingizni osongina topib borishi uchun qo'shimcha ko'rsatma yozishingiz mumkin.
-                </p>
               </div>
             </div>
+
             <div>
               <label className="label">{t('booking.frequency')}</label>
-              <select className="input" value={form.frequency} onChange={(e) => updateField('frequency', e.target.value as BookingFrequency)}>
-                {Object.entries(frequencyLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label as string}</option>
+              <select className="input" {...register('frequency')}>
+                {Object.entries(frequencyLabels).map(([val, lbl]) => (
+                  <option key={val} value={val}>{lbl as string}</option>
                 ))}
               </select>
             </div>
+
             <div>
               <label className="label">{t('booking.date')}</label>
-              <input type="date" className="input" value={form.date} min={new Date().toISOString().slice(0, 10)} onChange={(e) => updateField('date', e.target.value)} required />
+              <input
+                type="date"
+                className="input"
+                min={new Date().toISOString().slice(0, 10)}
+                {...register('date')}
+              />
+              {errors.date && <p className="mt-1 text-xs text-red-500">{errors.date.message}</p>}
             </div>
+
             <div className="sm:col-span-2">
               <label className="label">{t('booking.time')} (Ish vaqti: 09:00 - 18:00)</label>
-              {!form.date ? (
+              {!formValues.date ? (
                 <p className="mt-1 text-xs text-amber-600 bg-amber-50 rounded-md p-2">Avval buyurtma sanasini tanlang</p>
               ) : loadingTimes ? (
                 <p className="mt-1 text-xs text-gray-400">Vaqtlar tekshirilmoqda...</p>
@@ -409,19 +422,22 @@ export default function Booking() {
                 <div className="mt-2 grid grid-cols-5 gap-2 sm:grid-cols-10">
                   {WORKING_HOURS.map((tSlot) => {
                     const isBooked = bookedTimes.includes(tSlot)
-                    const isSelected = form.time === tSlot
+                    const isSelected = formValues.time === tSlot
                     return (
                       <button
                         type="button"
                         key={tSlot}
                         disabled={isBooked}
-                        onClick={() => updateField('time', tSlot)}
+                        onClick={() => {
+                          triggerHaptic('light')
+                          setValue('time', tSlot)
+                        }}
                         className={`flex flex-col items-center justify-center rounded-lg border py-2 text-xs font-semibold transition ${
                           isBooked
-                            ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 line-through'
+                            ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 line-through dark:border-gray-800 dark:bg-gray-800'
                             : isSelected
-                            ? 'border-brand-600 bg-brand-600 text-white shadow-sm ring-2 ring-brand-200'
-                            : 'border-gray-200 bg-white text-gray-700 hover:border-brand-300'
+                            ? 'border-brand-600 bg-brand-600 text-white shadow-sm ring-2 ring-brand-200 dark:ring-brand-900'
+                            : 'border-gray-200 bg-white text-gray-700 hover:border-brand-300 dark:border-gray-800 dark:bg-gray-800 dark:text-gray-300'
                         }`}
                       >
                         <span>{tSlot}</span>
@@ -434,49 +450,61 @@ export default function Booking() {
             </div>
           </div>
 
+          {/* Tier Selection */}
           <div className="card">
-            <label className="label">{t('booking.tier')}</label>
+            <label className="label font-semibold">{t('booking.tier')}</label>
             <div className="grid gap-3 sm:grid-cols-3">
               {TIERS.map((tier) => {
                 const pct = Math.round((tierMultiplierMap[tier] - 1) * 100)
+                const isSelected = formValues.tier === tier
                 return (
-                <button
-                  type="button"
-                  key={tier}
-                  onClick={() => updateField('tier', tier)}
-                  className={`rounded-md border p-4 text-left transition ${
-                    form.tier === tier ? 'border-brand-600 bg-brand-50' : 'border-gray-200 hover:border-brand-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-gray-900">{tierLabels[tier]}</span>
-                    {pct !== 0 && (
-                      <span className={`tag px-2 py-0.5 text-[11px] text-white ${pct > 0 ? 'bg-brand-600' : 'bg-gray-400'}`}>
-                        {pct > 0 ? '+' : ''}{pct}%
-                      </span>
-                    )}
-                  </div>
-                  <ul className="mt-2 space-y-1 text-xs text-gray-500">
-                    {tierPerks[tier].map((perk) => (
-                      <li key={perk} className="flex items-start gap-1.5">
-                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
-                        {perk}
-                      </li>
-                    ))}
-                  </ul>
-                </button>
+                  <button
+                    type="button"
+                    key={tier}
+                    onClick={() => {
+                      triggerHaptic('light')
+                      setValue('tier', tier)
+                    }}
+                    className={`rounded-md border p-4 text-left transition ${
+                      isSelected
+                        ? 'border-brand-600 bg-brand-50 dark:border-brand-500 dark:bg-brand-900/30'
+                        : 'border-gray-200 hover:border-brand-300 dark:border-gray-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">{tierLabels[tier]}</span>
+                      {pct !== 0 && (
+                        <span className={`tag px-2 py-0.5 text-[11px] text-white ${pct > 0 ? 'bg-brand-600' : 'bg-gray-400'}`}>
+                          {pct > 0 ? '+' : ''}{pct}%
+                        </span>
+                      )}
+                    </div>
+                    <ul className="mt-2 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                      {tierPerks[tier].map((perk) => (
+                        <li key={perk} className="flex items-start gap-1.5">
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
+                          {perk}
+                        </li>
+                      ))}
+                    </ul>
+                  </button>
                 )
               })}
             </div>
           </div>
 
+          {/* Addons Selection */}
           <div className="card">
-            <label className="label">{t('booking.addonsLabel')}</label>
+            <label className="label font-semibold">{t('booking.addonsLabel')}</label>
             <div className="grid gap-2 sm:grid-cols-2">
               {addons.map((a) => (
-                <label key={a.code} className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm">
-                  <span className="flex items-center gap-2">
-                    <input type="checkbox" checked={form.addonCodes.includes(a.code)} onChange={() => toggleAddon(a.code)} />
+                <label key={a.code} className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-800">
+                  <span className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                    <input
+                      type="checkbox"
+                      checked={(formValues.addonCodes || []).includes(a.code)}
+                      onChange={() => toggleAddon(a.code)}
+                    />
                     {a.name_uz}
                   </span>
                   <span className="text-gray-400">{formatUZS(a.price)}</span>
@@ -485,96 +513,84 @@ export default function Booking() {
             </div>
           </div>
 
+          {/* Contact Details */}
           <div className="card grid gap-4 sm:grid-cols-2">
             <div>
               <label className="label">{t('booking.nameLabel')}</label>
-              <input className="input" value={form.contactName} onChange={(e) => updateField('contactName', e.target.value)} required />
+              <input className="input" {...register('contactName')} />
+              {errors.contactName && <p className="mt-1 text-xs text-red-500">{errors.contactName.message}</p>}
             </div>
             <div>
               <label className="label">{t('booking.phoneLabel')}</label>
-              <input className="input" placeholder="+998 90 123 45 67" value={form.contactPhone} onChange={(e) => updateField('contactPhone', e.target.value)} required />
+              <input className="input" placeholder="+998 90 123 45 67" {...register('contactPhone')} />
+              {errors.contactPhone && <p className="mt-1 text-xs text-red-500">{errors.contactPhone.message}</p>}
             </div>
             <div className="sm:col-span-2">
               <label className="label">{t('booking.notesLabel')}</label>
-              <textarea className="input" rows={3} value={form.notes} onChange={(e) => updateField('notes', e.target.value)} />
+              <textarea className="input" rows={3} {...register('notes')} />
             </div>
           </div>
         </div>
 
+        {/* Order Summary Sidebar */}
         <div className="lg:col-span-1">
           <div className="card lg:sticky lg:top-24">
-            <h3 className="text-lg font-semibold text-gray-900">{t('booking.priceDetailsTitle')}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('booking.priceDetailsTitle')}</h3>
 
             {(isReferred || isFirstBooking) && (
-              <p className="mt-3 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-700">
-                {isReferred ? t('booking.referralBanner') : t('booking.firstBookingBanner')}
+              <p className="mt-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                {isReferred ? t('booking.referralAppliedText') : t('booking.firstBookingText')}
               </p>
             )}
 
-            {priceBreakdown ? (
-              <div className="mt-4 space-y-2 text-sm">
-                <div className="flex justify-between text-gray-600">
-                  <span>{t('booking.baseAmount')}</span>
+            {priceBreakdown && (
+              <div className="mt-4 space-y-3 text-sm">
+                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                  <span>Boshlang'ich narx</span>
                   <span>{formatUZS(priceBreakdown.baseAmount)}</span>
                 </div>
-                {priceBreakdown.tierAmount > 0 && (
-                  <div className="flex justify-between text-gray-600">
-                    <span>{tierLabels[form.tier]}</span>
-                    <span>+{formatUZS(priceBreakdown.tierAmount)}</span>
+                {priceBreakdown.tierAmount !== 0 && (
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Tarif moslashuvi</span>
+                    <span>{priceBreakdown.tierAmount > 0 ? '+' : ''}{formatUZS(priceBreakdown.tierAmount)}</span>
                   </div>
                 )}
                 {priceBreakdown.addonsAmount > 0 && (
-                  <div className="flex justify-between text-gray-600">
-                    <span>{t('booking.addonsAmount')}</span>
-                    <span>{formatUZS(priceBreakdown.addonsAmount)}</span>
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Qo'shimcha xizmatlar</span>
+                    <span>+{formatUZS(priceBreakdown.addonsAmount)}</span>
                   </div>
                 )}
-                {priceBreakdown.discountAmount - priceBreakdown.extraDiscountAmount > 0 && (
-                  <div className="flex justify-between text-brand-700">
-                    <span>{t('booking.discount')}</span>
-                    <span>-{formatUZS(priceBreakdown.discountAmount - priceBreakdown.extraDiscountAmount)}</span>
+                {priceBreakdown.discountAmount > 0 && (
+                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span>Chegirma</span>
+                    <span>-{formatUZS(priceBreakdown.discountAmount)}</span>
                   </div>
                 )}
-                {priceBreakdown.extraDiscountAmount > 0 && (
-                  <div className="flex justify-between text-brand-700">
-                    <span>{isReferred ? t('pricing.referralDiscountLabel') : t('pricing.firstBookingDiscountLabel')}</span>
-                    <span>-{formatUZS(priceBreakdown.extraDiscountAmount)}</span>
-                  </div>
-                )}
-                <hr />
-                <div className="flex justify-between text-lg font-bold text-gray-900">
-                  <span>{t('booking.total')}</span>
-                  <span>{formatUZS(priceBreakdown.totalAmount)}</span>
+                <hr className="dark:border-gray-800" />
+                <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-gray-100">
+                  <span>Jami narx</span>
+                  <span className="text-brand-700 dark:text-brand-400">{formatUZS(priceBreakdown.totalAmount)}</span>
                 </div>
               </div>
-            ) : (
-              <p className="mt-4 text-sm text-gray-400">{t('booking.selectService')}</p>
             )}
 
-            {error && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+            {error && (
+              <div className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 text-xs text-red-600 dark:bg-red-900/30 dark:text-red-300">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
 
-            <button type="submit" disabled={submitting} className="btn-primary mt-6 w-full">
-              {submitting ? t('booking.submitting') : user ? t('booking.submit') : t('booking.loginToContinue')}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="btn-primary mt-6 w-full py-3 text-base font-semibold shadow-md"
+            >
+              {submitting ? 'Yuborilmoqda…' : t('booking.submit')}
             </button>
-            <p className="mt-3 text-center text-xs text-gray-400">{t('booking.nextStepNote')}</p>
           </div>
         </div>
-
-        {/* Mobile-only sticky mini price bar - the price card above is
-            lg:sticky so desktop never loses sight of the total, but on
-            mobile it's stacked at the bottom of a long form. This mirrors
-            it in a slim always-visible bar (MobileBookingBar is hidden on
-            this route - see MOBILE_BAR_HIDDEN_PREFIXES - so there's no
-            overlap). Extra bottom padding on the form keeps the submit
-            button from being covered. */}
-        {priceBreakdown && (
-          <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-gray-800 dark:bg-[#101c17]/95 lg:hidden">
-            <div className="mx-auto flex max-w-lg items-center justify-between">
-              <span className="text-sm text-gray-500 dark:text-gray-400">{t('booking.total')}</span>
-              <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatUZS(priceBreakdown.totalAmount)}</span>
-            </div>
-          </div>
-        )}
       </form>
     </div>
   )

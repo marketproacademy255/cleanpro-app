@@ -9,6 +9,7 @@ import { fetchActiveServiceTypes } from '@/lib/publicData'
 import { formatUZS } from '@/lib/pricing'
 import { bookingStatusMeta } from '@/lib/bookingStatus'
 import Reveal from '@/components/Reveal'
+import { SkeletonCard, SkeletonRow } from '@/components/SkeletonLoaders'
 import type { Booking, ServiceType } from '@/lib/types'
 
 interface ReferralInfo {
@@ -106,7 +107,15 @@ export default function Dashboard() {
       </div>
 
       {loading ? (
-        <div className="mt-10 text-gray-400">{t('dashboard.loading')}</div>
+        <div className="mt-6 space-y-4">
+          <SkeletonRow />
+          <SkeletonRow />
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        </div>
       ) : bookings.length === 0 ? (
         <div className="mt-6 grid gap-6 lg:grid-cols-3">
           {/* Empty state - the first thing a brand-new customer sees right

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import StarRating from '@/components/StarRating'
 import { fetchActiveCleaners } from '@/lib/publicData'
@@ -11,7 +11,7 @@ import { useTranslation } from '@/context/LanguageContext'
  * page. If there's no backend configured or no active cleaners yet, this
  * renders nothing rather than showing placeholder/fake staff.
  */
-export default function TeamPreview() {
+const TeamPreview = memo(function TeamPreview() {
   const { t } = useTranslation()
   const [cleaners, setCleaners] = useState<Cleaner[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,4 +53,7 @@ export default function TeamPreview() {
       </div>
     </section>
   )
-}
+})
+
+export default TeamPreview
+
