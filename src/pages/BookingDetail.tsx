@@ -81,6 +81,18 @@ export default function BookingDetail() {
     if (!booking) return
     setRedirecting(provider)
 
+    const isConfigured = gateways[provider]
+
+    if (!isConfigured) {
+      await apiFetch('payments', {
+        method: 'POST',
+        body: JSON.stringify({ booking_id: booking.id, provider, demo: true }),
+      }).catch(() => null)
+
+      window.location.href = `/payment-result?booking=${booking.id}&demo=true`
+      return
+    }
+
     await apiFetch('payments', {
       method: 'POST',
       body: JSON.stringify({ booking_id: booking.id, provider }),
@@ -154,14 +166,20 @@ export default function BookingDetail() {
         <div className="card mt-6">
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('bookingDetail.choosePayment')}</h3>
           {!gateways.payme && !gateways.click && (
-            <p className="mt-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">{t('bookingDetail.gatewaysWarning')}</p>
+            <p className="mt-2 rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-900 dark:text-emerald-300">
+              ⚡ <strong>Demo rejim:</strong> Merchant API kalitlar sozlanmagani sababli to'lov simulyatsiya rejimida darhol bajariladi. Netlify Environment Variables ga kalitlarni kiritishingiz bilan avtomatik real Payme/Click tizimiga ulanaveradi.
+            </p>
           )}
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <button onClick={() => pay('payme')} disabled={redirecting !== null} className="btn-primary">
-              {redirecting === 'payme' ? t('bookingDetail.redirecting') : t('bookingDetail.payWithPayme')}
+              {redirecting === 'payme'
+                ? t('bookingDetail.redirecting')
+                : `${t('bookingDetail.payWithPayme')}${!gateways.payme ? ' (Demo)' : ''}`}
             </button>
             <button onClick={() => pay('click')} disabled={redirecting !== null} className="btn-secondary">
-              {redirecting === 'click' ? t('bookingDetail.redirecting') : t('bookingDetail.payWithClick')}
+              {redirecting === 'click'
+                ? t('bookingDetail.redirecting')
+                : `${t('bookingDetail.payWithClick')}${!gateways.click ? ' (Demo)' : ''}`}
             </button>
           </div>
 

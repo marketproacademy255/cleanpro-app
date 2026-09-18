@@ -87,20 +87,29 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       }
     }
 
+    const isDemo = Boolean(body.demo)
+
     const ref = await db.collection('payments').add({
       booking_id: bookingSnap.id,
       provider: body.provider,
-      provider_transaction_id: null,
+      provider_transaction_id: isDemo ? `demo_${Date.now()}` : null,
       amount: booking.total_amount,
-      state: null,
-      status: 'pending',
+      state: isDemo ? 2 : null,
+      status: isDemo ? 'paid' : 'pending',
       receipt_url: body.receipt_url ?? null,
-      raw_payload: null,
+      raw_payload: isDemo ? { is_demo: true } : null,
       created_at: now,
       updated_at: now,
-      performed_at: null,
+      performed_at: isDemo ? now : null,
       cancelled_at: null,
     })
+
+    if (isDemo) {
+      await db.collection('bookings').doc(bookingSnap.id).update({
+        status: 'confirmed',
+        updated_at: now,
+      })
+    }
 
     if (body.provider === 'manual') {
       await notifyTelegram(
