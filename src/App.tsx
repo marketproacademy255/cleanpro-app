@@ -34,12 +34,15 @@ const AdminServices = lazy(() => import('@/pages/admin/AdminServices'))
 const AdminAddons = lazy(() => import('@/pages/admin/AdminAddons'))
 const AdminReviews = lazy(() => import('@/pages/admin/AdminReviews'))
 
+import MouseGlowFollower from '@/components/MouseGlowFollower'
+
 export default function App() {
   const { pathname } = useLocation()
   const showMobileBar = !MOBILE_BAR_HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
 
   return (
     <ErrorBoundary>
+      <MouseGlowFollower />
       <div className="flex min-h-screen flex-col">
         <Navbar />
         <main className={`flex-1 ${showMobileBar ? 'pb-16 md:pb-0' : ''}`}>

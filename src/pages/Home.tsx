@@ -19,6 +19,9 @@ import BeforeAfterSlider from '@/components/BeforeAfterSlider'
 import Reveal from '@/components/Reveal'
 import StarRating from '@/components/StarRating'
 import TeamPreview from '@/components/TeamPreview'
+import TiltCard from '@/components/TiltCard'
+import ParallaxSection from '@/components/ParallaxSection'
+import AnimatedBackground from '@/components/AnimatedBackground'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
 import { fetchApprovedReviews } from '@/lib/publicData'
@@ -86,17 +89,12 @@ export default function Home() {
     <div>
       <DiscountBanner />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-brand-900">
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1800&q=80"
-            alt="Xizmatchi uyni tozalamoqda"
-            className="h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-900 via-brand-900/85 to-brand-900/50" />
-        </div>
-
+      {/* Hero with Parallax Background */}
+      <ParallaxSection
+        bgImage="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1800&q=80"
+        speed={25}
+        className="bg-brand-900"
+      >
         <div className="section relative py-16 md:py-24 grid lg:grid-cols-12 gap-10 items-center">
           <div className="lg:col-span-7">
             {/* Social Proof Trust Badge */}
@@ -125,7 +123,7 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 to="/booking"
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-5 py-3 font-semibold tracking-tight text-brand-700 transition hover:bg-brand-50"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-5 py-3 font-semibold tracking-tight text-brand-700 transition hover:bg-brand-50 shadow-md"
               >
                 {t('home.ctaBook')}
                 <ArrowRight className="h-4 w-4" />
@@ -154,9 +152,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Instant Quote Widget (US cleaning sites 1-click price widget) */}
+          {/* Instant Quote Widget with 3D Tilt & Mouse Spotlight */}
           <div className="lg:col-span-5">
-            <div className="rounded-3xl border border-white/20 bg-white/15 p-6 backdrop-blur-xl shadow-2xl text-white">
+            <TiltCard
+              intensity={8}
+              glowColor="rgba(52, 211, 153, 0.25)"
+              className="rounded-3xl border border-white/20 bg-white/15 p-6 backdrop-blur-xl shadow-2xl text-white"
+            >
               <div className="flex items-center gap-2 border-b border-white/10 pb-4">
                 <Calculator className="h-5 w-5 text-emerald-400" />
                 <h3 className="font-bold text-lg">{t('home.instantQuoteTitle')}</h3>
@@ -238,35 +240,42 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-            </div>
+            </TiltCard>
           </div>
         </div>
-      </section>
+      </ParallaxSection>
 
-      {/* 3 Trust Pillars */}
-      <section className="bg-slate-50 py-8 border-y border-slate-200 dark:border-slate-800 dark:bg-[#0c1512]">
-        <div className="section grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-2xl shrink-0">🛡️</div>
-            <div>
-              <h4 className="font-semibold text-slate-900 dark:text-white text-base">{t('home.pillar1Title')}</h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{t('home.pillar1Desc')}</p>
+      {/* 3 Trust Pillars with Ambient Glow & Tilt */}
+      <section className="relative overflow-hidden bg-slate-50 py-8 border-y border-slate-200 dark:border-slate-800 dark:bg-[#0c1512]">
+        <AnimatedBackground />
+        <div className="section relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <TiltCard intensity={6} className="p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+            <div className="flex items-center gap-3.5">
+              <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-2xl shrink-0">🛡️</div>
+              <div>
+                <h4 className="font-semibold text-slate-900 dark:text-white text-base">{t('home.pillar1Title')}</h4>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('home.pillar1Desc')}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-            <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-2xl shrink-0">✨</div>
-            <div>
-              <h4 className="font-semibold text-slate-900 dark:text-white text-base">{t('home.pillar2Title')}</h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{t('home.pillar2Desc')}</p>
+          </TiltCard>
+          <TiltCard intensity={6} className="p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+            <div className="flex items-center gap-3.5">
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-2xl shrink-0">✨</div>
+              <div>
+                <h4 className="font-semibold text-slate-900 dark:text-white text-base">{t('home.pillar2Title')}</h4>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('home.pillar2Desc')}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 shadow-sm">
-            <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-2xl shrink-0">💳</div>
-            <div>
-              <h4 className="font-semibold text-slate-900 dark:text-white text-base">{t('home.pillar3Title')}</h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{t('home.pillar3Desc')}</p>
+          </TiltCard>
+          <TiltCard intensity={6} className="p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 shadow-sm">
+            <div className="flex items-center gap-3.5">
+              <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-2xl shrink-0">💳</div>
+              <div>
+                <h4 className="font-semibold text-slate-900 dark:text-white text-base">{t('home.pillar3Title')}</h4>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('home.pillar3Desc')}</p>
+              </div>
             </div>
-          </div>
+          </TiltCard>
         </div>
       </section>
 
@@ -315,8 +324,9 @@ export default function Home() {
       </section>
 
       {/* 3-Tier Pricing Section (Silicon Valley Style with MOST POPULAR highlight) */}
-      <section className="bg-gray-50 py-16 dark:bg-[#0f1a15]">
-        <div className="section">
+      <section className="relative overflow-hidden bg-gray-50 py-16 dark:bg-[#0f1a15]">
+        <AnimatedBackground />
+        <div className="section relative z-10">
           <div className="text-center max-w-xl mx-auto mb-12">
             <span className="tag bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">{t('home.plansTag')}</span>
             <h2 className="mt-3 text-3xl font-bold text-gray-900 dark:text-gray-100">{t('home.plansTitle')}</h2>
@@ -324,7 +334,7 @@ export default function Home() {
           </div>
           <div className="grid gap-8 lg:grid-cols-3 items-stretch max-w-6xl mx-auto pt-4">
             {/* Standart */}
-            <div className="card flex flex-col justify-between border border-gray-200 dark:border-gray-800">
+            <TiltCard intensity={8} className="card flex flex-col justify-between border border-gray-200 dark:border-gray-800">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('home.planStandardName')}</h3>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('home.planStandardSub')}</p>
@@ -336,10 +346,10 @@ export default function Home() {
                 </ul>
               </div>
               <Link to="/booking" className="btn-secondary mt-8 w-full text-center">{t('home.selectBtn')}</Link>
-            </div>
+            </TiltCard>
 
             {/* Mukammal (Deep Clean) - MOST POPULAR */}
-            <div className="card relative flex flex-col justify-between border-2 border-brand-500 ring-2 ring-brand-500 shadow-xl shadow-brand-500/10 lg:scale-105 bg-white dark:bg-[#12211b] z-10">
+            <TiltCard intensity={12} glowColor="rgba(16, 185, 129, 0.25)" className="card relative flex flex-col justify-between border-2 border-brand-500 ring-2 ring-brand-500 shadow-xl shadow-brand-500/10 lg:scale-105 bg-white dark:bg-[#12211b] z-10">
               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-purple-600 to-brand-600 px-4 py-1 text-xs font-bold text-white uppercase tracking-wider shadow-md">
                 ✨ {t('home.mostPopularBadge')}
               </div>
@@ -355,10 +365,10 @@ export default function Home() {
                 </ul>
               </div>
               <Link to="/booking" className="btn-primary mt-8 w-full text-center py-3">{t('home.bookNowBtn')}</Link>
-            </div>
+            </TiltCard>
 
             {/* Move-in / out */}
-            <div className="card flex flex-col justify-between border border-gray-200 dark:border-gray-800">
+            <TiltCard intensity={8} className="card flex flex-col justify-between border border-gray-200 dark:border-gray-800">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('home.planMoveName')}</h3>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('home.planMoveSub')}</p>
@@ -370,7 +380,7 @@ export default function Home() {
                 </ul>
               </div>
               <Link to="/booking" className="btn-secondary mt-8 w-full text-center">{t('home.selectBtn')}</Link>
-            </div>
+            </TiltCard>
           </div>
         </div>
       </section>
