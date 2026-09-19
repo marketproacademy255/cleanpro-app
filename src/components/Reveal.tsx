@@ -1,69 +1,57 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
+import { motion } from 'framer-motion'
 
-type RevealDirection = 'up' | 'left' | 'right'
+export type RevealDirection = 'up' | 'down' | 'left' | 'right' | 'zoom'
 
 interface RevealProps {
   children: ReactNode
-  /** Stagger delay in ms - pass `index * 80` in a .map() for a cascading effect. */
   delayMs?: number
   className?: string
-  /**
-   * Which direction the element travels in from as it appears:
-   * 'up' (default, slides up + fades), 'left' (slides in from the left +
-   * fades) or 'right' (slides in from the right + fades). Useful for
-   * alternating image/text blocks so content doesn't just fade in from a
-   * single direction the whole way down the page.
-   */
   direction?: RevealDirection
+  /** Distance in pixels to travel from left/right/up/down */
+  distance?: number
+  /** If true, animates only the first time into view. If false, re-animates on scroll up/down */
+  once?: boolean
 }
 
-const HIDDEN_TRANSFORM: Record<RevealDirection, string> = {
-  up: 'translate-y-6',
-  left: '-translate-x-10',
-  right: 'translate-x-10',
-}
-
-/**
- * Fades + slides an element into place the first time it scrolls into
- * view, instead of everything just being there instantly on load. Uses
- * IntersectionObserver (cheap, no scroll-listener math) and disconnects
- * once triggered - it only ever plays once per element, doesn't reverse
- * when scrolling back up. Respects prefers-reduced-motion by skipping the
- * animation entirely and just showing the content.
- */
-export default function Reveal({ children, delayMs = 0, className = '', direction = 'up' }: RevealProps) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      setVisible(true)
-      return
+export default function Reveal({
+  children,
+  delayMs = 0,
+  className = '',
+  direction = 'up',
+  distance = 90,
+  once = false,
+}: RevealProps) {
+  const getInitialPosition = () => {
+    switch (direction) {
+      case 'left':
+        return { x: -distance, y: 0, opacity: 0, scale: 0.95 }
+      case 'right':
+        return { x: distance, y: 0, opacity: 0, scale: 0.95 }
+      case 'up':
+        return { x: 0, y: distance / 2, opacity: 0, scale: 0.98 }
+      case 'down':
+        return { x: 0, y: -distance / 2, opacity: 0, scale: 0.98 }
+      case 'zoom':
+        return { x: 0, y: 0, opacity: 0, scale: 0.85 }
+      default:
+        return { x: 0, y: distance / 2, opacity: 0, scale: 0.98 }
     }
-    const el = ref.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
+  }
 
   return (
-    <div
-      ref={ref}
-      className={`transition-all duration-700 ease-out ${
-        visible ? 'translate-x-0 translate-y-0 opacity-100' : `${HIDDEN_TRANSFORM[direction]} opacity-0`
-      } ${className}`}
-      style={{ transitionDelay: visible ? `${delayMs}ms` : '0ms' }}
+    <motion.div
+      initial={getInitialPosition()}
+      whileInView={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+      viewport={{ once, margin: '-60px' }}
+      transition={{
+        duration: 0.7,
+        delay: delayMs / 1000,
+        ease: [0.21, 0.47, 0.32, 0.98],
+      }}
+      className={className}
     >
       {children}
-    </div>
+    </motion.div>
   )
 }
