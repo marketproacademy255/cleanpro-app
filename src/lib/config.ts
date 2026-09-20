@@ -1,6 +1,6 @@
 // Flip to false once the business is live with real services, real
 // payment gateways and this is no longer a demo/test deployment.
-export const IS_DEMO = true
+export const IS_DEMO = false
 
 // Brand name/tagline shown in the Navbar, Footer and page titles. Kept in
 // one place so a future rename doesn't require hunting through every page.
