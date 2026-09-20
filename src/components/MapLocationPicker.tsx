@@ -299,57 +299,66 @@ export default function MapLocationPicker({
     onLocationSelect({ address: formatted, lat, lng })
   }
 
-  // Direct Dual-engine GPS + IP Geolocation Call
-  async function handleUseGPS() {
+  // Auto-request location on mount if no initial address is set
+  useEffect(() => {
+    if (!initialAddress) {
+      requestLocation(true)
+    }
+  }, [])
+
+  // Core Geolocation Request Handler
+  async function requestLocation(isAutoMount = false) {
+    if (!navigator.geolocation) {
+      if (!isAutoMount) {
+        setGpsError("Qurilmangizda GPS qo'llab-quvvatlanmaydi.")
+      }
+      return
+    }
+
     setLocating(true)
     setGpsError(null)
 
-    let success = false
-
-    // Attempt HTML5 Geolocation API
-    if (navigator.geolocation) {
-      try {
-        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: false,
-            timeout: 6000,
-            maximumAge: 60000,
-          })
+    try {
+      // Call HTML5 Geolocation API with high accuracy and 30s timeout to allow user interaction with browser prompt
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 30000,
+          maximumAge: 0,
         })
+      })
 
-        const lat = pos.coords.latitude
-        const lng = pos.coords.longitude
+      const lat = pos.coords.latitude
+      const lng = pos.coords.longitude
 
-        if (mapRef.current && markerRef.current) {
-          mapRef.current.flyTo([lat, lng], 16)
-          markerRef.current.setLatLng([lat, lng])
-        }
-        await updateLocation(lat, lng, true)
-        success = true
-      } catch {
-        // HTML5 Geolocation failed/denied/timed out -> proceed to IP Geolocation
-      }
-    }
-
-    // Fallback to IP Geolocation if HTML5 Geolocation failed
-    if (!success) {
-      success = await fallbackToIPLocation()
-    }
-
-    // Final fallback to city center if both failed
-    if (!success) {
-      const targetCenter = CITY_COORDS[city] || CITY_COORDS['Toshkent']
       if (mapRef.current && markerRef.current) {
-        mapRef.current.flyTo(targetCenter, 14)
-        markerRef.current.setLatLng(targetCenter)
+        mapRef.current.flyTo([lat, lng], 16)
+        markerRef.current.setLatLng([lat, lng])
       }
-      await updateLocation(targetCenter[0], targetCenter[1], true)
-      setGpsError(
-        "Avtomatik GPS aniqlanmadi. Joylashuvingiz shahar markazi bo'yicha o'rnatildi, iltimos, xaritadan aniq nuqtani tanlang.",
-      )
+      await updateLocation(lat, lng, true)
+      setGpsError(null)
+    } catch (err: any) {
+      if (err && err.code === 1) {
+        // PERMISSION_DENIED: User clicked "Block" or site permission is set to Block
+        setGpsError(
+          "Brauzerda joylashuvga ruxsat berilmadi (Blocked). Iltimos, brauzeringizda ushbu sayt uchun joylashuvga ruxsat bering yoki manzilni xaritadan tanlang.",
+        )
+      } else {
+        // Position unavailable or timed out -> try IP fallback
+        const ipSuccess = await fallbackToIPLocation()
+        if (!ipSuccess && !isAutoMount) {
+          setGpsError(
+            "GPS orqali joylashuvni aniqlab bo'lmadi. Iltimos, xaritadan belgilang.",
+          )
+        }
+      }
+    } finally {
+      setLocating(false)
     }
+  }
 
-    setLocating(false)
+  function handleUseGPS() {
+    requestLocation(false)
   }
 
   return (
