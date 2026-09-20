@@ -1,15 +1,4 @@
-// Netlify Function: Click Merchant webhook (Prepare + Complete)
-//
-// SETUP:
-//   1. Register as a merchant at https://merchant.click.uz
-//   2. Set this function's URL as your "Webhook URL" in the Click cabinet:
-//        https://<your-site>.netlify.app/.netlify/functions/click
-//   3. Set CLICK_SECRET_KEY in Netlify env vars (Site settings ->
-//      Environment variables).
-//   4. Review this file against the latest Click docs
-//      (https://docs.click.uz) before going to production - this is a
-//      solid starting point, not a certified integration.
-//
+// Netlify Function: Click Merchant webhook (Prepare + Complete with Atomic Idempotency)
 // eslint-disable @typescript-eslint/no-explicit-any
 import type { Handler } from '@netlify/functions'
 import { createHash } from 'node:crypto'
@@ -17,6 +6,7 @@ import { getDb } from './_lib/firebaseAdmin'
 import { parseFormOrJson } from './_lib/parseBody'
 import { formatPaymentConfirmedMessage, notifyTelegram } from './_lib/telegram'
 import { safeEqual } from './_lib/safeEqual'
+import { checkRateLimit, getClientIp } from './_lib/rateLimit'
 
 const CLICK_SECRET_KEY = process.env.CLICK_SECRET_KEY ?? ''
 
@@ -63,21 +53,6 @@ function verifySign(params: Record<string, string>, isComplete: boolean) {
   return safeEqual(md5(parts.join('')), params.sign_string ?? '')
 }
 
-async function findBooking(db: FirebaseFirestore.Firestore, id: string) {
-  const snap = await db.collection('bookings').doc(id).get()
-  return snap.exists ? { id: snap.id, ...snap.data()! } : null
-}
-
-async function findPaymentByClickTx(db: FirebaseFirestore.Firestore, clickTransId: string) {
-  const snap = await db
-    .collection('payments')
-    .where('provider', '==', 'click')
-    .where('provider_transaction_id', '==', clickTransId)
-    .limit(1)
-    .get()
-  return snap.empty ? null : { id: snap.docs[0]!.id, ...snap.docs[0]!.data()! }
-}
-
 async function prepare(db: FirebaseFirestore.Firestore, params: Record<string, string>) {
   if (!verifySign(params, false)) {
     return jsonResponse({
@@ -89,64 +64,99 @@ async function prepare(db: FirebaseFirestore.Firestore, params: Record<string, s
   }
 
   const bookingId = params.merchant_trans_id
-  const booking = await findBooking(db, bookingId)
-  if (!booking) {
-    return jsonResponse({
-      click_trans_id: params.click_trans_id,
-      merchant_trans_id: bookingId,
-      error: CLICK_ERROR.USER_NOT_FOUND,
-      error_note: 'Order not found',
-    })
-  }
+  const clickTransId = params.click_trans_id
 
-  const expectedAmount = Number(booking.total_amount)
-  if (Math.abs(Number(params.amount) - expectedAmount) > 1) {
-    return jsonResponse({
-      click_trans_id: params.click_trans_id,
-      merchant_trans_id: bookingId,
-      error: CLICK_ERROR.INCORRECT_AMOUNT,
-      error_note: 'Incorrect amount',
-    })
-  }
+  return await db.runTransaction(async (transaction) => {
+    const bookingRef = db.collection('bookings').doc(bookingId)
+    const bookingSnap = await transaction.get(bookingRef)
 
-  try {
-    const existing = await findPaymentByClickTx(db, params.click_trans_id)
+    if (!bookingSnap.exists) {
+      return jsonResponse({
+        click_trans_id: clickTransId,
+        merchant_trans_id: bookingId,
+        error: CLICK_ERROR.USER_NOT_FOUND,
+        error_note: 'Order not found',
+      })
+    }
+
+    const booking = bookingSnap.data()!
+    const expectedAmount = Number(booking.total_amount)
+    if (Math.abs(Number(params.amount) - expectedAmount) > 1) {
+      return jsonResponse({
+        click_trans_id: clickTransId,
+        merchant_trans_id: bookingId,
+        error: CLICK_ERROR.INCORRECT_AMOUNT,
+        error_note: 'Incorrect amount',
+      })
+    }
+
+    // Check existing payment transaction
+    const existingSnap = await db
+      .collection('payments')
+      .where('provider', '==', 'click')
+      .where('provider_transaction_id', '==', clickTransId)
+      .limit(1)
+      .get()
+
     const now = new Date().toISOString()
-    const paymentData = {
-      booking_id: bookingId,
-      provider: 'click',
-      provider_transaction_id: params.click_trans_id,
-      amount: booking.total_amount,
-      state: '0',
-      status: 'pending',
-      raw_payload: params,
-      updated_at: now,
-    }
-
     let paymentId: string
-    if (existing) {
-      await db.collection('payments').doc(existing.id).set(paymentData, { merge: true })
-      paymentId = existing.id
+
+    if (!existingSnap.empty) {
+      const existingDoc = existingSnap.docs[0]!
+      paymentId = existingDoc.id
+      const existingData = existingDoc.data()
+
+      // Idempotency: If already paid or prepared, return success response immediately
+      if (existingData.status === 'paid' || existingData.state === '2') {
+        return jsonResponse({
+          click_trans_id: clickTransId,
+          merchant_trans_id: bookingId,
+          merchant_prepare_id: paymentId,
+          error: CLICK_ERROR.SUCCESS,
+          error_note: 'Already paid',
+        })
+      }
+
+      transaction.set(
+        existingDoc.ref,
+        {
+          booking_id: bookingId,
+          provider: 'click',
+          provider_transaction_id: clickTransId,
+          amount: booking.total_amount,
+          state: '0',
+          status: 'pending',
+          raw_payload: params,
+          updated_at: now,
+        },
+        { merge: true },
+      )
     } else {
-      const ref = await db.collection('payments').add({ ...paymentData, created_at: now, performed_at: null, cancelled_at: null })
-      paymentId = ref.id
+      const paymentRef = db.collection('payments').doc()
+      paymentId = paymentRef.id
+      transaction.set(paymentRef, {
+        booking_id: bookingId,
+        provider: 'click',
+        provider_transaction_id: clickTransId,
+        amount: booking.total_amount,
+        state: '0',
+        status: 'pending',
+        raw_payload: params,
+        created_at: now,
+        updated_at: now,
+        performed_at: null,
+        cancelled_at: null,
+      })
     }
 
     return jsonResponse({
-      click_trans_id: params.click_trans_id,
+      click_trans_id: clickTransId,
       merchant_trans_id: bookingId,
       merchant_prepare_id: paymentId,
       error: CLICK_ERROR.SUCCESS,
       error_note: 'Success',
     })
-  } catch (err) {
-    return jsonResponse({
-      click_trans_id: params.click_trans_id,
-      merchant_trans_id: bookingId,
-      error: CLICK_ERROR.INTERNAL_ERROR,
-      error_note: err instanceof Error ? err.message : 'Insert failed',
-    })
-  }
+  })
 }
 
 async function complete(db: FirebaseFirestore.Firestore, params: Record<string, string>) {
@@ -160,56 +170,118 @@ async function complete(db: FirebaseFirestore.Firestore, params: Record<string, 
   }
 
   const bookingId = params.merchant_trans_id
-  const payment = await findPaymentByClickTx(db, params.click_trans_id)
+  const clickTransId = params.click_trans_id
 
-  if (!payment) {
-    return jsonResponse({
-      click_trans_id: params.click_trans_id,
-      merchant_trans_id: bookingId,
-      error: CLICK_ERROR.TRANSACTION_NOT_FOUND,
-      error_note: 'Transaction not found',
+  let shouldNotify = false
+  let notifyParams: any = null
+
+  const response = await db.runTransaction(async (transaction) => {
+    const paymentSnap = await db
+      .collection('payments')
+      .where('provider', '==', 'click')
+      .where('provider_transaction_id', '==', clickTransId)
+      .limit(1)
+      .get()
+
+    if (paymentSnap.empty) {
+      return jsonResponse({
+        click_trans_id: clickTransId,
+        merchant_trans_id: bookingId,
+        error: CLICK_ERROR.TRANSACTION_NOT_FOUND,
+        error_note: 'Transaction not found',
+      })
+    }
+
+    const paymentDoc = paymentSnap.docs[0]!
+    const paymentId = paymentDoc.id
+    const paymentData = paymentDoc.data()
+    const now = new Date().toISOString()
+
+    // Idempotency: If already completed/paid, return success without duplicate actions or notifications
+    if (paymentData.status === 'paid' || paymentData.state === '2') {
+      return jsonResponse({
+        click_trans_id: clickTransId,
+        merchant_trans_id: bookingId,
+        merchant_confirm_id: paymentId,
+        error: CLICK_ERROR.SUCCESS,
+        error_note: 'Already completed',
+      })
+    }
+
+    if (Number(params.error) < 0) {
+      transaction.update(paymentDoc.ref, {
+        state: '-1',
+        status: 'cancelled',
+        cancelled_at: now,
+        updated_at: now,
+      })
+      return jsonResponse({
+        click_trans_id: clickTransId,
+        merchant_trans_id: bookingId,
+        merchant_confirm_id: paymentId,
+        error: CLICK_ERROR.SUCCESS,
+        error_note: 'Cancelled',
+      })
+    }
+
+    // Mark paid atomically
+    transaction.update(paymentDoc.ref, {
+      state: '2',
+      status: 'paid',
+      performed_at: now,
+      updated_at: now,
     })
-  }
 
-  const now = new Date().toISOString()
+    const bookingRef = db.collection('bookings').doc(paymentData.booking_id)
+    const bookingSnap = await transaction.get(bookingRef)
+    const booking = bookingSnap.exists ? bookingSnap.data() : null
 
-  if (Number(params.error) < 0) {
-    await db.collection('payments').doc(payment.id).update({ state: '-1', status: 'cancelled', cancelled_at: now, updated_at: now })
-    return jsonResponse({
-      click_trans_id: params.click_trans_id,
-      merchant_trans_id: bookingId,
-      merchant_confirm_id: payment.id,
-      error: CLICK_ERROR.SUCCESS,
-      error_note: 'Cancelled',
-    })
-  }
+    transaction.update(bookingRef, { status: 'confirmed', updated_at: now })
 
-  await db.collection('payments').doc(payment.id).update({ state: '2', status: 'paid', performed_at: now, updated_at: now })
-  const bookingRef = db.collection('bookings').doc(payment.booking_id)
-  await bookingRef.update({ status: 'confirmed', updated_at: now })
-  const booking = (await bookingRef.get()).data()
-
-  await notifyTelegram(
-    formatPaymentConfirmedMessage({
+    shouldNotify = true
+    notifyParams = {
       provider: 'click',
       contactName: booking?.contact_name ?? '',
       contactPhone: booking?.contact_phone ?? '',
       address: booking ? `${booking.address}, ${booking.city}` : '',
-      amountUZS: Number(payment.amount),
-      bookingId: payment.booking_id,
-    }),
-  )
+      amountUZS: Number(paymentData.amount),
+      bookingId: paymentData.booking_id,
+      serviceName: booking?.service_name || booking?.service_id || 'Tozalash xizmati',
+      date: booking?.date || '',
+      time: booking?.time || '',
+      apartment: booking?.apartment,
+      floor: booking?.floor,
+      entrance: booking?.entrance,
+      intercom: booking?.intercom,
+      landmark: booking?.landmark,
+      lat: booking?.lat,
+      lng: booking?.lng,
+    }
 
-  return jsonResponse({
-    click_trans_id: params.click_trans_id,
-    merchant_trans_id: bookingId,
-    merchant_confirm_id: payment.id,
-    error: CLICK_ERROR.SUCCESS,
-    error_note: 'Success',
+    return jsonResponse({
+      click_trans_id: clickTransId,
+      merchant_trans_id: bookingId,
+      merchant_confirm_id: paymentId,
+      error: CLICK_ERROR.SUCCESS,
+      error_note: 'Success',
+    })
   })
+
+  // Trigger Telegram notification outside the transaction body
+  if (shouldNotify && notifyParams) {
+    await notifyTelegram(formatPaymentConfirmedMessage(notifyParams))
+  }
+
+  return response
 }
 
 const handler: Handler = async (event) => {
+  const ip = getClientIp(event)
+  const allowed = await checkRateLimit(`click-webhook:${ip}`, 30, 60 * 1000)
+  if (!allowed) {
+    return jsonResponse({ error: CLICK_ERROR.INTERNAL_ERROR, error_note: 'Rate limit exceeded' })
+  }
+
   try {
     const params = parseFormOrJson(event)
     const db = getDb()
@@ -218,7 +290,7 @@ const handler: Handler = async (event) => {
     return jsonResponse({ error: CLICK_ERROR.ACTION_NOT_FOUND, error_note: 'Action not found' })
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error(err)
+    console.error('Click handler error:', err)
     return jsonResponse({ error: CLICK_ERROR.INTERNAL_ERROR, error_note: 'Internal error' })
   }
 }

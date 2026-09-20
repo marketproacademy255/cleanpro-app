@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, AlertCircle, Star, UserCheck, Repeat } from 'lucide-react'
-import MapLocationPicker from '@/components/MapLocationPicker'
+import MapLocationPicker, { type LocationDetails } from '@/components/MapLocationPicker'
 import { PageSkeleton } from '@/components/SkeletonLoaders'
 import { fetchActiveAddons, fetchActiveCleaners, fetchActiveServiceTypes } from '@/lib/publicData'
 import { apiFetch, ApiError } from '@/lib/api'
@@ -87,6 +87,7 @@ export default function Booking() {
   })
 
   const formValues = watch()
+  const [locationDetails, setLocationDetails] = useState<LocationDetails | null>(null)
 
   // Fetch available times when date changes
   useEffect(() => {
@@ -143,10 +144,25 @@ export default function Booking() {
 
         const draftRaw = sessionStorage.getItem(DRAFT_KEY)
         if (draftRaw) {
-          const draft = JSON.parse(draftRaw)
-          Object.keys(draft).forEach((key) => {
-            setValue(key as keyof BookingFormValues, draft[key])
-          })
+          try {
+            const draft = JSON.parse(draftRaw)
+            if (draft.serviceId) setValue('serviceId', draft.serviceId)
+            if (draft.rooms) setValue('rooms', Number(draft.rooms))
+            if (draft.areaSqm) setValue('areaSqm', draft.areaSqm)
+            if (draft.floor) setValue('floor', draft.floor)
+            if (draft.address) setValue('address', draft.address)
+            if (draft.city) setValue('city', draft.city)
+            if (draft.date) setValue('date', draft.date)
+            if (draft.time) setValue('time', draft.time)
+            if (draft.frequency) setValue('frequency', draft.frequency)
+            if (draft.tier) setValue('tier', draft.tier)
+            if (draft.addonCodes) setValue('addonCodes', draft.addonCodes)
+            if (draft.contactName) setValue('contactName', draft.contactName)
+            if (draft.contactPhone) setValue('contactPhone', draft.contactPhone)
+            if (draft.notes) setValue('notes', draft.notes)
+          } catch {
+            // Ignore corrupted draft
+          }
           sessionStorage.removeItem(DRAFT_KEY)
         } else {
           const firstCleaning = serviceList.find((s) => (s.category ?? 'cleaning') === 'cleaning')
@@ -237,8 +253,14 @@ export default function Booking() {
           serviceId: selectedService.id,
           rooms: data.rooms,
           areaSqm: data.areaSqm ? Number(data.areaSqm) : null,
-          floor: data.floor ? Number(data.floor) : null,
-          address: data.addressNotes ? `${data.address} (Mo'ljal/Izoh: ${data.addressNotes})` : data.address,
+          floor: locationDetails?.floor ? Number(locationDetails.floor) : (data.floor ? Number(data.floor) : null),
+          apartment: locationDetails?.apartment || null,
+          entrance: locationDetails?.entrance || null,
+          intercom: locationDetails?.intercom || null,
+          landmark: locationDetails?.landmark || (data.addressNotes ?? null),
+          lat: locationDetails?.lat || null,
+          lng: locationDetails?.lng || null,
+          address: data.addressNotes ? `${data.address} (Mo'ljal: ${data.addressNotes})` : data.address,
           city: data.city,
           date: data.date,
           time: data.time,
@@ -388,8 +410,11 @@ export default function Booking() {
               <MapLocationPicker
                 city={formValues.city}
                 initialAddress={formValues.address}
+                initialDetails={locationDetails || undefined}
                 onLocationSelect={(loc) => {
+                  setLocationDetails(loc)
                   setValue('address', loc.address, { shouldValidate: true })
+                  if (loc.landmark) setValue('addressNotes', loc.landmark)
                 }}
               />
 

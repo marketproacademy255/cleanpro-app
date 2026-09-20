@@ -34,17 +34,13 @@ export async function notifyTelegram(text: string): Promise<void> {
 }
 
 /**
- * Sends a message via the separate "auth" Telegram bot (the one customers
- * register through - see the standalone Python bot). Distinct from
- * notifyTelegram() above, which posts to the fixed admin chat using the
- * business's own notification bot. Set TELEGRAM_AUTH_BOT_TOKEN in Netlify
- * env vars (never VITE_-prefixed).
+ * Sends a message via the separate "auth" Telegram bot.
  */
 export async function sendTelegramDirectMessage(chatId: string | number, text: string): Promise<boolean> {
-  const token = process.env.TELEGRAM_AUTH_BOT_TOKEN
+  const token = process.env.TELEGRAM_AUTH_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN
   if (!token) {
     // eslint-disable-next-line no-console
-    console.error('TELEGRAM_AUTH_BOT_TOKEN sozlanmagan, login kodi yuborilmadi.')
+    console.error('TELEGRAM_AUTH_BOT_TOKEN / TELEGRAM_BOT_TOKEN sozlanmagan, xabar yuborilmadi.')
     return false
   }
   try {
@@ -80,30 +76,61 @@ export function formatBookingCreatedMessage(params: {
   time: string
   totalAmountUZS: number
   bookingId: string
+  apartment?: string
+  floor?: string
+  entrance?: string
+  intercom?: string
+  landmark?: string
+  lat?: number
+  lng?: number
+  paymentMethod?: string
   repairNotes?: string
   repairPhotoCount?: number
 }): string {
   const amount = new Intl.NumberFormat('uz-UZ').format(Math.round(params.totalAmountUZS))
   const lines = [
-    '🆕 <b>Yangi buyurtma</b>',
-    `Xizmat: ${esc(params.serviceName)}`,
-    `Mijoz: ${esc(params.contactName)} (${esc(params.contactPhone)})`,
-    `Manzil: ${esc(params.address)}, ${esc(params.city)}`,
-    `Sana: ${esc(params.date)} ${esc(params.time)}`,
-    `Summa: ${amount} so'm`,
-    "To'lov: kutilmoqda",
-    `ID: ${esc(params.bookingId)}`,
+    '🆕 <b>YANGI BUYURTMA</b>',
+    `🆔 <b>ID:</b> <code>${esc(params.bookingId)}</code>`,
+    `🧹 <b>Xizmat:</b> ${esc(params.serviceName)}`,
+    `👤 <b>Mijoz:</b> ${esc(params.contactName)} (${esc(params.contactPhone)})`,
+    `📍 <b>Manzil:</b> ${esc(params.address)}, ${esc(params.city)}`,
   ]
-  // Repair/renovation bookings can include a project description + up to 2
-  // photos (data: URLs - too long for a Telegram message, see
-  // formatReceiptUploadedMessage's same tradeoff) - point the admin at the
-  // panel to view them and adjust the flat estimate into a real quote.
+
+  // Detailed building details
+  const buildingDetails: string[] = []
+  if (params.apartment) buildingDetails.push(`Xonadon/Ofis: ${esc(params.apartment)}`)
+  if (params.floor) buildingDetails.push(`Qavat: ${esc(params.floor)}`)
+  if (params.entrance) buildingDetails.push(`Podyezd: ${esc(params.entrance)}`)
+  if (params.intercom) buildingDetails.push(`Domofon: ${esc(params.intercom)}`)
+
+  if (buildingDetails.length > 0) {
+    lines.push(`🏢 <b>Bino ma'lumotlari:</b> ${buildingDetails.join(', ')}`)
+  }
+
+  if (params.landmark) {
+    lines.push(`🚩 <b>Mo'ljal:</b> ${esc(params.landmark)}`)
+  }
+
+  // Map location link
+  if (typeof params.lat === 'number' && typeof params.lng === 'number' && (params.lat !== 0 || params.lng !== 0)) {
+    const yandexMapUrl = `https://yandex.uz/maps/?pt=${params.lng},${params.lat}&z=17&l=map`
+    lines.push(`🗺️ <b>Xaritada joylashuv:</b> <a href="${yandexMapUrl}">Yandex Maps-da ko'rish</a>`)
+  }
+
+  lines.push(`📅 <b>Sana va vaqt:</b> ${esc(params.date)} soat ${esc(params.time)}`)
+  lines.push(`💰 <b>Summa:</b> <b>${amount} so'm</b>`)
+
+  if (params.paymentMethod) {
+    lines.push(`💳 <b>To'lov usuli:</b> ${esc(params.paymentMethod)}`)
+  }
+
   if (params.repairNotes) {
-    lines.push(`Loyiha tavsifi: ${esc(params.repairNotes)}`)
+    lines.push(`📝 <b>Loyiha tavsifi:</b> ${esc(params.repairNotes)}`)
   }
   if (params.repairPhotoCount) {
-    lines.push(`Loyiha rasmlari: ${params.repairPhotoCount} ta (admin panelda ko'ring, narxni moslashtiring)`)
+    lines.push(`📷 <b>Loyiha rasmlari:</b> ${params.repairPhotoCount} ta (admin panelda ko'ring)`)
   }
+
   return lines.join('\n')
 }
 
@@ -114,10 +141,9 @@ export function formatReferralRewardMessage(params: {
 }): string {
   const amount = new Intl.NumberFormat('uz-UZ').format(Math.round(params.rewardUZS))
   return [
-    "🎁 <b>Referral mukofoti tayyor</b>",
+    '🎁 <b>Referral mukofoti tayyor</b>',
     `Taklif qilingan mijozning buyurtmasi (ID: ${esc(params.bookingId)}) bajarildi.`,
     `Taklif qiluvchi (uid: ${esc(params.referrerUid)}) hisobiga ${amount} so'm kredit yozildi.`,
-    "Eslatma: bu faqat hisob-kitob yozuvi - to'lovni/chegirmani mijozga qo'lda qo'llang (avtomatik pul o'tkazish yo'q).",
   ].join('\n')
 }
 
@@ -130,18 +156,15 @@ export function formatReceiptUploadedMessage(params: {
   receiptUrl: string
 }): string {
   const amount = new Intl.NumberFormat('uz-UZ').format(Math.round(params.amountUZS))
-  // Receipts are stored as data: URLs (no Storage bucket on this project),
-  // which can be hundreds of KB - far too long for a Telegram message, so
-  // we point admins at the admin panel instead of inlining the link.
   const receiptLine = params.receiptUrl.startsWith('data:')
     ? "Chek: admin panel -> Buyurtmalar jadvalida ko'ring"
     : `Chek: ${esc(params.receiptUrl)}`
   return [
-    "🧾 <b>To'lov cheki yuklandi</b>",
-    `Mijoz: ${esc(params.contactName)} (${esc(params.contactPhone)})`,
-    `Manzil: ${esc(params.address)}`,
-    `Summa: ${amount} so'm`,
-    `Buyurtma ID: ${esc(params.bookingId)}`,
+    "🧾 <b>TO'LOV CHEKI YUKLANDI</b>",
+    `👤 <b>Mijoz:</b> ${esc(params.contactName)} (${esc(params.contactPhone)})`,
+    `📍 <b>Manzil:</b> ${esc(params.address)}`,
+    `💰 <b>Summa:</b> ${amount} so'm`,
+    `🆔 <b>Buyurtma ID:</b> ${esc(params.bookingId)}`,
     receiptLine,
     'Admin panelda tekshirib tasdiqlang.',
   ].join('\n')
@@ -161,20 +184,61 @@ export function formatContactMessage(params: {
 }
 
 export function formatPaymentConfirmedMessage(params: {
-  provider: 'payme' | 'click'
+  provider: 'payme' | 'click' | 'cash'
   contactName: string
   contactPhone: string
   address: string
   amountUZS: number
   bookingId: string
+  serviceName?: string
+  date?: string
+  time?: string
+  apartment?: string
+  floor?: string
+  entrance?: string
+  intercom?: string
+  landmark?: string
+  lat?: number
+  lng?: number
 }): string {
   const amount = new Intl.NumberFormat('uz-UZ').format(Math.round(params.amountUZS))
-  return [
-    "✅ <b>To'lov qabul qilindi</b>",
-    `Provayder: ${params.provider === 'payme' ? 'Payme' : 'Click'}`,
-    `Mijoz: ${esc(params.contactName)} (${esc(params.contactPhone)})`,
-    `Manzil: ${esc(params.address)}`,
-    `Summa: ${amount} so'm`,
-    `Buyurtma ID: ${esc(params.bookingId)}`,
-  ].join('\n')
+  const providerTitle = params.provider === 'payme' ? 'Payme' : params.provider === 'click' ? 'Click' : 'Naqd pul'
+
+  const lines = [
+    "✅ <b>TO'LOV MUVAFFAQIYATLI QABUL QILINDI</b>",
+    `💳 <b>To'lov tizimi:</b> ${providerTitle}`,
+    `🆔 <b>Buyurtma ID:</b> <code>${esc(params.bookingId)}</code>`,
+    `👤 <b>Mijoz:</b> ${esc(params.contactName)} (${esc(params.contactPhone)})`,
+    `📍 <b>Manzil:</b> ${esc(params.address)}`,
+  ]
+
+  const buildingDetails: string[] = []
+  if (params.apartment) buildingDetails.push(`Xonadon: ${esc(params.apartment)}`)
+  if (params.floor) buildingDetails.push(`Qavat: ${esc(params.floor)}`)
+  if (params.entrance) buildingDetails.push(`Podyezd: ${esc(params.entrance)}`)
+  if (params.intercom) buildingDetails.push(`Domofon: ${esc(params.intercom)}`)
+
+  if (buildingDetails.length > 0) {
+    lines.push(`🏢 <b>Bino:</b> ${buildingDetails.join(', ')}`)
+  }
+
+  if (params.landmark) {
+    lines.push(`🚩 <b>Mo'ljal:</b> ${esc(params.landmark)}`)
+  }
+
+  if (typeof params.lat === 'number' && typeof params.lng === 'number' && (params.lat !== 0 || params.lng !== 0)) {
+    const yandexMapUrl = `https://yandex.uz/maps/?pt=${params.lng},${params.lat}&z=17&l=map`
+    lines.push(`🗺️ <b>Xarita:</b> <a href="${yandexMapUrl}">Yandex Maps-da ochish</a>`)
+  }
+
+  if (params.serviceName) {
+    lines.push(`🧹 <b>Xizmat:</b> ${esc(params.serviceName)}`)
+  }
+  if (params.date && params.time) {
+    lines.push(`📅 <b>Vaqt:</b> ${esc(params.date)} ${esc(params.time)}`)
+  }
+
+  lines.push(`💰 <b>To'langan summa:</b> <b>${amount} so'm</b>`)
+
+  return lines.join('\n')
 }

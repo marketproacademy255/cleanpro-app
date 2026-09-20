@@ -1,25 +1,11 @@
-// Netlify Function: Payme Merchant API (JSON-RPC 2.0)
-//
-// This implements the standard Payme merchant webhook methods:
-// CheckPerformTransaction, CreateTransaction, PerformTransaction,
-// CancelTransaction, CheckTransaction, GetStatement.
-//
-// SETUP:
-//   1. Register as a merchant at https://business.payme.uz
-//   2. Set this function's URL as your "Payment URL" in the Payme cabinet:
-//        https://<your-site>.netlify.app/.netlify/functions/payme
-//   3. Set PAYME_MERCHANT_KEY in Netlify env vars (Site settings ->
-//      Environment variables).
-//   4. Review this file against the latest Payme docs
-//      (https://developer.help.paycom.uz) before going to production -
-//      this is a solid starting point, not a certified integration.
-//
+// Netlify Function: Payme Merchant API (JSON-RPC 2.0 with Atomic Idempotency)
 // eslint-disable @typescript-eslint/no-explicit-any
 import type { Handler } from '@netlify/functions'
 import { getDb } from './_lib/firebaseAdmin'
 import { rawBody } from './_lib/parseBody'
 import { formatPaymentConfirmedMessage, notifyTelegram } from './_lib/telegram'
 import { safeEqual } from './_lib/safeEqual'
+import { checkRateLimit, getClientIp } from './_lib/rateLimit'
 
 const PAYME_MERCHANT_KEY = process.env.PAYME_MERCHANT_KEY ?? ''
 
@@ -62,16 +48,6 @@ async function findBooking(db: FirebaseFirestore.Firestore, orderId: string) {
   return snap.exists ? { id: snap.id, ...snap.data()! } : null
 }
 
-async function findPayment(db: FirebaseFirestore.Firestore, transactionId: string) {
-  const snap = await db
-    .collection('payments')
-    .where('provider', '==', 'payme')
-    .where('provider_transaction_id', '==', transactionId)
-    .limit(1)
-    .get()
-  return snap.empty ? null : { id: snap.docs[0]!.id, ...snap.docs[0]!.data()! }
-}
-
 async function checkPerformTransaction(db: FirebaseFirestore.Firestore, id: unknown, params: any) {
   const orderId = params?.account?.order_id
   const booking = orderId ? await findBooking(db, orderId) : null
@@ -86,97 +62,190 @@ async function checkPerformTransaction(db: FirebaseFirestore.Firestore, id: unkn
 
 async function createTransaction(db: FirebaseFirestore.Firestore, id: unknown, params: any) {
   const orderId = params?.account?.order_id
-  const booking = orderId ? await findBooking(db, orderId) : null
-  if (!booking) return rpcError(id, ERROR.ORDER_NOT_FOUND, 'Order not found')
+  const paymeTransId = params.id
 
-  const existing = await findPayment(db, params.id)
-  if (existing) {
-    if (existing.state === '2') {
-      return rpcError(id, ERROR.ALREADY_PERFORMED, 'Transaction already performed')
+  return await db.runTransaction(async (transaction) => {
+    const bookingRef = db.collection('bookings').doc(orderId)
+    const bookingSnap = await transaction.get(bookingRef)
+
+    if (!bookingSnap.exists) {
+      return rpcError(id, ERROR.ORDER_NOT_FOUND, 'Order not found')
     }
-    return rpcResult(id, {
-      create_time: new Date(existing.created_at).getTime(),
-      transaction: existing.id,
-      state: 1,
+
+    const booking = bookingSnap.data()!
+    const expectedTiyin = Math.round(Number(booking.total_amount) * 100)
+    if (Number(params.amount) !== expectedTiyin) {
+      return rpcError(id, ERROR.INVALID_AMOUNT, 'Incorrect amount')
+    }
+
+    const existingSnap = await db
+      .collection('payments')
+      .where('provider', '==', 'payme')
+      .where('provider_transaction_id', '==', paymeTransId)
+      .limit(1)
+      .get()
+
+    if (!existingSnap.empty) {
+      const existing = existingSnap.docs[0]!.data()
+      const existingId = existingSnap.docs[0]!.id
+
+      if (existing.state === '2') {
+        return rpcError(id, ERROR.ALREADY_PERFORMED, 'Transaction already performed')
+      }
+      return rpcResult(id, {
+        create_time: new Date(existing.created_at).getTime(),
+        transaction: existingId,
+        state: Number(existing.state ?? 1),
+      })
+    }
+
+    const now = new Date().toISOString()
+    const paymentRef = db.collection('payments').doc()
+
+    transaction.set(paymentRef, {
+      booking_id: bookingSnap.id,
+      provider: 'payme',
+      provider_transaction_id: paymeTransId,
+      amount: booking.total_amount,
+      state: '1',
+      status: 'pending',
+      raw_payload: params,
+      created_at: now,
+      updated_at: now,
+      performed_at: null,
+      cancelled_at: null,
     })
-  }
 
-  const expectedTiyin = Math.round(Number(booking.total_amount) * 100)
-  if (Number(params.amount) !== expectedTiyin) {
-    return rpcError(id, ERROR.INVALID_AMOUNT, 'Incorrect amount')
-  }
-
-  const now = new Date().toISOString()
-  const ref = await db.collection('payments').add({
-    booking_id: booking.id,
-    provider: 'payme',
-    provider_transaction_id: params.id,
-    amount: booking.total_amount,
-    state: '1',
-    status: 'pending',
-    raw_payload: params,
-    created_at: now,
-    updated_at: now,
-    performed_at: null,
-    cancelled_at: null,
+    return rpcResult(id, { create_time: new Date(now).getTime(), transaction: paymentRef.id, state: 1 })
   })
-
-  return rpcResult(id, { create_time: new Date(now).getTime(), transaction: ref.id, state: 1 })
 }
 
 async function performTransaction(db: FirebaseFirestore.Firestore, id: unknown, params: any) {
-  const payment = await findPayment(db, params.id)
-  if (!payment) return rpcError(id, ERROR.TRANSACTION_NOT_FOUND, 'Transaction not found')
+  const paymeTransId = params.id
+  let shouldNotify = false
+  let notifyParams: any = null
 
-  if (payment.state === '2') {
-    return rpcResult(id, {
-      transaction: payment.id,
-      perform_time: new Date(payment.performed_at).getTime(),
-      state: 2,
-    })
-  }
+  const response = await db.runTransaction(async (transaction) => {
+    const existingSnap = await db
+      .collection('payments')
+      .where('provider', '==', 'payme')
+      .where('provider_transaction_id', '==', paymeTransId)
+      .limit(1)
+      .get()
 
-  const now = new Date().toISOString()
-  await db.collection('payments').doc(payment.id).update({ state: '2', status: 'paid', performed_at: now, updated_at: now })
-  const bookingRef = db.collection('bookings').doc(payment.booking_id)
-  await bookingRef.update({ status: 'confirmed', updated_at: now })
-  const booking = (await bookingRef.get()).data()
+    if (existingSnap.empty) {
+      return rpcError(id, ERROR.TRANSACTION_NOT_FOUND, 'Transaction not found')
+    }
 
-  await notifyTelegram(
-    formatPaymentConfirmedMessage({
+    const paymentDoc = existingSnap.docs[0]!
+    const payment = paymentDoc.data()
+    const paymentId = paymentDoc.id
+
+    // Idempotency: If already state 2 (paid), return perform result without duplicate operations or Telegram messages
+    if (payment.state === '2' || payment.status === 'paid') {
+      return rpcResult(id, {
+        transaction: paymentId,
+        perform_time: new Date(payment.performed_at).getTime(),
+        state: 2,
+      })
+    }
+
+    const now = new Date().toISOString()
+    transaction.update(paymentDoc.ref, { state: '2', status: 'paid', performed_at: now, updated_at: now })
+
+    const bookingRef = db.collection('bookings').doc(payment.booking_id)
+    const bookingSnap = await transaction.get(bookingRef)
+    const booking = bookingSnap.exists ? bookingSnap.data() : null
+
+    transaction.update(bookingRef, { status: 'confirmed', updated_at: now })
+
+    shouldNotify = true
+    notifyParams = {
       provider: 'payme',
       contactName: booking?.contact_name ?? '',
       contactPhone: booking?.contact_phone ?? '',
       address: booking ? `${booking.address}, ${booking.city}` : '',
       amountUZS: Number(payment.amount),
       bookingId: payment.booking_id,
-    }),
-  )
+      serviceName: booking?.service_name || booking?.service_id || 'Tozalash xizmati',
+      date: booking?.date || '',
+      time: booking?.time || '',
+      apartment: booking?.apartment,
+      floor: booking?.floor,
+      entrance: booking?.entrance,
+      intercom: booking?.intercom,
+      landmark: booking?.landmark,
+      lat: booking?.lat,
+      lng: booking?.lng,
+    }
 
-  return rpcResult(id, { transaction: payment.id, perform_time: new Date(now).getTime(), state: 2 })
+    return rpcResult(id, { transaction: paymentId, perform_time: new Date(now).getTime(), state: 2 })
+  })
+
+  if (shouldNotify && notifyParams) {
+    await notifyTelegram(formatPaymentConfirmedMessage(notifyParams))
+  }
+
+  return response
 }
 
 async function cancelTransaction(db: FirebaseFirestore.Firestore, id: unknown, params: any) {
-  const payment = await findPayment(db, params.id)
-  if (!payment) return rpcError(id, ERROR.TRANSACTION_NOT_FOUND, 'Transaction not found')
+  const paymeTransId = params.id
 
-  const newState = payment.state === '2' ? '-2' : '-1'
-  const now = new Date().toISOString()
-  await db.collection('payments').doc(payment.id).update({ state: newState, status: 'cancelled', cancelled_at: now, updated_at: now })
-  await db.collection('bookings').doc(payment.booking_id).update({ status: 'cancelled', updated_at: now })
+  return await db.runTransaction(async (transaction) => {
+    const existingSnap = await db
+      .collection('payments')
+      .where('provider', '==', 'payme')
+      .where('provider_transaction_id', '==', paymeTransId)
+      .limit(1)
+      .get()
 
-  return rpcResult(id, { transaction: payment.id, cancel_time: new Date(now).getTime(), state: Number(newState) })
+    if (existingSnap.empty) {
+      return rpcError(id, ERROR.TRANSACTION_NOT_FOUND, 'Transaction not found')
+    }
+
+    const paymentDoc = existingSnap.docs[0]!
+    const payment = paymentDoc.data()
+    const paymentId = paymentDoc.id
+
+    // Idempotency: If already cancelled, return existing cancel state
+    if (Number(payment.state) < 0) {
+      return rpcResult(id, {
+        transaction: paymentId,
+        cancel_time: payment.cancelled_at ? new Date(payment.cancelled_at).getTime() : Date.now(),
+        state: Number(payment.state),
+      })
+    }
+
+    const newState = payment.state === '2' ? '-2' : '-1'
+    const now = new Date().toISOString()
+    transaction.update(paymentDoc.ref, { state: newState, status: 'cancelled', cancelled_at: now, updated_at: now })
+
+    const bookingRef = db.collection('bookings').doc(payment.booking_id)
+    transaction.update(bookingRef, { status: 'cancelled', updated_at: now })
+
+    return rpcResult(id, { transaction: paymentId, cancel_time: new Date(now).getTime(), state: Number(newState) })
+  })
 }
 
 async function checkTransaction(db: FirebaseFirestore.Firestore, id: unknown, params: any) {
-  const payment = await findPayment(db, params.id)
-  if (!payment) return rpcError(id, ERROR.TRANSACTION_NOT_FOUND, 'Transaction not found')
+  const snap = await db
+    .collection('payments')
+    .where('provider', '==', 'payme')
+    .where('provider_transaction_id', '==', params.id)
+    .limit(1)
+    .get()
+
+  if (snap.empty) return rpcError(id, ERROR.TRANSACTION_NOT_FOUND, 'Transaction not found')
+
+  const doc = snap.docs[0]!
+  const payment = doc.data()
 
   return rpcResult(id, {
     create_time: new Date(payment.created_at).getTime(),
     perform_time: payment.performed_at ? new Date(payment.performed_at).getTime() : 0,
     cancel_time: payment.cancelled_at ? new Date(payment.cancelled_at).getTime() : 0,
-    transaction: payment.id,
+    transaction: doc.id,
     state: Number(payment.state ?? 1),
     reason: null,
   })
@@ -212,6 +281,12 @@ async function getStatement(db: FirebaseFirestore.Firestore, id: unknown, params
 }
 
 const handler: Handler = async (event) => {
+  const ip = getClientIp(event)
+  const allowed = await checkRateLimit(`payme-webhook:${ip}`, 30, 60 * 1000)
+  if (!allowed) {
+    return rpcError(null, ERROR.UNABLE_TO_PERFORM, 'Rate limit exceeded')
+  }
+
   let body: any
   try {
     body = JSON.parse(rawBody(event) || '{}')
@@ -247,7 +322,7 @@ const handler: Handler = async (event) => {
     }
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error(err)
+    console.error('Payme handler error:', err)
     return rpcError(id, ERROR.UNABLE_TO_PERFORM, 'Internal error')
   }
 }

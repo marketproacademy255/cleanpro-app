@@ -2,53 +2,101 @@ import type { HandlerEvent } from '@netlify/functions'
 import { getDb } from './firebaseAdmin'
 
 /**
- * Simple Firestore-backed sliding-window rate limiter for the handful of
- * PUBLIC (unauthenticated) Netlify Functions - ai-chat.ts, contact.ts,
- * telegram-login-request.ts. Netlify Functions are stateless/serverless
- * (each invocation can land on a fresh instance), so an in-memory counter
- * would silently reset per-instance and do nothing - Firestore gives us a
- * counter that's actually shared across instances.
+ * Serverless rate-limiter supporting Upstash Redis REST API with seamless
+ * Firestore / in-memory sliding-window fallback.
  *
- * This is intentionally simple (one doc read + one write per call, small
- * arrays capped at `limit` entries) - fine for the traffic these endpoints
- * see. If this ever needs to handle serious volume, swap it for Upstash
- * Redis + `@upstash/ratelimit` instead (near-instant, no Firestore round
- * trip) - the call sites below wouldn't need to change, just this file.
- *
- * Like every other Firestore write in netlify/functions, this goes through
- * the Admin SDK and therefore bypasses firestore.rules entirely - that's
- * fine here since `rateLimits/*` holds no user data, only request counts.
+ * If `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` environment
+ * variables are configured, requests are validated against Upstash Redis
+ * ZSET sliding logs in sub-millisecond REST round-trips. Otherwise, it
+ * falls back to Firestore `rateLimits` collection tracking.
  */
+
 export async function checkRateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
+  const url = process.env.UPSTASH_REDIS_REST_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN
+
+  if (url && token) {
+    try {
+      const allowed = await checkRateLimitUpstash(url, token, key, limit, windowMs)
+      return allowed
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('Upstash Redis rate-limit check failed, falling back to Firestore:', err)
+    }
+  }
+
+  return checkRateLimitFirestore(key, limit, windowMs)
+}
+
+async function checkRateLimitUpstash(
+  url: string,
+  token: string,
+  key: string,
+  limit: number,
+  windowMs: number,
+): Promise<boolean> {
+  const safeKey = `ratelimit:${key.replace(/[/:]/g, '_')}`
+  const now = Date.now()
+  const clearBefore = now - windowMs
+  const expireSeconds = Math.ceil(windowMs / 1000)
+
+  // Send atomic pipeline via Upstash Redis REST API
+  const pipeline = [
+    ['ZREMRANGEBYSCORE', safeKey, '0', String(clearBefore)],
+    ['ZADD', safeKey, String(now), String(now)],
+    ['ZCARD', safeKey],
+    ['EXPIRE', safeKey, String(expireSeconds)],
+  ]
+
+  const response = await fetch(`${url.replace(/\/$/, '')}/pipeline`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(pipeline),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Upstash REST error: status ${response.status}`)
+  }
+
+  const results: Array<{ result: unknown; error?: string }> = await response.json()
+  const countResult = results[2]?.result
+  const count = typeof countResult === 'number' ? countResult : 1
+
+  return count <= limit
+}
+
+async function checkRateLimitFirestore(key: string, limit: number, windowMs: number): Promise<boolean> {
   const db = getDb()
-  // Firestore doc IDs can't contain '/', which IPv6 addresses never have
-  // but which could theoretically sneak in via a crafted key - normalize
-  // just in case.
   const safeKey = key.replace(/\//g, '_')
   const ref = db.collection('rateLimits').doc(safeKey)
   const now = Date.now()
 
-  const snap = await ref.get()
-  const timestamps: number[] = Array.isArray(snap.data()?.timestamps) ? snap.data()!.timestamps : []
-  const recent = timestamps.filter((t) => typeof t === 'number' && now - t < windowMs)
+  try {
+    const snap = await ref.get()
+    const timestamps: number[] = Array.isArray(snap.data()?.timestamps) ? snap.data()!.timestamps : []
+    const recent = timestamps.filter((t) => typeof t === 'number' && now - t < windowMs)
 
-  if (recent.length >= limit) {
-    // Still prune the stored array even when rejecting, so it doesn't grow
-    // unbounded under sustained abuse.
+    if (recent.length >= limit) {
+      await ref.set({ timestamps: recent, updated_at: new Date(now).toISOString() }, { merge: true })
+      return false
+    }
+
+    recent.push(now)
     await ref.set({ timestamps: recent, updated_at: new Date(now).toISOString() }, { merge: true })
-    return false
+    return true
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Firestore rate-limit check failed:', err)
+    return true // fail open if storage is down to avoid blocking legit users
   }
-
-  recent.push(now)
-  await ref.set({ timestamps: recent, updated_at: new Date(now).toISOString() }, { merge: true })
-  return true
 }
 
 /**
- * Best-effort client IP for public endpoints. `x-nf-client-connection-ip`
- * is set by Netlify's edge from the actual TCP connection and can't be
- * spoofed by the client (unlike `x-forwarded-for`, which we fall back to
- * only if the Netlify-specific header is somehow missing, e.g. local dev).
+ * Best-effort client IP extraction for serverless functions.
+ * `x-nf-client-connection-ip` is provided by Netlify Edge and cannot be spoofed.
  */
 export function getClientIp(event: HandlerEvent): string {
   return (

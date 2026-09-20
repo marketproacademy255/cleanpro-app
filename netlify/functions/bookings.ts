@@ -2,15 +2,16 @@ import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
 import { authenticate, isAdmin } from './_lib/auth'
 import { getDb } from './_lib/firebaseAdmin'
 import { docData, queryData } from './_lib/firestoreUtil'
-import { badRequest, forbidden, json, notFound, serverError, unauthorized } from './_lib/respond'
+import { badRequest, forbidden, json, notFound, serverError, tooManyRequests, unauthorized } from './_lib/respond'
 import { formatBookingCreatedMessage, formatReferralRewardMessage, notifyTelegram } from './_lib/telegram'
+import { checkRateLimit, getClientIp } from './_lib/rateLimit'
 import { REFERRAL_REWARD_UZS } from './_lib/referral'
 import { calculatePrice, FIRST_BOOKING_DISCOUNT, REFERRAL_REFERRED_DISCOUNT } from '../../src/lib/pricing'
 import type { Addon, Booking, BookingFrequency, BookingTier, Cleaner, ServiceType } from '../../src/lib/types'
 
 const VALID_TIERS: BookingTier[] = ['standard', 'premium', 'elite']
 const MAX_REPAIR_PHOTOS = 2
-const MAX_REPAIR_PHOTO_LENGTH = 350_000 // each photo is a compressed data: URL - see src/lib/projectPhoto.ts
+const MAX_REPAIR_PHOTO_LENGTH = 350_000 // each photo is a compressed data: URL
 const MAX_REPAIR_NOTES_LENGTH = 2000
 
 interface CreateBookingBody {
@@ -18,6 +19,12 @@ interface CreateBookingBody {
   rooms: number
   areaSqm: number | null
   floor: number | null
+  apartment?: string | null
+  entrance?: string | null
+  intercom?: string | null
+  landmark?: string | null
+  lat?: number | null
+  lng?: number | null
   address: string
   city: string
   date: string
@@ -28,14 +35,14 @@ interface CreateBookingBody {
   contactName: string
   contactPhone: string
   notes: string
+  paymentMethod?: string
   repairPhotos?: string[]
   repairNotes?: string
   cleanerId?: string | null
   isSubscription?: boolean
 }
 
-/** Firestore has no joins - manually attach service_types/cleaners/payments,
- * matching the shape the frontend expects (see src/lib/types.ts Booking). */
+/** Firestore has no joins - manually attach service_types/cleaners/payments */
 async function enrichBooking(
   db: FirebaseFirestore.Firestore,
   id: string,
@@ -94,6 +101,10 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
 
   // ---------- POST: create a booking (price recomputed server-side) ----------
   if (event.httpMethod === 'POST') {
+    const ip = getClientIp(event)
+    const allowed = await checkRateLimit(`booking-create:${ip}:${req.uid}`, 10, 60 * 1000)
+    if (!allowed) return tooManyRequests()
+
     let body: CreateBookingBody
     try {
       body = JSON.parse(event.body ?? '{}')
@@ -131,10 +142,6 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
 
     const tier: BookingTier = VALID_TIERS.includes(body.tier as BookingTier) ? (body.tier as BookingTier) : 'standard'
 
-    // Repair project photos/notes - optional, only meaningful for the
-    // repair category, but harmless to store either way. Validated
-    // server-side (count + size) since these land straight on a Firestore
-    // document (1 MiB cap) same as payment receipts.
     const repairPhotos = Array.isArray(body.repairPhotos) ? body.repairPhotos.slice(0, MAX_REPAIR_PHOTOS) : []
     for (const photo of repairPhotos) {
       if (typeof photo !== 'string' || photo.length > MAX_REPAIR_PHOTO_LENGTH) {
@@ -143,8 +150,6 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     }
     const repairNotes = typeof body.repairNotes === 'string' ? body.repairNotes.slice(0, MAX_REPAIR_NOTES_LENGTH) : null
 
-    // Automatic new-customer / referral discount - never trust a
-    // client-sent flag, determine both eligibility conditions server-side.
     let extraDiscountRate = 0
     let extraDiscountKind: 'referral' | 'first' | null = null
     if (req.profile?.referral_discount_pending) {
@@ -158,7 +163,6 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       }
     }
 
-    // Never trust client-sent prices - recompute from the source of truth.
     const price = calculatePrice({
       service,
       rooms: Number(body.rooms) || 1,
@@ -181,6 +185,13 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       rooms: body.rooms,
       area_sqm: body.areaSqm ? Number(body.areaSqm) : null,
       address: body.address,
+      apartment: body.apartment ?? null,
+      floor: body.floor ? Number(body.floor) : null,
+      entrance: body.entrance ?? null,
+      intercom: body.intercom ?? null,
+      landmark: body.landmark ?? null,
+      lat: typeof body.lat === 'number' ? body.lat : null,
+      lng: typeof body.lng === 'number' ? body.lng : null,
       city: body.city || 'Toshkent',
       scheduled_date: body.date,
       scheduled_time: body.time,
@@ -190,6 +201,7 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       contact_name: body.contactName || req.profile?.full_name || null,
       contact_phone: body.contactPhone,
       notes: body.notes ?? null,
+      payment_method: body.paymentMethod ?? null,
       repair_photos: repairPhotos,
       repair_notes: repairNotes,
       base_amount: price.subtotal,
@@ -204,9 +216,6 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     const ref = await db.collection('bookings').add(newBooking)
     const booking = await enrichBooking(db, ref.id, newBooking)
 
-    // If a referral discount was just used, clear the pending flag and
-    // link the redemption row to this booking so the PATCH handler below
-    // knows to reward the referrer once it's marked 'completed'.
     if (extraDiscountKind === 'referral') {
       await db.collection('profiles').doc(req.uid).update({ referral_discount_pending: false })
       const redemptionSnap = await db
@@ -231,6 +240,14 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
         time: booking.scheduled_time,
         totalAmountUZS: booking.total_amount,
         bookingId: booking.id,
+        apartment: body.apartment ?? undefined,
+        floor: body.floor ? String(body.floor) : undefined,
+        entrance: body.entrance ?? undefined,
+        intercom: body.intercom ?? undefined,
+        landmark: body.landmark ?? undefined,
+        lat: typeof body.lat === 'number' ? body.lat : undefined,
+        lng: typeof body.lng === 'number' ? body.lng : undefined,
+        paymentMethod: body.paymentMethod ?? undefined,
         repairNotes: booking.repair_notes ?? undefined,
         repairPhotoCount: booking.repair_photos?.length ?? 0,
       }),
@@ -288,9 +305,6 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     const updated = await ref.get()
     const updatedData = updated.data()!
 
-    // Referral reward: once a referred customer's booking is marked
-    // 'completed', credit the referrer (see _lib/referral.ts - manually
-    // applied by the admin, there's no auto-payout rail here).
     if (patch.status === 'completed' && before.status !== 'completed' && updatedData.customer_id) {
       const redemptionSnap = await db
         .collection('referralRedemptions')

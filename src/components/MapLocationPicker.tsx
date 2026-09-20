@@ -1,11 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
-import { Crosshair, MapPin, Loader2, Check, Search, AlertCircle } from 'lucide-react'
+import { Crosshair, MapPin, Loader2, Check, Search, AlertCircle, Building } from 'lucide-react'
+
+export interface LocationDetails {
+  address: string
+  lat: number
+  lng: number
+  apartment?: string
+  floor?: string
+  entrance?: string
+  intercom?: string
+  landmark?: string
+}
 
 interface MapLocationPickerProps {
   city?: string
   initialAddress?: string
-  onLocationSelect: (location: { address: string; lat: number; lng: number }) => void
+  initialDetails?: Partial<LocationDetails>
+  onLocationSelect: (location: LocationDetails) => void
 }
 
 const CITY_COORDS: Record<string, [number, number]> = {
@@ -35,7 +47,6 @@ const CITY_COORDS: Record<string, [number, number]> = {
   Samarkand: [39.6542, 66.9597],
 }
 
-// Custom SVG marker pin icon to avoid broken image asset paths
 const customIcon = L.divIcon({
   className: 'custom-leaflet-marker',
   html: `
@@ -63,6 +74,7 @@ interface SearchResult {
 export default function MapLocationPicker({
   city = 'Toshkent',
   initialAddress = '',
+  initialDetails = {},
   onLocationSelect,
 }: MapLocationPickerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
@@ -71,10 +83,18 @@ export default function MapLocationPicker({
 
   const defaultCenter = CITY_COORDS[city] || CITY_COORDS['Toshkent']
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({
-    lat: defaultCenter[0],
-    lng: defaultCenter[1],
+    lat: initialDetails?.lat || defaultCenter[0],
+    lng: initialDetails?.lng || defaultCenter[1],
   })
   const [addressText, setAddressText] = useState(initialAddress)
+
+  // Building detail inputs
+  const [apartment, setApartment] = useState(initialDetails.apartment || '')
+  const [floor, setFloor] = useState(initialDetails.floor || '')
+  const [entrance, setEntrance] = useState(initialDetails.entrance || '')
+  const [intercom, setIntercom] = useState(initialDetails.intercom || '')
+  const [landmark, setLandmark] = useState(initialDetails.landmark || '')
+
   const [geocoding, setGeocoding] = useState(false)
   const [locating, setLocating] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
@@ -86,12 +106,27 @@ export default function MapLocationPicker({
   const [isSearching, setIsSearching] = useState(false)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Helper to emit complete location details payload
+  function notifyChange(address: string, lat: number, lng: number, overrides = {}) {
+    onLocationSelect({
+      address,
+      lat,
+      lng,
+      apartment,
+      floor,
+      entrance,
+      intercom,
+      landmark,
+      ...overrides,
+    })
+  }
+
   // Initialize Leaflet map
   useEffect(() => {
     if (!mapContainerRef.current) return
     if (mapRef.current) return
 
-    const initialCoords = CITY_COORDS[city] || CITY_COORDS['Toshkent']
+    const initialCoords: [number, number] = [coords.lat, coords.lng]
 
     const map = L.map(mapContainerRef.current, {
       center: initialCoords,
@@ -198,7 +233,7 @@ export default function MapLocationPicker({
 
     setAddressText(formattedAddress)
     if (notifyParent) {
-      onLocationSelect({ address: formattedAddress, lat, lng })
+      notifyChange(formattedAddress, lat, lng)
     }
     setGeocoding(false)
   }
@@ -296,7 +331,7 @@ export default function MapLocationPicker({
     setSearchResults([])
     setSearchQuery('')
     setConfirmed(true)
-    onLocationSelect({ address: formatted, lat, lng })
+    notifyChange(formatted, lat, lng)
   }
 
   // Auto-request location on mount if no initial address is set
@@ -319,7 +354,6 @@ export default function MapLocationPicker({
     setGpsError(null)
 
     try {
-      // Call HTML5 Geolocation API with high accuracy and 30s timeout to allow user interaction with browser prompt
       const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
@@ -339,12 +373,10 @@ export default function MapLocationPicker({
       setGpsError(null)
     } catch (err: any) {
       if (err && err.code === 1) {
-        // PERMISSION_DENIED: User clicked "Block" or site permission is set to Block
         setGpsError(
           "Brauzerda joylashuvga ruxsat berilmadi (Blocked). Iltimos, brauzeringizda ushbu sayt uchun joylashuvga ruxsat bering yoki manzilni xaritadan tanlang.",
         )
       } else {
-        // Position unavailable or timed out -> try IP fallback
         const ipSuccess = await fallbackToIPLocation()
         if (!ipSuccess && !isAutoMount) {
           setGpsError(
@@ -400,7 +432,6 @@ export default function MapLocationPicker({
           {isSearching && <Loader2 className="absolute right-2.5 h-4 w-4 animate-spin text-brand-600" />}
         </div>
 
-        {/* Search Results Dropdown */}
         {searchResults.length > 0 && (
           <div className="absolute z-[1000] mt-1 w-full rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
             {searchResults.map((item) => (
@@ -428,7 +459,7 @@ export default function MapLocationPicker({
 
       {/* Address Text Preview */}
       <div className="rounded-lg bg-white p-3 border border-gray-100 dark:border-gray-800 dark:bg-gray-800/80">
-        <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">Xaritadan aniqlangan manzil:</div>
+        <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">Xaritadan aniqlangan ko'cha:</div>
         <div className="mt-1 flex items-start justify-between gap-2">
           <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {geocoding ? (
@@ -448,7 +479,7 @@ export default function MapLocationPicker({
               type="button"
               onClick={() => {
                 setConfirmed(true)
-                onLocationSelect({ address: addressText, lat: coords.lat, lng: coords.lng })
+                notifyChange(addressText, coords.lat, coords.lng)
               }}
               className={`shrink-0 inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold transition ${
                 confirmed
@@ -461,8 +492,95 @@ export default function MapLocationPicker({
             </button>
           )}
         </div>
-        <div className="mt-2 text-[11px] text-gray-400 dark:text-gray-500">
-          💡 Xaritadagi belgini surib yoki istalgan nuqtaga bosib aniq joyni tanlashingiz mumkin.
+      </div>
+
+      {/* Detailed Building Input Fields */}
+      <div className="rounded-lg bg-white p-3 border border-gray-100 space-y-3 dark:border-gray-800 dark:bg-gray-800/80">
+        <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+          <Building className="h-3.5 w-3.5 text-brand-600" />
+          <span>Aniq bino va xonadon ma'lumotlari:</span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div>
+            <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-1">Xonadon / Ofis</label>
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                value={apartment}
+                onChange={(e) => {
+                  setApartment(e.target.value)
+                  notifyChange(addressText, coords.lat, coords.lng, { apartment: e.target.value })
+                }}
+                placeholder="Masalan: 42"
+                className="w-full rounded-md border border-gray-300 bg-white py-1.5 px-2.5 text-xs text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-1">Qavat (Etaj)</label>
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                value={floor}
+                onChange={(e) => {
+                  setFloor(e.target.value)
+                  notifyChange(addressText, coords.lat, coords.lng, { floor: e.target.value })
+                }}
+                placeholder="Masalan: 5"
+                className="w-full rounded-md border border-gray-300 bg-white py-1.5 px-2.5 text-xs text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-1">Podyezd</label>
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                value={entrance}
+                onChange={(e) => {
+                  setEntrance(e.target.value)
+                  notifyChange(addressText, coords.lat, coords.lng, { entrance: e.target.value })
+                }}
+                placeholder="Masalan: 2"
+                className="w-full rounded-md border border-gray-300 bg-white py-1.5 px-2.5 text-xs text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-1">Domofon kodi</label>
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                value={intercom}
+                onChange={(e) => {
+                  setIntercom(e.target.value)
+                  notifyChange(addressText, coords.lat, coords.lng, { intercom: e.target.value })
+                }}
+                placeholder="Masalan: 42K"
+                className="w-full rounded-md border border-gray-300 bg-white py-1.5 px-2.5 text-xs text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[11px] font-medium text-gray-600 dark:text-gray-400 block mb-1">Mo'ljal (Orientir)</label>
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              value={landmark}
+              onChange={(e) => {
+                setLandmark(e.target.value)
+                notifyChange(addressText, coords.lat, coords.lng, { landmark: e.target.value })
+              }}
+              placeholder="Masalan: Makro supermarketi ro'parasida, 4-maktab yonida"
+              className="w-full rounded-md border border-gray-300 bg-white py-1.5 px-2.5 text-xs text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            />
+          </div>
         </div>
       </div>
     </div>

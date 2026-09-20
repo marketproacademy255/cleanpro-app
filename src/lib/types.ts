@@ -117,6 +117,14 @@ export interface Booking {
   rooms: number
   area_sqm: number | null
   address: string
+  apartment?: string | null
+  floor?: number | null
+  entrance?: string | null
+  intercom?: string | null
+  landmark?: string | null
+  lat?: number | null
+  lng?: number | null
+  payment_method?: string | null
   city: string
   scheduled_date: string
   scheduled_time: string

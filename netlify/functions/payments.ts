@@ -1,25 +1,10 @@
 import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
 import { authenticate, isAdmin } from './_lib/auth'
 import { getDb } from './_lib/firebaseAdmin'
-import { badRequest, forbidden, json, notFound, serverError, unauthorized } from './_lib/respond'
+import { badRequest, forbidden, json, notFound, serverError, tooManyRequests, unauthorized } from './_lib/respond'
 import { formatReceiptUploadedMessage, notifyTelegram } from './_lib/telegram'
+import { checkRateLimit, getClientIp } from './_lib/rateLimit'
 
-/**
- * POST /.netlify/functions/payments { booking_id, provider, receipt_url? }
- *
- * Registers a pending payment doc before redirecting the customer to the
- * Payme/Click hosted checkout, so the provider's webhook
- * (netlify/functions/payme|click) can match the incoming transaction back
- * to this booking. Also used for the manual "upload a bank transfer
- * receipt" flow (provider: 'manual') when Payme/Click merchant keys aren't
- * configured yet - the customer's browser compresses the receipt image (or
- * validates a small PDF) into a data: URL client-side (see
- * src/lib/receiptFile.ts, no Firebase Storage bucket needed) and calls
- * this with the resulting string.
- *
- * PATCH /.netlify/functions/payments?id=... { status } - admin-only, used
- * to mark a manual payment as paid/failed after reviewing the receipt.
- */
 const handler: Handler = async (event) => {
   try {
     return await route(event)
@@ -36,8 +21,12 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
   const db = getDb()
   const id = event.queryStringParameters?.id
 
+  const ip = getClientIp(event)
+  const allowed = await checkRateLimit(`payments:${ip}:${req.uid}`, 20, 60 * 1000)
+  if (!allowed) return tooManyRequests()
+
   if (event.httpMethod === 'POST') {
-    let body: { booking_id?: string; provider?: 'payme' | 'click' | 'manual'; receipt_url?: string }
+    let body: { booking_id?: string; provider?: 'payme' | 'click' | 'manual'; receipt_url?: string; demo?: boolean }
     try {
       body = JSON.parse(event.body ?? '{}')
     } catch {
@@ -58,8 +47,6 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
 
     const now = new Date().toISOString()
 
-    // Re-uploading a receipt updates the existing pending manual payment
-    // instead of piling up duplicate rows.
     if (body.provider === 'manual') {
       const existing = await db
         .collection('payments')
@@ -154,8 +141,6 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       performed_at: body.status === 'paid' ? now : payment.performed_at ?? null,
     })
 
-    // Mirror what the Payme/Click webhooks do automatically: confirming a
-    // manually-reviewed payment also moves the booking out of "pending".
     if (body.status === 'paid' && payment.booking_id) {
       const bookingRef = db.collection('bookings').doc(payment.booking_id)
       const bookingSnap = await bookingRef.get()
