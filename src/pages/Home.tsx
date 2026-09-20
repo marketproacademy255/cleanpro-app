@@ -92,7 +92,7 @@ export default function Home() {
       {/* Hero with Video Background & Split Left/Right Scroll Entry */}
       <ParallaxSection
         bgVideo="/hero-bg.mp4"
-        overlayGradient="from-[#020a07]/95 via-[#061c14]/90 to-[#020a07]/92"
+        overlayGradient="from-[#04120d]/85 via-[#071f17]/75 to-[#04120d]/80"
         speed={25}
         className="bg-brand-950"
       >
