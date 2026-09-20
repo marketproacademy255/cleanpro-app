@@ -89,11 +89,12 @@ export default function Home() {
     <div>
       <DiscountBanner />
 
-      {/* Hero with Parallax Background & Split Left/Right Scroll Entry */}
+      {/* Hero with Video Background & Split Left/Right Scroll Entry */}
       <ParallaxSection
-        bgImage="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1800&q=80"
+        bgVideo="/hero-bg.mp4"
+        overlayGradient="from-[#04120d]/92 via-[#071f17]/85 to-[#04120d]/90"
         speed={25}
-        className="bg-brand-900"
+        className="bg-brand-950"
       >
         <div className="section relative py-16 md:py-24 grid lg:grid-cols-12 gap-10 items-center">
           <Reveal direction="left" distance={120} className="lg:col-span-7">

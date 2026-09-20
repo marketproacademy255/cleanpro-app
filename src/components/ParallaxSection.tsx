@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 interface ParallaxSectionProps {
   children: ReactNode
   bgImage?: string
+  bgVideo?: string
   overlayGradient?: string
   className?: string
   speed?: number // Speed multiplier for parallax (e.g. -50 to 50)
@@ -12,6 +13,7 @@ interface ParallaxSectionProps {
 export default function ParallaxSection({
   children,
   bgImage,
+  bgVideo,
   overlayGradient = 'from-brand-900 via-brand-900/85 to-brand-900/50',
   className = '',
   speed = 40,
@@ -28,7 +30,23 @@ export default function ParallaxSection({
 
   return (
     <div ref={containerRef} className={`relative overflow-hidden ${className}`}>
-      {bgImage && (
+      {bgVideo ? (
+        <div className="absolute inset-0 overflow-hidden">
+          <motion.video
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{ y: bgY, scale: 1.15 }}
+            className="h-full w-full object-cover"
+          >
+            <source src={bgVideo} type="video/mp4" />
+          </motion.video>
+          {overlayGradient && (
+            <div className={`absolute inset-0 bg-gradient-to-r ${overlayGradient}`} />
+          )}
+        </div>
+      ) : bgImage ? (
         <div className="absolute inset-0 overflow-hidden">
           <motion.img
             src={bgImage}
@@ -40,7 +58,7 @@ export default function ParallaxSection({
             <div className={`absolute inset-0 bg-gradient-to-r ${overlayGradient}`} />
           )}
         </div>
-      )}
+      ) : null}
 
       <motion.div style={{ opacity }} className="relative z-10">
         {children}
