@@ -94,13 +94,17 @@ export default function MapLocationPicker({
     markerRef.current = marker
     mapRef.current = map
 
-    // Handle marker drag end (explicit user action)
+    setTimeout(() => {
+      map.invalidateSize()
+    }, 300)
+
+    // Handle marker drag end
     marker.on('dragend', () => {
       const latLng = marker.getLatLng()
       updateLocation(latLng.lat, latLng.lng, true)
     })
 
-    // Handle click on map (explicit user action)
+    // Handle click on map
     map.on('click', (e: L.LeafletMouseEvent) => {
       marker.setLatLng(e.latlng)
       updateLocation(e.latlng.lat, e.latlng.lng, true)
@@ -123,13 +127,16 @@ export default function MapLocationPicker({
     }
   }, [city])
 
-  // Reverse geocode via OpenStreetMap Nominatim
+  // Reverse geocode with Nominatim + BigDataCloud fallback
   async function updateLocation(lat: number, lng: number, notifyParent = true) {
     setCoords({ lat, lng })
     setGeocoding(true)
     setConfirmed(notifyParent)
     setGpsError(null)
 
+    let formattedAddress = ''
+
+    // Primary: OpenStreetMap Nominatim
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=uz`,
@@ -138,28 +145,89 @@ export default function MapLocationPicker({
         const data = await res.json()
         if (data && data.display_name) {
           const parts = data.display_name.split(', ')
-          const formatted = parts.slice(0, 4).join(', ')
-          setAddressText(formatted)
-          if (notifyParent) {
-            onLocationSelect({ address: formatted, lat, lng })
-          }
-        } else {
-          const fallback = `${city}, (${lat.toFixed(5)}, ${lng.toFixed(5)})`
-          setAddressText(fallback)
-          if (notifyParent) {
-            onLocationSelect({ address: fallback, lat, lng })
-          }
+          formattedAddress = parts.slice(0, 4).join(', ')
         }
       }
     } catch {
-      const fallback = `${city}, (${lat.toFixed(5)}, ${lng.toFixed(5)})`
-      setAddressText(fallback)
-      if (notifyParent) {
-        onLocationSelect({ address: fallback, lat, lng })
-      }
-    } finally {
-      setGeocoding(false)
+      // Ignore
     }
+
+    // Secondary Fallback: BigDataCloud Reverse Geocoding
+    if (!formattedAddress) {
+      try {
+        const res2 = await fetch(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=uz`,
+        )
+        if (res2.ok) {
+          const data2 = await res2.json()
+          const parts = [
+            data2.locality || data2.city,
+            data2.principalSubdivision,
+            data2.countryName,
+          ].filter(Boolean)
+          if (parts.length > 0) {
+            formattedAddress = parts.join(', ')
+          }
+        }
+      } catch {
+        // Ignore
+      }
+    }
+
+    if (!formattedAddress) {
+      formattedAddress = `${city}, (${lat.toFixed(5)}, ${lng.toFixed(5)})`
+    }
+
+    setAddressText(formattedAddress)
+    if (notifyParent) {
+      onLocationSelect({ address: formattedAddress, lat, lng })
+    }
+    setGeocoding(false)
+  }
+
+  // IP Geolocation Fallback
+  async function fallbackToIPLocation(): Promise<boolean> {
+    try {
+      const res = await fetch('https://freeipapi.com/api/json')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.latitude && data.longitude) {
+          const lat = data.latitude
+          const lng = data.longitude
+          if (mapRef.current && markerRef.current) {
+            mapRef.current.flyTo([lat, lng], 15)
+            markerRef.current.setLatLng([lat, lng])
+          }
+          await updateLocation(lat, lng, true)
+          setGpsError(null)
+          return true
+        }
+      }
+    } catch {
+      // try fallback 2
+    }
+
+    try {
+      const res2 = await fetch('https://ipapi.co/json/')
+      if (res2.ok) {
+        const data2 = await res2.json()
+        if (data2.latitude && data2.longitude) {
+          const lat = data2.latitude
+          const lng = data2.longitude
+          if (mapRef.current && markerRef.current) {
+            mapRef.current.flyTo([lat, lng], 15)
+            markerRef.current.setLatLng([lat, lng])
+          }
+          await updateLocation(lat, lng, true)
+          setGpsError(null)
+          return true
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    return false
   }
 
   // Handle Search Input Change
@@ -213,19 +281,24 @@ export default function MapLocationPicker({
     onLocationSelect({ address: formatted, lat, lng })
   }
 
-  // Direct Browser Native Geolocation Call
-  function handleUseGPS() {
+  // Direct Dual-engine GPS + IP Geolocation Call
+  async function handleUseGPS() {
     setLocating(true)
     setGpsError(null)
 
-    if (!navigator.geolocation) {
-      setGpsError("Qurilmangizda GPS qo'llab-quvvatlanmaydi.")
-      setLocating(false)
-      return
-    }
+    let success = false
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
+    // Attempt HTML5 Geolocation API
+    if (navigator.geolocation) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: 6000,
+            maximumAge: 60000,
+          })
+        })
+
         const lat = pos.coords.latitude
         const lng = pos.coords.longitude
 
@@ -233,35 +306,32 @@ export default function MapLocationPicker({
           mapRef.current.flyTo([lat, lng], 16)
           markerRef.current.setLatLng([lat, lng])
         }
-        updateLocation(lat, lng, true)
-        setLocating(false)
-      },
-      (err) => {
-        setLocating(false)
-        if (err.code === 1) {
-          setGpsError(
-            "Brauzerda GPS joylashuvga ruxsat berilmadi. Iltimos, brauzer sozlamalarida ruxsat bering yoki xaritadan tanlang.",
-          )
-        } else if (err.code === 2) {
-          setGpsError(
-            "Joylashuvni aniqlab bo'lmadi. GPS/internet aloqasini tekshiring yoki xaritadan belgilang.",
-          )
-        } else if (err.code === 3) {
-          setGpsError(
-            "So'rov vaqti tugadi (Timeout). Qayta urinib ko'ring yoki xaritadan belgilang.",
-          )
-        } else {
-          setGpsError(
-            "Lokatsiyani olishda xatolik yuz berdi. Iltimos, xaritadan belgilang.",
-          )
-        }
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 15000,
-        maximumAge: 60000,
-      },
-    )
+        await updateLocation(lat, lng, true)
+        success = true
+      } catch {
+        // HTML5 Geolocation failed/denied/timed out -> proceed to IP Geolocation
+      }
+    }
+
+    // Fallback to IP Geolocation if HTML5 Geolocation failed
+    if (!success) {
+      success = await fallbackToIPLocation()
+    }
+
+    // Final fallback to city center if both failed
+    if (!success) {
+      const targetCenter = CITY_COORDS[city] || CITY_COORDS['Toshkent']
+      if (mapRef.current && markerRef.current) {
+        mapRef.current.flyTo(targetCenter, 14)
+        markerRef.current.setLatLng(targetCenter)
+      }
+      await updateLocation(targetCenter[0], targetCenter[1], true)
+      setGpsError(
+        "Avtomatik GPS aniqlanmadi. Joylashuvingiz shahar markazi bo'yicha o'rnatildi, iltimos, xaritadan aniq nuqtani tanlang.",
+      )
+    }
+
+    setLocating(false)
   }
 
   return (
@@ -360,7 +430,7 @@ export default function MapLocationPicker({
               }`}
             >
               <Check className="h-3 w-3" />
-              {confirmed ? 'Tasdiqlandi' : 'Shu manzilni tanlash'}
+              <span>{confirmed ? 'Tanlandi' : 'Tasdiqlash'}</span>
             </button>
           )}
         </div>
