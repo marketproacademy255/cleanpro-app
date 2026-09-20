@@ -370,6 +370,17 @@ export default function Booking() {
                 >
                   <option value="Toshkent">Toshkent</option>
                   <option value="Samarqand">Samarqand</option>
+                  <option value="Namangan">Namangan</option>
+                  <option value="Andijon">Andijon</option>
+                  <option value="Farg'ona">Farg'ona</option>
+                  <option value="Buxoro">Buxoro</option>
+                  <option value="Xiva">Xiva</option>
+                  <option value="Nukus">Nukus</option>
+                  <option value="Qarshi">Qarshi</option>
+                  <option value="Termiz">Termiz</option>
+                  <option value="Navoiy">Navoiy</option>
+                  <option value="Jizzax">Jizzax</option>
+                  <option value="Guliston">Guliston</option>
                 </select>
               </div>
 
