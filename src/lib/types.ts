@@ -143,6 +143,8 @@ export interface Booking {
   service_types?: ServiceType
   cleaners?: Cleaner
   payments?: Payment[]
+  is_subscription?: boolean
+  subscription_status?: 'active' | 'paused' | 'cancelled'
 }
 
 /** A manually-collected customer review, shown (once approved) as the

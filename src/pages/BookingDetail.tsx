@@ -9,6 +9,7 @@ import { formatUZS } from '@/lib/pricing'
 import { bookingStatusMeta, STATUS_STEPS } from '@/lib/bookingStatus'
 import { buildClickCheckoutUrl, buildPaymeCheckoutUrl, paymentGatewaysConfigured } from '@/lib/payments'
 import { fileToReceiptDataUrl } from '@/lib/receiptFile'
+import { generatePdfInvoice } from '@/lib/pdfInvoice'
 import StarRating from '@/components/StarRating'
 import { PageSkeleton } from '@/components/SkeletonLoaders'
 import type { Booking, BookingStatus, BookingTier } from '@/lib/types'
@@ -116,13 +117,22 @@ export default function BookingDetail() {
     <div className="section max-w-2xl py-14">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('bookingDetail.title')}</h1>
-        <button
-          onClick={() => reload()}
-          className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400"
-          title="Yangilash"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => booking && generatePdfInvoice(booking)}
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition hover:bg-emerald-100"
+            title="PDF Chek / Invoysni yuklab olish"
+          >
+            📄 PDF Chek
+          </button>
+          <button
+            onClick={() => reload()}
+            className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400"
+            title="Yangilash"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       <StatusStepper status={booking.status} />

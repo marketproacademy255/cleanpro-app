@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Calendar, CreditCard, Gift, ShieldCheck, Sparkles, Zap } from 'lucide-react'
+import { Calendar, CreditCard, Gift, ShieldCheck, Sparkles, Zap, Repeat, Pause, Play, XCircle } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
@@ -63,6 +63,20 @@ export default function Dashboard() {
     })
   }
 
+  async function updateSubscriptionStatus(bookingId: string, subscription_status: 'active' | 'paused' | 'cancelled') {
+    try {
+      const updated = await apiFetch<Booking>(`bookings?id=${bookingId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ subscription_status }),
+      })
+      setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, ...updated } : b)))
+    } catch {
+      // ignore
+    }
+  }
+
+  const subscriptions = bookings.filter((b) => b.is_subscription)
+
   return (
     <div className="section py-14">
       <h1 className="text-3xl font-bold text-gray-900">
@@ -96,6 +110,70 @@ export default function Dashboard() {
           <button type="button" onClick={copyReferralLink} className="btn-secondary shrink-0 py-2">
             {copied ? t('dashboard.referralCopied') : t('dashboard.referralCopyLink')}
           </button>
+        </div>
+      )}
+
+      {/* Active Subscriptions Card */}
+      {subscriptions.length > 0 && (
+        <div className="mt-8 rounded-xl border border-brand-200 bg-brand-50/40 p-5 dark:border-brand-900/40 dark:bg-brand-950/20">
+          <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-gray-100 text-lg">
+            <Repeat className="h-5 w-5 text-brand-600 dark:text-brand-400" />
+            <span>Mening Obunalarim (-20% Avto-takroriy)</span>
+          </div>
+          <div className="mt-3 space-y-3">
+            {subscriptions.map((sub) => {
+              const subStatus = sub.subscription_status || 'active'
+              return (
+                <div key={sub.id} className="flex flex-col gap-3 rounded-lg border border-white bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:border-gray-800 dark:bg-gray-900">
+                  <div>
+                    <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100">
+                      <span>{sub.service_types ? getServiceName(sub.service_types, lang) : 'Murojaat xizmati'}</span>
+                      <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                        subStatus === 'active' ? 'bg-emerald-100 text-emerald-800' : subStatus === 'paused' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {subStatus === 'active' ? 'Faol obuna' : subStatus === 'paused' ? 'Muzlatilgan' : 'Bekor qilingan'}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      Chastotasi: <strong className="text-gray-700 dark:text-gray-300">{sub.frequency}</strong> · Manzil: {sub.address}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {subStatus === 'active' && (
+                      <button
+                        type="button"
+                        onClick={() => updateSubscriptionStatus(sub.id, 'paused')}
+                        className="flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
+                      >
+                        <Pause className="h-3.5 w-3.5" />
+                        Muzlatish
+                      </button>
+                    )}
+                    {subStatus === 'paused' && (
+                      <button
+                        type="button"
+                        onClick={() => updateSubscriptionStatus(sub.id, 'active')}
+                        className="flex items-center gap-1 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
+                      >
+                        <Play className="h-3.5 w-3.5" />
+                        Tiklansin
+                      </button>
+                    )}
+                    {subStatus !== 'cancelled' && (
+                      <button
+                        type="button"
+                        onClick={() => updateSubscriptionStatus(sub.id, 'cancelled')}
+                        className="flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                        Bekor qilish
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

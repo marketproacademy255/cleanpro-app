@@ -30,6 +30,8 @@ interface CreateBookingBody {
   notes: string
   repairPhotos?: string[]
   repairNotes?: string
+  cleanerId?: string | null
+  isSubscription?: boolean
 }
 
 /** Firestore has no joins - manually attach service_types/cleaners/payments,
@@ -172,7 +174,9 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     const newBooking = {
       customer_id: req.uid,
       service_type_id: service.id,
-      cleaner_id: null,
+      cleaner_id: body.cleanerId || null,
+      is_subscription: body.isSubscription ?? false,
+      subscription_status: body.isSubscription ? ('active' as const) : undefined,
       property_type: service.property_type,
       rooms: body.rooms,
       area_sqm: body.areaSqm ? Number(body.areaSqm) : null,
@@ -235,12 +239,21 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     return json(201, booking)
   }
 
-  // ---------- PATCH: admin updates status / assigns a cleaner ----------
+  // ---------- PATCH: admin updates status / assigns cleaner, or owner manages subscription ----------
   if (event.httpMethod === 'PATCH') {
     if (!id) return badRequest('id kerak.')
-    if (!isAdmin(req)) return forbidden()
 
-    let body: { status?: string; cleaner_id?: string | null; total_amount?: number }
+    const ref = db.collection('bookings').doc(id)
+    const snap = await ref.get()
+    if (!snap.exists) return notFound()
+    const before = snap.data()!
+
+    const isOwner = before.customer_id === req.uid
+    const isUserAdmin = isAdmin(req)
+
+    if (!isOwner && !isUserAdmin) return forbidden()
+
+    let body: { status?: string; cleaner_id?: string | null; total_amount?: number; subscription_status?: 'active' | 'paused' | 'cancelled' }
     try {
       body = JSON.parse(event.body ?? '{}')
     } catch {
@@ -248,27 +261,27 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     }
 
     const VALID_STATUSES = ['pending', 'confirmed', 'assigned', 'in_progress', 'completed', 'cancelled']
+    const VALID_SUB_STATUSES = ['active', 'paused', 'cancelled']
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
-    if (body.status) {
+
+    if (body.status && isUserAdmin) {
       if (!VALID_STATUSES.includes(body.status)) return badRequest("Noto'g'ri holat qiymati.")
       patch.status = body.status
     }
-    if ('cleaner_id' in body) patch.cleaner_id = body.cleaner_id || null
-    // Manual price override - mainly for repair/renovation quotes, where
-    // the admin reviews the customer's uploaded photos/description (see
-    // repair_photos/repair_notes) and adjusts the flat per-sqm estimate to
-    // a real quote. Works for any booking, not just repair ones.
-    if ('total_amount' in body) {
+    if ('cleaner_id' in body && isUserAdmin) {
+      patch.cleaner_id = body.cleaner_id || null
+    }
+    if ('total_amount' in body && isUserAdmin) {
       const amount = Number(body.total_amount)
       if (!Number.isFinite(amount) || amount < 0) return badRequest("Noto'g'ri summa.")
       patch.total_amount = Math.round(amount)
     }
-    if (Object.keys(patch).length === 1) return badRequest("O'zgartiriladigan maydon yo'q.")
+    if (body.subscription_status) {
+      if (!VALID_SUB_STATUSES.includes(body.subscription_status)) return badRequest("Noto'g'ri obuna holati.")
+      patch.subscription_status = body.subscription_status
+    }
 
-    const ref = db.collection('bookings').doc(id)
-    const snap = await ref.get()
-    if (!snap.exists) return notFound()
-    const before = snap.data()!
+    if (Object.keys(patch).length === 1) return badRequest("O'zgartiriladigan maydon yo'q.")
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await ref.update(patch as any)

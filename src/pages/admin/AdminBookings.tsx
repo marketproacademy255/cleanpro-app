@@ -99,7 +99,14 @@ export default function AdminBookings() {
                       </div>
                       <div className="text-xs text-gray-400">{b.contact_phone}</div>
                     </td>
-                    <td className="px-4 py-3">{b.service_types?.name_uz}</td>
+                    <td className="px-4 py-3">
+                      <div>{b.service_types?.name_uz}</div>
+                      {b.is_subscription && (
+                        <span className="mt-0.5 inline-block rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold text-brand-700">
+                          🔄 Obuna ({b.subscription_status || 'active'})
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-gray-500">{b.scheduled_date} {b.scheduled_time}</td>
                     <td className="px-4 py-3">
                       <button

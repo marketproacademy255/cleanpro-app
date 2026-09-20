@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, AlertCircle } from 'lucide-react'
+import { Check, AlertCircle, Star, UserCheck, Repeat } from 'lucide-react'
 import MapLocationPicker from '@/components/MapLocationPicker'
 import { PageSkeleton } from '@/components/SkeletonLoaders'
-import { fetchActiveAddons, fetchActiveServiceTypes } from '@/lib/publicData'
+import { fetchActiveAddons, fetchActiveCleaners, fetchActiveServiceTypes } from '@/lib/publicData'
 import { apiFetch, ApiError } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
@@ -20,7 +20,7 @@ import {
   TIER_MULTIPLIER,
 } from '@/lib/pricing'
 import { BOOKING_DRAFT_KEY } from '@/lib/config'
-import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, ServiceType } from '@/lib/types'
+import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, Cleaner, ServiceType } from '@/lib/types'
 
 const TIERS: BookingTier[] = ['standard', 'premium', 'elite']
 export const DRAFT_KEY = BOOKING_DRAFT_KEY
@@ -48,6 +48,9 @@ export default function Booking() {
 
   const [services, setServices] = useState<ServiceType[]>([])
   const [addons, setAddons] = useState<Addon[]>([])
+  const [cleaners, setCleaners] = useState<Cleaner[]>([])
+  const [selectedCleanerId, setSelectedCleanerId] = useState<string | null>(null)
+  const [isSubscription, setIsSubscription] = useState(false)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -129,9 +132,14 @@ export default function Booking() {
   useEffect(() => {
     async function load() {
       try {
-        const [serviceList, ad] = await Promise.all([fetchActiveServiceTypes(), fetchActiveAddons()])
+        const [serviceList, ad, clList] = await Promise.all([
+          fetchActiveServiceTypes(),
+          fetchActiveAddons(),
+          fetchActiveCleaners(),
+        ])
         setServices(serviceList)
         setAddons(ad)
+        setCleaners(clList)
 
         const draftRaw = sessionStorage.getItem(DRAFT_KEY)
         if (draftRaw) {
@@ -240,6 +248,8 @@ export default function Booking() {
           contactName: data.contactName,
           contactPhone: data.contactPhone,
           notes: data.notes,
+          cleanerId: selectedCleanerId,
+          isSubscription,
         }),
       })
       triggerHaptic('success')
@@ -511,6 +521,103 @@ export default function Booking() {
                 </label>
               ))}
             </div>
+          </div>
+
+          {/* Preferred Cleaner Selection */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-3">
+              <label className="label text-base font-semibold mb-0">Afzal ko'rilgan tozalovchi (Ixtiyoriy)</label>
+              <span className="text-xs text-gray-400">Sevilarli mutaxassisni tanlang</span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('light')
+                  setSelectedCleanerId(null)
+                }}
+                className={`flex items-center gap-3 rounded-lg border p-3 text-left transition ${
+                  selectedCleanerId === null
+                    ? 'border-brand-600 bg-brand-50/50 ring-2 ring-brand-100 dark:bg-brand-900/20 dark:ring-brand-900'
+                    : 'border-gray-200 hover:border-brand-300 dark:border-gray-800'
+                }`}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400 font-bold shrink-0">
+                  <UserCheck className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Tizim tayinlasin</div>
+                  <div className="text-xs text-gray-500">Eng mos va bo'sh bo'lgan professional</div>
+                </div>
+              </button>
+
+              {cleaners.map((cl) => {
+                const isSel = selectedCleanerId === cl.id
+                return (
+                  <button
+                    type="button"
+                    key={cl.id}
+                    onClick={() => {
+                      triggerHaptic('light')
+                      setSelectedCleanerId(cl.id)
+                    }}
+                    className={`flex items-center gap-3 rounded-lg border p-3 text-left transition ${
+                      isSel
+                        ? 'border-brand-600 bg-brand-50/50 ring-2 ring-brand-100 dark:bg-brand-900/20 dark:ring-brand-900'
+                        : 'border-gray-200 hover:border-brand-300 dark:border-gray-800'
+                    }`}
+                  >
+                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                      {cl.photo_url ? (
+                        <img src={cl.photo_url} alt={cl.full_name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center font-bold text-gray-500">
+                          {cl.full_name.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <div className="truncate font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                          {cl.full_name}
+                        </div>
+                        <div className="flex items-center gap-0.5 text-amber-500 text-xs font-bold">
+                          <Star className="h-3.5 w-3.5 fill-current" />
+                          <span>{cl.rating.toFixed(1)}</span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500 truncate mt-0.5">
+                        {cl.years_experience} yillik tajriba {cl.bio ? `• ${cl.bio}` : ''}
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Automatic Recurring Subscription Toggle */}
+          <div className="card border-brand-200 bg-gradient-to-r from-brand-50/50 to-white dark:from-brand-950/20 dark:to-gray-900 dark:border-brand-900/40">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={isSubscription}
+                onChange={(e) => {
+                  triggerHaptic('light')
+                  setIsSubscription(e.target.checked)
+                }}
+                className="mt-1 h-5 w-5 rounded border-brand-300 text-brand-600 focus:ring-brand-500"
+              />
+              <div>
+                <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100">
+                  <Repeat className="h-4 w-4 text-brand-600 dark:text-brand-400" />
+                  <span>Avtomatik qayta obuna bo'lish (-20% chegirma)</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Xizmat tanlangan chastotaga ko'ra ({frequencyLabels[formValues.frequency || 'once']}) avtomatik takrorlanadi. Obunani istalgan vaqtda shaxsiy kabinetdan bekor qilishingiz yoki to'xtatishingiz mumkin.
+                </p>
+              </div>
+            </label>
           </div>
 
           {/* Contact Details */}
