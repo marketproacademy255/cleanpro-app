@@ -179,10 +179,10 @@ export default function Home() {
                           triggerHaptic('light')
                           setHeroRooms(n)
                         }}
-                        className={`rounded-xl py-2 text-sm font-bold transition ${
+                        className={`rounded-xl py-2 text-sm font-extrabold transition-all duration-200 ${
                           heroRooms === n
-                            ? 'bg-white text-brand-900 shadow-lg'
-                            : 'bg-white/10 text-white hover:bg-white/20'
+                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 ring-2 ring-emerald-300 scale-105'
+                            : 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white border border-white/10'
                         }`}
                       >
                         {n}{n === 5 ? '+' : ''}
@@ -200,14 +200,14 @@ export default function Home() {
                         triggerHaptic('light')
                         setHeroTier('standard')
                       }}
-                      className={`rounded-xl py-2.5 px-3 text-xs font-semibold transition text-left ${
+                      className={`rounded-xl py-2.5 px-3 text-xs font-semibold transition-all duration-200 text-left border ${
                         heroTier === 'standard'
-                          ? 'bg-white text-brand-900 shadow-lg'
-                          : 'bg-white/10 text-white hover:bg-white/20'
+                          ? 'bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/40 ring-2 ring-emerald-300'
+                          : 'bg-white/10 text-white/80 border-white/10 hover:bg-white/20 hover:text-white'
                       }`}
                     >
-                      <div className="font-bold">{t('home.standardTitle')}</div>
-                      <div className="text-[10px] opacity-80">{t('home.standardSub')}</div>
+                      <div className="font-bold text-white">{t('home.standardTitle')}</div>
+                      <div className={`text-[10px] ${heroTier === 'standard' ? 'text-emerald-100 font-medium' : 'text-white/60'}`}>{t('home.standardSub')}</div>
                     </button>
                     <button
                       type="button"
@@ -215,14 +215,14 @@ export default function Home() {
                         triggerHaptic('light')
                         setHeroTier('premium')
                       }}
-                      className={`rounded-xl py-2.5 px-3 text-xs font-semibold transition text-left ${
+                      className={`rounded-xl py-2.5 px-3 text-xs font-semibold transition-all duration-200 text-left border ${
                         heroTier === 'premium'
-                          ? 'bg-white text-brand-900 shadow-lg'
-                          : 'bg-white/10 text-white hover:bg-white/20'
+                          ? 'bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/40 ring-2 ring-emerald-300'
+                          : 'bg-white/10 text-white/80 border-white/10 hover:bg-white/20 hover:text-white'
                       }`}
                     >
-                      <div className="font-bold">{t('home.deepTitle')}</div>
-                      <div className="text-[10px] opacity-80">{t('home.deepSub')}</div>
+                      <div className="font-bold text-white">{t('home.deepTitle')}</div>
+                      <div className={`text-[10px] ${heroTier === 'premium' ? 'text-emerald-100 font-medium' : 'text-white/60'}`}>{t('home.deepSub')}</div>
                     </button>
                   </div>
                 </div>
