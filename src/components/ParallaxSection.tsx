@@ -37,7 +37,7 @@ export default function ParallaxSection({
             loop
             muted
             playsInline
-            style={{ y: bgY, scale: 1.15 }}
+            style={{ y: bgY, scale: 1.15, filter: 'brightness(0.35) contrast(0.95) saturate(0.8)' }}
             className="h-full w-full object-cover"
           >
             <source src={bgVideo} type="video/mp4" />

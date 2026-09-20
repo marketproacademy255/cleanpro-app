@@ -92,7 +92,7 @@ export default function Home() {
       {/* Hero with Video Background & Split Left/Right Scroll Entry */}
       <ParallaxSection
         bgVideo="/hero-bg.mp4"
-        overlayGradient="from-[#04120d]/92 via-[#071f17]/85 to-[#04120d]/90"
+        overlayGradient="from-[#020a07]/95 via-[#061c14]/90 to-[#020a07]/92"
         speed={25}
         className="bg-brand-950"
       >
@@ -107,10 +107,10 @@ export default function Home() {
               <div>
                 <span className="tag bg-white/10 text-white">{t('home.heroTag')}</span>
               </div>
-              <h1 className="mt-4 text-4xl font-extrabold leading-tight text-white md:text-5xl">
+              <h1 className="mt-4 text-4xl font-extrabold leading-tight text-white md:text-5xl drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]">
                 {t('home.heroTitle')} <span className="text-brand-100">{t('home.heroTitleHighlight')}</span>
               </h1>
-              <p className="mt-5 max-w-lg text-lg text-white/80">{t('home.heroDesc')}</p>
+              <p className="mt-5 max-w-lg text-lg text-white/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">{t('home.heroDesc')}</p>
 
               {reviews.length > 0 && (
                 <div className="mt-5 inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-2 text-white backdrop-blur">
