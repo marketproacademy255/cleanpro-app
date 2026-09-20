@@ -238,17 +238,29 @@ export default function MapLocationPicker({
       },
       (err) => {
         setLocating(false)
-        if (err.code === err.PERMISSION_DENIED) {
+        if (err.code === 1) {
           setGpsError(
-            "Brauzerda GPS joylashuvga ruxsat berilmadi. Iltimos, xaritadan o'zingiz belgilang yoki qidiruvdan foydalaning.",
+            "Brauzerda GPS joylashuvga ruxsat berilmadi. Iltimos, brauzer sozlamalarida ruxsat bering yoki xaritadan tanlang.",
+          )
+        } else if (err.code === 2) {
+          setGpsError(
+            "Joylashuvni aniqlab bo'lmadi. GPS/internet aloqasini tekshiring yoki xaritadan belgilang.",
+          )
+        } else if (err.code === 3) {
+          setGpsError(
+            "So'rov vaqti tugadi (Timeout). Qayta urinib ko'ring yoki xaritadan belgilang.",
           )
         } else {
           setGpsError(
-            "GPS orqali joylashuvni aniqlab bo'lmadi. Iltimos, xaritadan belgilang.",
+            "Lokatsiyani olishda xatolik yuz berdi. Iltimos, xaritadan belgilang.",
           )
         }
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+      {
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 60000,
+      },
     )
   }
 
