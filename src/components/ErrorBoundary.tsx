@@ -23,6 +23,18 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error caught by ErrorBoundary:', error, errorInfo)
+    const isChunkError =
+      error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.name === 'ChunkLoadError' ||
+      String(error).includes('dynamically imported module')
+
+    if (isChunkError) {
+      const reloaded = sessionStorage.getItem('chunk_reload_attempts')
+      if (!reloaded) {
+        sessionStorage.setItem('chunk_reload_attempts', '1')
+        window.location.reload()
+      }
+    }
   }
 
   private handleReset = () => {

@@ -10,15 +10,27 @@ export function rawBody(event: HandlerEvent): string {
 export function parseFormOrJson(event: HandlerEvent): Record<string, string> {
   const contentType = event.headers['content-type'] ?? event.headers['Content-Type'] ?? ''
   const body = rawBody(event)
-  if (contentType.includes('application/json')) {
-    try {
-      return JSON.parse(body || '{}')
-    } catch {
-      return {}
+  const obj: Record<string, string> = {}
+
+  if (event.queryStringParameters) {
+    for (const [k, v] of Object.entries(event.queryStringParameters)) {
+      if (v !== undefined) obj[k] = v
     }
   }
-  const params = new URLSearchParams(body)
-  const obj: Record<string, string> = {}
-  for (const [k, v] of params.entries()) obj[k] = v
+
+  if (contentType.includes('application/json')) {
+    try {
+      const parsed = JSON.parse(body || '{}')
+      return { ...obj, ...parsed }
+    } catch {
+      return obj
+    }
+  }
+
+  if (body) {
+    const params = new URLSearchParams(body)
+    for (const [k, v] of params.entries()) obj[k] = v
+  }
+
   return obj
 }

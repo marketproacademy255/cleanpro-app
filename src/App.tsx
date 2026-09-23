@@ -11,28 +11,50 @@ import { PageSkeleton } from '@/components/SkeletonLoaders'
 
 import Home from '@/pages/Home'
 
-const Services = lazy(() => import('@/pages/Services'))
-const Booking = lazy(() => import('@/pages/Booking'))
-const Login = lazy(() => import('@/pages/Login'))
-const Register = lazy(() => import('@/pages/Register'))
-const Dashboard = lazy(() => import('@/pages/Dashboard'))
-const BookingDetail = lazy(() => import('@/pages/BookingDetail'))
-const PaymentResult = lazy(() => import('@/pages/PaymentResult'))
-const About = lazy(() => import('@/pages/About'))
-const Contact = lazy(() => import('@/pages/Contact'))
-const Blog = lazy(() => import('@/pages/Blog'))
-const BlogPost = lazy(() => import('@/pages/BlogPost'))
-const Privacy = lazy(() => import('@/pages/Privacy'))
-const Terms = lazy(() => import('@/pages/Terms'))
-const NotFound = lazy(() => import('@/pages/NotFound'))
+// Helper for dynamic imports that handles single-page app deployment chunk cache invalidation
+function safeLazy<T extends React.ComponentType<any>>(importFn: () => Promise<{ default: T }>) {
+  return lazy(() =>
+    importFn().catch((error) => {
+      const isChunkError =
+        error?.message?.includes('Failed to fetch dynamically imported module') ||
+        error?.name === 'ChunkLoadError' ||
+        String(error).includes('dynamically imported module')
 
-const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout'))
-const AdminOverview = lazy(() => import('@/pages/admin/AdminOverview'))
-const AdminBookings = lazy(() => import('@/pages/admin/AdminBookings'))
-const AdminStaff = lazy(() => import('@/pages/admin/AdminStaff'))
-const AdminServices = lazy(() => import('@/pages/admin/AdminServices'))
-const AdminAddons = lazy(() => import('@/pages/admin/AdminAddons'))
-const AdminReviews = lazy(() => import('@/pages/admin/AdminReviews'))
+      if (isChunkError) {
+        const reloaded = sessionStorage.getItem('chunk_reload_attempts')
+        if (!reloaded) {
+          sessionStorage.setItem('chunk_reload_attempts', '1')
+          window.location.reload()
+          return new Promise<{ default: T }>(() => {})
+        }
+      }
+      throw error
+    }),
+  )
+}
+
+const Services = safeLazy(() => import('@/pages/Services'))
+const Booking = safeLazy(() => import('@/pages/Booking'))
+const Login = safeLazy(() => import('@/pages/Login'))
+const Register = safeLazy(() => import('@/pages/Register'))
+const Dashboard = safeLazy(() => import('@/pages/Dashboard'))
+const BookingDetail = safeLazy(() => import('@/pages/BookingDetail'))
+const PaymentResult = safeLazy(() => import('@/pages/PaymentResult'))
+const About = safeLazy(() => import('@/pages/About'))
+const Contact = safeLazy(() => import('@/pages/Contact'))
+const Blog = safeLazy(() => import('@/pages/Blog'))
+const BlogPost = safeLazy(() => import('@/pages/BlogPost'))
+const Privacy = safeLazy(() => import('@/pages/Privacy'))
+const Terms = safeLazy(() => import('@/pages/Terms'))
+const NotFound = safeLazy(() => import('@/pages/NotFound'))
+
+const AdminLayout = safeLazy(() => import('@/pages/admin/AdminLayout'))
+const AdminOverview = safeLazy(() => import('@/pages/admin/AdminOverview'))
+const AdminBookings = safeLazy(() => import('@/pages/admin/AdminBookings'))
+const AdminStaff = safeLazy(() => import('@/pages/admin/AdminStaff'))
+const AdminServices = safeLazy(() => import('@/pages/admin/AdminServices'))
+const AdminAddons = safeLazy(() => import('@/pages/admin/AdminAddons'))
+const AdminReviews = safeLazy(() => import('@/pages/admin/AdminReviews'))
 
 import MouseGlowFollower from '@/components/MouseGlowFollower'
 
