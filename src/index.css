@@ -42,7 +42,7 @@ html.dark body {
     @apply inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 px-5 py-3 font-semibold tracking-tight text-gray-800 transition hover:border-brand-600 hover:text-brand-700 dark:border-gray-600 dark:text-gray-100 dark:hover:bg-brand-900/40;
   }
   .input {
-    @apply w-full rounded-md border border-gray-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-transparent dark:text-gray-100 dark:focus:ring-brand-900;
+    @apply w-full rounded-md border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:ring-brand-900;
   }
   .label {
     @apply mb-1.5 block text-sm font-medium text-gray-700;
@@ -157,3 +157,14 @@ html.dark .text-green-700 {
 html.dark ::placeholder {
   color: #5f7768;
 }
+
+select option {
+  background-color: #ffffff;
+  color: #1a2e22;
+}
+
+html.dark select option {
+  background-color: #101c17 !important;
+  color: #f1f8f4 !important;
+}
+

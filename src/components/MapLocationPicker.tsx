@@ -373,9 +373,11 @@ export default function MapLocationPicker({
       setGpsError(null)
     } catch (err: any) {
       if (err && err.code === 1) {
-        setGpsError(
-          "Brauzerda joylashuvga ruxsat berilmadi (Blocked). Iltimos, brauzeringizda ushbu sayt uchun joylashuvga ruxsat bering yoki manzilni xaritadan tanlang.",
-        )
+        if (!isAutoMount) {
+          setGpsError(
+            "Brauzerda joylashuvga ruxsat berilmadi. Iltimos, joylashuvga ruxsat bering yoki manzilni xaritadan tanlang.",
+          )
+        }
       } else {
         const ipSuccess = await fallbackToIPLocation()
         if (!ipSuccess && !isAutoMount) {
