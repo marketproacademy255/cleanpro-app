@@ -213,7 +213,7 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       service_type_id: service.id,
       cleaner_id: body.cleanerId || null,
       is_subscription: body.isSubscription ?? false,
-      subscription_status: body.isSubscription ? ('active' as const) : undefined,
+      subscription_status: body.isSubscription ? ('active' as const) : null,
       property_type: service.property_type,
       rooms: body.rooms,
       area_sqm: body.areaSqm ? Number(body.areaSqm) : null,

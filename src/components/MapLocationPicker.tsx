@@ -372,15 +372,13 @@ export default function MapLocationPicker({
       await updateLocation(lat, lng, true)
       setGpsError(null)
     } catch (err: any) {
-      if (err && err.code === 1) {
-        if (!isAutoMount) {
+      const ipSuccess = await fallbackToIPLocation()
+      if (!isAutoMount && !ipSuccess) {
+        if (err && err.code === 1) {
           setGpsError(
-            "Brauzerda joylashuvga ruxsat berilmadi. Iltimos, joylashuvga ruxsat bering yoki manzilni xaritadan tanlang.",
+            "Brauzerda joylashuvga ruxsat berilmadi. Iltimos, manzilni xaritadan tanlang.",
           )
-        }
-      } else {
-        const ipSuccess = await fallbackToIPLocation()
-        if (!ipSuccess && !isAutoMount) {
+        } else {
           setGpsError(
             "GPS orqali joylashuvni aniqlab bo'lmadi. Iltimos, xaritadan belgilang.",
           )
