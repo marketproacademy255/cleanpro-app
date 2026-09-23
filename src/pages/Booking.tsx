@@ -9,7 +9,6 @@ import { fetchActiveAddons, fetchActiveCleaners, fetchActiveServiceTypes } from 
 import { apiFetch, ApiError } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
-import { getServiceName, getServiceDescription } from '@/lib/i18nHelpers'
 import { triggerHaptic } from '@/lib/haptics'
 import { bookingFormSchema, type BookingFormValues } from '@/lib/validationSchemas'
 import {
@@ -38,8 +37,6 @@ const WORKING_HOURS = [
   '18:00',
 ]
 
-const FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80'
 
 const DEFAULT_BOOKING_SERVICES: ServiceType[] = [
   {
@@ -107,7 +104,7 @@ const DEFAULT_BOOKING_SERVICES: ServiceType[] = [
 export default function Booking() {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
-  const { t, lang } = useTranslation()
+  const { t } = useTranslation()
 
   const [services, setServices] = useState<ServiceType[]>(DEFAULT_BOOKING_SERVICES)
   const [addons, setAddons] = useState<Addon[]>([])
@@ -131,7 +128,7 @@ export default function Booking() {
   } = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
-      serviceId: '',
+      serviceId: DEFAULT_BOOKING_SERVICES[0].id,
       rooms: 1,
       areaSqm: '',
       floor: '',
@@ -268,7 +265,7 @@ export default function Booking() {
     }
   }, [services, availableServices, formValues.serviceId, setValue])
 
-  const selectedService = services.find((s) => s.id === formValues.serviceId)
+  const selectedService = availableServices.find((s) => s.id === formValues.serviceId) || availableServices[0]
   const selectedAddons = addons.filter((a) => (formValues.addonCodes || []).includes(a.code))
   const showFloorInput = !!selectedService?.floor_multiplier
 
@@ -365,46 +362,23 @@ export default function Booking() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-8 grid gap-8 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          {/* Service Selection */}
-          <div className="card">
-            <label className="label text-base font-semibold">{t('booking.serviceType')}</label>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {availableServices.map((s) => (
-                <button
-                  type="button"
-                  key={s.id}
-                  onClick={() => {
-                    triggerHaptic('light')
-                    setValue('serviceId', s.id)
-                  }}
-                  className={`overflow-hidden rounded-lg border text-left transition ${
-                    formValues.serviceId === s.id
-                      ? 'border-brand-600 ring-2 ring-brand-100 dark:ring-brand-900'
-                      : 'border-gray-200 hover:border-brand-300 dark:border-gray-800'
-                  }`}
-                >
-                  <div className="h-28 w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
-                    <img src={s.image || FALLBACK_IMAGE} alt={getServiceName(s, lang)} className="h-full w-full object-cover" />
-                  </div>
-                  <div className="p-3">
-                    <div className="font-semibold text-gray-900 dark:text-gray-100">{getServiceName(s, lang)}</div>
-                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{getServiceDescription(s, lang)}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-            {errors.serviceId && <p className="mt-2 text-xs text-red-500">{errors.serviceId.message}</p>}
-          </div>
-
           {/* Property details & Map */}
           <div className="card grid gap-4 sm:grid-cols-2">
             <div>
               <label className="label">{t('booking.propertyType')}</label>
-              <input
-                className="input bg-gray-50 dark:bg-gray-800"
-                disabled
-                value={selectedService?.property_type === 'office' ? t('booking.office') : t('booking.home')}
-              />
+              <select
+                className="input"
+                value={selectedService?.property_type === 'office' ? 'office' : 'home'}
+                onChange={(e) => {
+                  triggerHaptic('light')
+                  const targetType = e.target.value
+                  const match = availableServices.find((s) => s.property_type === targetType) || availableServices[0]
+                  if (match) setValue('serviceId', match.id)
+                }}
+              >
+                <option value="home">{t('booking.home')}</option>
+                <option value="office">{t('booking.office')}</option>
+              </select>
             </div>
             {selectedService?.pricing_unit === 'per_sqm' ? (
               <div>

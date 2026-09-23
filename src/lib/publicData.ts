@@ -20,7 +20,10 @@ async function fetchActive<T>(collectionName: string): Promise<(T & { id: string
 
 export async function fetchActiveServiceTypes(): Promise<ServiceType[]> {
   const rows = await fetchActive<ServiceType>('serviceTypes')
-  return rows.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  const cleaningOnly = rows.filter(
+    (s) => (s.category ?? 'cleaning') === 'cleaning' && s.code !== 'repair' && !s.code?.includes('repair'),
+  )
+  return cleaningOnly.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
 }
 
 export async function fetchActiveAddons(): Promise<Addon[]> {
