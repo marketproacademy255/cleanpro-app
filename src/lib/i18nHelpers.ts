@@ -14,3 +14,9 @@ export function getServiceName(service: ServiceType, lang: Lang): string {
   if (lang === 'ru') return service.name_ru || service.name_en || service.name_uz
   return service.name_uz
 }
+
+export function getServiceDescription(service: ServiceType, lang: Lang): string {
+  if (lang === 'ru') return service.description_ru || service.description_uz || ''
+  return service.description_uz || ''
+}
+

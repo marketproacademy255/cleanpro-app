@@ -9,7 +9,7 @@ import { fetchActiveAddons, fetchActiveCleaners, fetchActiveServiceTypes } from 
 import { apiFetch, ApiError } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
-import { getServiceName } from '@/lib/i18nHelpers'
+import { getServiceName, getServiceDescription } from '@/lib/i18nHelpers'
 import { triggerHaptic } from '@/lib/haptics'
 import { bookingFormSchema, type BookingFormValues } from '@/lib/validationSchemas'
 import {
@@ -256,18 +256,17 @@ export default function Booking() {
     }
   }, [profile, setValue, formValues.contactName, formValues.contactPhone])
 
-  const servicesInCategory = useMemo(() => {
-    const filtered = services.filter((s) => (s.category ?? 'cleaning') === 'cleaning')
-    return filtered.length > 0 ? filtered : DEFAULT_BOOKING_SERVICES
+  const availableServices = useMemo(() => {
+    return services.length > 0 ? services : DEFAULT_BOOKING_SERVICES
   }, [services])
 
   useEffect(() => {
     if (!services.length) return
-    const stillValid = servicesInCategory.some((s) => s.id === formValues.serviceId)
-    if (!stillValid && servicesInCategory[0]) {
-      setValue('serviceId', servicesInCategory[0].id)
+    const stillValid = availableServices.some((s) => s.id === formValues.serviceId)
+    if (!stillValid && availableServices[0]) {
+      setValue('serviceId', availableServices[0].id)
     }
-  }, [services, servicesInCategory, formValues.serviceId, setValue])
+  }, [services, availableServices, formValues.serviceId, setValue])
 
   const selectedService = services.find((s) => s.id === formValues.serviceId)
   const selectedAddons = addons.filter((a) => (formValues.addonCodes || []).includes(a.code))
@@ -369,37 +368,31 @@ export default function Booking() {
           {/* Service Selection */}
           <div className="card">
             <label className="label text-base font-semibold">{t('booking.serviceType')}</label>
-            {servicesInCategory.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400">
-                {t('booking.noServicesInCategory')}
-              </p>
-            ) : (
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                {servicesInCategory.map((s) => (
-                  <button
-                    type="button"
-                    key={s.id}
-                    onClick={() => {
-                      triggerHaptic('light')
-                      setValue('serviceId', s.id)
-                    }}
-                    className={`overflow-hidden rounded-lg border text-left transition ${
-                      formValues.serviceId === s.id
-                        ? 'border-brand-600 ring-2 ring-brand-100 dark:ring-brand-900'
-                        : 'border-gray-200 hover:border-brand-300 dark:border-gray-800'
-                    }`}
-                  >
-                    <div className="h-28 w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
-                      <img src={s.image || FALLBACK_IMAGE} alt={getServiceName(s, lang)} className="h-full w-full object-cover" />
-                    </div>
-                    <div className="p-3">
-                      <div className="font-semibold text-gray-900 dark:text-gray-100">{getServiceName(s, lang)}</div>
-                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{s.description_uz}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {availableServices.map((s) => (
+                <button
+                  type="button"
+                  key={s.id}
+                  onClick={() => {
+                    triggerHaptic('light')
+                    setValue('serviceId', s.id)
+                  }}
+                  className={`overflow-hidden rounded-lg border text-left transition ${
+                    formValues.serviceId === s.id
+                      ? 'border-brand-600 ring-2 ring-brand-100 dark:ring-brand-900'
+                      : 'border-gray-200 hover:border-brand-300 dark:border-gray-800'
+                  }`}
+                >
+                  <div className="h-28 w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
+                    <img src={s.image || FALLBACK_IMAGE} alt={getServiceName(s, lang)} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="p-3">
+                    <div className="font-semibold text-gray-900 dark:text-gray-100">{getServiceName(s, lang)}</div>
+                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{getServiceDescription(s, lang)}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
             {errors.serviceId && <p className="mt-2 text-xs text-red-500">{errors.serviceId.message}</p>}
           </div>
 
