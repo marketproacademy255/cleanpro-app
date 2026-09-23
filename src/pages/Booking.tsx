@@ -41,12 +41,75 @@ const WORKING_HOURS = [
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80'
 
+const DEFAULT_BOOKING_SERVICES: ServiceType[] = [
+  {
+    id: 'demo-1',
+    code: 'std',
+    name_uz: 'Standart tozalash',
+    name_ru: 'Стандартная уборка',
+    name_en: 'Standard Cleaning',
+    description_uz: 'Uyni muntazam toza saqlash uchun standart tozalash xizmati.',
+    description_ru: 'Стандартная уборка для поддержания чистоты дома.',
+    property_type: 'home',
+    pricing_unit: 'per_room',
+    base_price: 150000,
+    extra_unit_price: 40000,
+    min_price: 150000,
+    multiplier: 1,
+    is_active: true,
+    sort_order: 1,
+    category: 'cleaning',
+    created_at: new Date().toISOString(),
+    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 'demo-2',
+    code: 'deep',
+    name_uz: 'Chuqur tozalash',
+    name_ru: 'Генеральная уборка',
+    name_en: 'Deep Cleaning',
+    description_uz: 'Har bir burchakni ehtiyotkorlik bilan tozalaydigan chuqur tozalash.',
+    description_ru: 'Генеральная уборка, очищающая каждый уголок.',
+    property_type: 'home',
+    pricing_unit: 'per_room',
+    base_price: 210000,
+    extra_unit_price: 56000,
+    min_price: 210000,
+    multiplier: 1.2,
+    is_active: true,
+    sort_order: 2,
+    category: 'cleaning',
+    created_at: new Date().toISOString(),
+    image: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 'demo-3',
+    code: 'office',
+    name_uz: 'Ofis tozalash',
+    name_ru: 'Уборка офисов',
+    name_en: 'Office Cleaning',
+    description_uz: 'Ish joyingizni toza va ozoda saqlash uchun professional ofis tozalash xizmati.',
+    description_ru: 'Профессиональная уборка офисов для поддержания чистоты рабочего места.',
+    property_type: 'office',
+    pricing_unit: 'per_room',
+    base_price: 180000,
+    extra_unit_price: 45000,
+    min_price: 180000,
+    multiplier: 1.1,
+    is_active: true,
+    sort_order: 3,
+    category: 'cleaning',
+    created_at: new Date().toISOString(),
+    image: 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=800&q=80',
+  },
+]
+
 export default function Booking() {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
   const { t, lang } = useTranslation()
 
-  const [services, setServices] = useState<ServiceType[]>([])
+  const [services, setServices] = useState<ServiceType[]>(DEFAULT_BOOKING_SERVICES)
   const [addons, setAddons] = useState<Addon[]>([])
   const [cleaners, setCleaners] = useState<Cleaner[]>([])
   const [selectedCleanerId, setSelectedCleanerId] = useState<string | null>(null)
@@ -138,7 +201,9 @@ export default function Booking() {
           fetchActiveAddons(),
           fetchActiveCleaners(),
         ])
-        setServices(serviceList)
+        if (serviceList && serviceList.length > 0) {
+          setServices(serviceList)
+        }
         setAddons(ad)
         setCleaners(clList)
 
@@ -165,7 +230,8 @@ export default function Booking() {
           }
           sessionStorage.removeItem(DRAFT_KEY)
         } else {
-          const firstCleaning = serviceList.find((s) => (s.category ?? 'cleaning') === 'cleaning')
+          const listToUse = serviceList.length > 0 ? serviceList : DEFAULT_BOOKING_SERVICES
+          const firstCleaning = listToUse.find((s) => (s.category ?? 'cleaning') === 'cleaning') || listToUse[0]
           if (firstCleaning) setValue('serviceId', firstCleaning.id)
         }
       } catch (err) {
@@ -190,10 +256,10 @@ export default function Booking() {
     }
   }, [profile, setValue, formValues.contactName, formValues.contactPhone])
 
-  const servicesInCategory = useMemo(
-    () => services.filter((s) => (s.category ?? 'cleaning') === 'cleaning'),
-    [services],
-  )
+  const servicesInCategory = useMemo(() => {
+    const filtered = services.filter((s) => (s.category ?? 'cleaning') === 'cleaning')
+    return filtered.length > 0 ? filtered : DEFAULT_BOOKING_SERVICES
+  }, [services])
 
   useEffect(() => {
     if (!services.length) return
