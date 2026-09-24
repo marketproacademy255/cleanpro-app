@@ -40,8 +40,8 @@ const WORKING_HOURS = [
 
 const DEFAULT_BOOKING_SERVICES: ServiceType[] = [
   {
-    id: 'demo-1',
-    code: 'std',
+    id: 'standard_home',
+    code: 'standard_home',
     name_uz: 'Standart tozalash',
     name_ru: 'Стандартная уборка',
     name_en: 'Standard Cleaning',
@@ -60,8 +60,8 @@ const DEFAULT_BOOKING_SERVICES: ServiceType[] = [
     image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80',
   },
   {
-    id: 'demo-2',
-    code: 'deep',
+    id: 'deep_home',
+    code: 'deep_home',
     name_uz: 'Chuqur tozalash',
     name_ru: 'Генеральная уборка',
     name_en: 'Deep Cleaning',
@@ -80,8 +80,8 @@ const DEFAULT_BOOKING_SERVICES: ServiceType[] = [
     image: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=800&q=80',
   },
   {
-    id: 'demo-3',
-    code: 'office',
+    id: 'office_clean',
+    code: 'office_clean',
     name_uz: 'Ofis tozalash',
     name_ru: 'Уборка офисов',
     name_en: 'Office Cleaning',
@@ -204,7 +204,12 @@ export default function Booking() {
         setAddons(ad)
         setCleaners(clList)
 
-        const draftRaw = sessionStorage.getItem(DRAFT_KEY)
+        const userDraftKey = `cleanpro_booking_draft_v2_${user?.uid || 'guest'}`
+        const draftRaw =
+          localStorage.getItem(userDraftKey) ||
+          localStorage.getItem('cleanpro_booking_draft_v2') ||
+          sessionStorage.getItem(DRAFT_KEY)
+
         if (draftRaw) {
           try {
             const draft = JSON.parse(draftRaw)
@@ -213,19 +218,23 @@ export default function Booking() {
             if (draft.areaSqm) setValue('areaSqm', draft.areaSqm)
             if (draft.floor) setValue('floor', draft.floor)
             if (draft.address) setValue('address', draft.address)
+            if (draft.addressNotes) setValue('addressNotes', draft.addressNotes)
             if (draft.city) setValue('city', draft.city)
             if (draft.date) setValue('date', draft.date)
             if (draft.time) setValue('time', draft.time)
             if (draft.frequency) setValue('frequency', draft.frequency)
             if (draft.tier) setValue('tier', draft.tier)
-            if (draft.addonCodes) setValue('addonCodes', draft.addonCodes)
+            if (draft.addonCodes && Array.isArray(draft.addonCodes)) setValue('addonCodes', draft.addonCodes)
             if (draft.contactName) setValue('contactName', draft.contactName)
             if (draft.contactPhone) setValue('contactPhone', draft.contactPhone)
             if (draft.notes) setValue('notes', draft.notes)
+
+            if (draft.locationDetails) setLocationDetails(draft.locationDetails)
+            if (typeof draft.isSubscription === 'boolean') setIsSubscription(draft.isSubscription)
+            if (draft.selectedCleanerId) setSelectedCleanerId(draft.selectedCleanerId)
           } catch {
             // Ignore corrupted draft
           }
-          sessionStorage.removeItem(DRAFT_KEY)
         } else {
           const listToUse = serviceList.length > 0 ? serviceList : DEFAULT_BOOKING_SERVICES
           const firstCleaning = listToUse.find((s) => (s.category ?? 'cleaning') === 'cleaning') || listToUse[0]
@@ -240,6 +249,26 @@ export default function Booking() {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Auto-save form draft to localStorage in real-time
+  useEffect(() => {
+    if (loading) return
+    const userKey = `cleanpro_booking_draft_v2_${user?.uid || 'guest'}`
+    const draftData = {
+      ...formValues,
+      locationDetails,
+      isSubscription,
+      selectedCleanerId,
+      updatedAt: Date.now(),
+    }
+    try {
+      const jsonStr = JSON.stringify(draftData)
+      localStorage.setItem(userKey, jsonStr)
+      localStorage.setItem('cleanpro_booking_draft_v2', jsonStr)
+    } catch {
+      // Ignore storage errors
+    }
+  }, [formValues, locationDetails, isSubscription, selectedCleanerId, user?.uid, loading])
 
   // Auto-fill user profile info
   useEffect(() => {
@@ -337,6 +366,10 @@ export default function Booking() {
         }),
       })
       triggerHaptic('success')
+      const userKey = `cleanpro_booking_draft_v2_${user?.uid || 'guest'}`
+      localStorage.removeItem(userKey)
+      localStorage.removeItem('cleanpro_booking_draft_v2')
+      sessionStorage.removeItem(DRAFT_KEY)
       navigate(`/dashboard/booking/${resData.id}`)
     } catch (err) {
       triggerHaptic('error')

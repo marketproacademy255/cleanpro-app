@@ -21,7 +21,12 @@ async function fetchActive<T>(collectionName: string): Promise<(T & { id: string
 export async function fetchActiveServiceTypes(): Promise<ServiceType[]> {
   const rows = await fetchActive<ServiceType>('serviceTypes')
   const cleaningOnly = rows.filter(
-    (s) => (s.category ?? 'cleaning') === 'cleaning' && s.code !== 'repair' && !s.code?.includes('repair'),
+    (s) =>
+      (s.category ?? 'cleaning') === 'cleaning' &&
+      s.code !== 'repair' &&
+      !s.code?.includes('repair') &&
+      !s.name_uz?.toLowerCase().includes("bo'yash") &&
+      !s.name_uz?.toLowerCase().includes("remont"),
   )
   return cleaningOnly.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
 }

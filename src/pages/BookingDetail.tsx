@@ -158,7 +158,7 @@ export default function BookingDetail() {
       )}
 
       <div className="card mt-6 space-y-2 text-sm">
-        <Row label={t('bookingDetail.service')} value={booking.service_types ? getServiceName(booking.service_types, lang) : '-'} />
+        <Row label={t('bookingDetail.service')} value={booking.service_types ? getServiceName(booking.service_types, lang) : 'Standart tozalash'} />
         <Row label={t('bookingDetail.tier')} value={tierLabels[booking.tier] ?? tierLabels.standard} />
         <Row label={t('bookingDetail.address')} value={`${booking.address}, ${booking.city}`} />
         <Row label={t('bookingDetail.dateTime')} value={`${booking.scheduled_date} ${booking.scheduled_time}`} />
@@ -181,12 +181,23 @@ export default function BookingDetail() {
             </p>
           )}
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <button onClick={() => pay('payme')} disabled={redirecting !== null} className="btn-primary">
-              {redirecting === 'payme'
-                ? t('bookingDetail.redirecting')
-                : `${t('bookingDetail.payWithPayme')}${!gateways.payme ? ' (Demo)' : ''}`}
+            <button
+              type="button"
+              disabled={true}
+              className="relative flex items-center justify-between rounded-xl border border-gray-200 bg-gray-100 dark:bg-gray-800/60 dark:border-gray-700/60 px-4 py-3 text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-75"
+              title="Payme tizimi yaqinda ishga tushiriladi"
+            >
+              <span>Payme orqali to'lash</span>
+              <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                Yaqinda
+              </span>
             </button>
-            <button onClick={() => pay('click')} disabled={redirecting !== null} className="btn-secondary">
+            <button
+              type="button"
+              onClick={() => pay('click')}
+              disabled={redirecting !== null}
+              className="btn-primary flex items-center justify-center gap-2"
+            >
               {redirecting === 'click'
                 ? t('bookingDetail.redirecting')
                 : `${t('bookingDetail.payWithClick')}${!gateways.click ? ' (Demo)' : ''}`}

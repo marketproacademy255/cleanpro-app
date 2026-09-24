@@ -54,10 +54,40 @@ async function enrichBooking(
     db.collection('payments').where('booking_id', '==', id).get(),
   ])
 
+  let serviceType = serviceSnap ? (docData<ServiceType>(serviceSnap) ?? undefined) : undefined
+  if (
+    serviceType &&
+    (serviceType.category === 'repair' ||
+      serviceType.code === 'repair' ||
+      serviceType.code?.includes('repair') ||
+      serviceType.name_uz?.toLowerCase().includes("bo'yash") ||
+      serviceType.name_uz?.toLowerCase().includes("remont"))
+  ) {
+    serviceType = {
+      id: 'standard_home',
+      code: 'standard_home',
+      name_uz: 'Standart tozalash',
+      name_ru: 'Стандартная уборка',
+      name_en: 'Standard Cleaning',
+      description_uz: 'Uyni muntazam toza saqlash uchun standart tozalash xizmati.',
+      description_ru: 'Стандартная уборка для поддержания чистоты дома.',
+      property_type: 'home',
+      pricing_unit: 'per_room',
+      base_price: 150000,
+      extra_unit_price: 40000,
+      min_price: 150000,
+      multiplier: 1,
+      is_active: true,
+      sort_order: 1,
+      category: 'cleaning',
+      created_at: new Date().toISOString(),
+    }
+  }
+
   return {
     id,
     ...(data as Omit<Booking, 'id'>),
-    service_types: serviceSnap ? (docData<ServiceType>(serviceSnap) ?? undefined) : undefined,
+    service_types: serviceType,
     cleaners: cleanerSnap ? (docData<Cleaner>(cleanerSnap) ?? undefined) : undefined,
     payments: queryData(paymentsSnap),
   }
@@ -145,12 +175,20 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     if (!service) {
       const activeSnap = await db.collection('serviceTypes').where('is_active', '==', true).get()
       const activeList = activeSnap.docs.map((d) => ({ id: d.id, ...d.data() } as ServiceType))
-      service = activeList.find((s) => (s.category ?? 'cleaning') === 'cleaning') || activeList[0]
+      const cleaningOnly = activeList.filter(
+        (s) =>
+          (s.category ?? 'cleaning') === 'cleaning' &&
+          s.code !== 'repair' &&
+          !s.code?.includes('repair') &&
+          !s.name_uz?.toLowerCase().includes('remont') &&
+          !s.name_uz?.toLowerCase().includes("bo'yash"),
+      )
+      service = cleaningOnly[0]
     }
 
     if (!service) {
       service = {
-        id: 'std_fallback',
+        id: 'standard_home',
         code: 'standard_home',
         name_uz: 'Standart tozalash',
         name_ru: 'Стандартная уборка',
@@ -211,6 +249,7 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     const newBooking = {
       customer_id: req.uid,
       service_type_id: service.id,
+      service_name: service.name_uz || 'Standart tozalash',
       cleaner_id: body.cleanerId || null,
       is_subscription: body.isSubscription ?? false,
       subscription_status: body.isSubscription ? ('active' as const) : null,
