@@ -125,11 +125,60 @@ const signupWizard = new Scenes.WizardScene(
       return ctx.scene.leave()
     }
 
+    // Check website registration phone verification request
+    const verifyRef = db.collection('phoneVerifications').doc(phone)
+    const verifySnap = await verifyRef.get()
+
+    if (verifySnap.exists) {
+      const vData = verifySnap.data()
+      if (vData.status === 'pending') {
+        const uid = vData.uid || db.collection('profiles').doc().id
+        let customToken = ''
+        try {
+          customToken = await admin.auth().createCustomToken(uid)
+        } catch {
+          // ignore token error
+        }
+
+        const now = new Date().toISOString()
+        const batch = db.batch()
+        batch.set(
+          db.collection('profiles').doc(uid),
+          {
+            role: 'customer',
+            full_name: vData.full_name || ctx.from.first_name || 'Foydalanuvchi',
+            phone,
+            email: vData.email || null,
+            phone_verified: true,
+            created_at: now,
+          },
+          { merge: true },
+        )
+
+        batch.update(verifyRef, {
+          status: 'verified',
+          uid,
+          custom_token: customToken,
+          updated_at: now,
+        })
+
+        await batch.commit()
+
+        await ctx.reply(
+          `✅ <b>Telefon raqamingiz muvaffaqiyatli tasdiqlandi!</b>\n\n` +
+            `Ism: <b>${vData.full_name || ctx.from.first_name}</b>\n` +
+            `Telefon: <code>${phone}</code>\n\n` +
+            `Saytga qaytishingiz mumkin — akkauntingiz avtomatik tasdiqlandi!`,
+          { parse_mode: 'HTML', ...Markup.removeKeyboard() },
+        )
+        return ctx.scene.leave()
+      }
+    }
+
     const existing = await db.collection('telegramAuth').doc(phone).get()
     if (existing.exists) {
       await ctx.reply(
-        "Bu raqam allaqachon ro'yxatdan o'tgan. Saytda Kirish -> Telegram bo'limidan " +
-          'shu raqam va parolingiz bilan kiring.',
+        "Bu raqam allaqachon ro'yxatdan o'tgan. Saytda Kirish bo'limidan shu raqam va parolingiz bilan kiring.",
         Markup.removeKeyboard(),
       )
       return ctx.scene.leave()
