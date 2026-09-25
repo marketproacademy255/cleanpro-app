@@ -1,14 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 import { Check, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { apiFetch, ApiError } from '@/lib/api'
+import { apiFetch } from '@/lib/api'
 import { useTranslation } from '@/context/LanguageContext'
 import { getServiceName } from '@/lib/i18nHelpers'
 import { formatUZS } from '@/lib/pricing'
 import { bookingStatusMeta, STATUS_STEPS } from '@/lib/bookingStatus'
 import { buildClickCheckoutUrl, buildPaymeCheckoutUrl, paymentGatewaysConfigured } from '@/lib/payments'
-import { fileToReceiptDataUrl } from '@/lib/receiptFile'
 import { generatePdfInvoice } from '@/lib/pdfInvoice'
 import StarRating from '@/components/StarRating'
 import { PageSkeleton } from '@/components/SkeletonLoaders'
@@ -20,10 +19,6 @@ export default function BookingDetail() {
   const [booking, setBooking] = useState<Booking | null>(null)
   const [loading, setLoading] = useState(true)
   const [redirecting, setRedirecting] = useState<'payme' | 'click' | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
   async function reload() {
     if (!id) return
     const data = await apiFetch<Booking>(`bookings?id=${id}`).catch(() => null)
@@ -41,7 +36,6 @@ export default function BookingDetail() {
     }
     load()
 
-    // Poll for status updates every 10 seconds while on this screen
     const timer = setInterval(() => {
       reload()
     }, 10000)
@@ -51,32 +45,6 @@ export default function BookingDetail() {
 
   const gateways = paymentGatewaysConfigured()
   const isPaid = booking?.payments?.some((p) => p.status === 'paid')
-  const manualPayment = booking?.payments
-    ?.filter((p) => p.provider === 'manual')
-    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0]
-
-  async function uploadReceipt(file: File) {
-    if (!booking) return
-    setUploadError(null)
-    setUploading(true)
-    try {
-      const receiptUrl = await fileToReceiptDataUrl(file)
-      await apiFetch('payments', {
-        method: 'POST',
-        body: JSON.stringify({ booking_id: booking.id, provider: 'manual', receipt_url: receiptUrl }),
-      })
-      await reload()
-    } catch (err) {
-      setUploadError(
-        err instanceof ApiError || err instanceof Error
-          ? err.message
-          : t('bookingDetail.uploadError'),
-      )
-    } finally {
-      setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
-  }
 
   async function pay(provider: 'payme' | 'click') {
     if (!booking) return
@@ -201,45 +169,6 @@ export default function BookingDetail() {
               {redirecting === 'click'
                 ? t('bookingDetail.redirecting')
                 : `${t('bookingDetail.payWithClick')}${!gateways.click ? ' (Demo)' : ''}`}
-            </button>
-          </div>
-
-          <hr className="my-5 dark:border-gray-700" />
-
-          <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('bookingDetail.orUploadReceipt')}</h4>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('bookingDetail.uploadReceiptDesc')}</p>
-
-          {manualPayment?.status === 'pending' && manualPayment.receipt_url ? (
-            <div className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-              {t('bookingDetail.receiptPending')} {' '}
-              <a href={manualPayment.receipt_url} target="_blank" rel="noreferrer" className="underline">
-                {t('bookingDetail.viewUploaded')}
-              </a>
-            </div>
-          ) : manualPayment?.status === 'failed' ? (
-            <div className="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-600 dark:bg-red-900/30 dark:text-red-300">{t('bookingDetail.receiptRejected')}</div>
-          ) : null}
-
-          {uploadError && <p className="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-600 dark:bg-red-900/30 dark:text-red-300">{uploadError}</p>}
-
-          <div className="mt-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,application/pdf"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) uploadReceipt(file)
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="btn-secondary"
-            >
-              {uploading ? t('bookingDetail.uploading') : t('bookingDetail.uploadReceipt')}
             </button>
           </div>
         </div>

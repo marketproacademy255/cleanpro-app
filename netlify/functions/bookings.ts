@@ -93,6 +93,58 @@ async function enrichBooking(
   }
 }
 
+/**
+ * Auto-purges expired unpaid pending bookings from Firestore.
+ * A booking is expired and unpaid if its scheduled date and time has passed
+ * and it has not been paid or confirmed.
+ */
+async function autoCleanupExpiredBookings(
+  db: FirebaseFirestore.Firestore,
+  docs: FirebaseFirestore.QueryDocumentSnapshot[],
+  enrichedRows: Booking[],
+): Promise<Booking[]> {
+  const now = new Date()
+  const validRows: Booking[] = []
+  const deletePromises: Promise<unknown>[] = []
+
+  for (let i = 0; i < enrichedRows.length; i++) {
+    const b = enrichedRows[i]
+    const docSnap = docs[i]
+
+    const isPaid = b.payments?.some((p) => p.status === 'paid')
+    const isConfirmedOrActive =
+      b.status === 'confirmed' ||
+      b.status === 'assigned' ||
+      b.status === 'in_progress' ||
+      b.status === 'completed'
+
+    let isExpired = false
+    if (!isPaid && !isConfirmedOrActive && b.scheduled_date && b.scheduled_time) {
+      const [year, month, day] = b.scheduled_date.split('-').map(Number)
+      const [hour, minute] = b.scheduled_time.split(':').map(Number)
+
+      if (year && month && day) {
+        const scheduledDate = new Date(year, month - 1, day, hour || 0, minute || 0)
+        if (scheduledDate.getTime() < now.getTime()) {
+          isExpired = true
+        }
+      }
+    }
+
+    if (isExpired && docSnap) {
+      deletePromises.push(db.collection('bookings').doc(docSnap.id).delete().catch(() => null))
+    } else {
+      validRows.push(b)
+    }
+  }
+
+  if (deletePromises.length > 0) {
+    await Promise.all(deletePromises)
+  }
+
+  return validRows
+}
+
 const handler: Handler = async (event) => {
   try {
     return await route(event)
@@ -124,7 +176,8 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       ? db.collection('bookings')
       : db.collection('bookings').where('customer_id', '==', req.uid)
     const snap = await query.get()
-    const rows = await Promise.all(snap.docs.map((d) => enrichBooking(db, d.id, d.data())))
+    const enriched = await Promise.all(snap.docs.map((d) => enrichBooking(db, d.id, d.data())))
+    const rows = await autoCleanupExpiredBookings(db, snap.docs, enriched)
     rows.sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
     return json(200, rows)
   }
