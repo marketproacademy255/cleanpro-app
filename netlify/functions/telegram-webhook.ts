@@ -1,6 +1,6 @@
 import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
 import bcrypt from 'bcryptjs'
-import { getDb } from './_lib/firebaseAdmin'
+import { getAdminAuth, getDb } from './_lib/firebaseAdmin'
 import { normalizeUzPhone } from './_lib/phone'
 import { json, badRequest, serverError } from './_lib/respond'
 
@@ -147,6 +147,64 @@ async function processUpdate(update: TelegramUpdate): Promise<void> {
         text: "Telefon raqamni aniqlab bo'lmadi. Iltimos, /start bosib qayta urinib ko'ring.",
       })
       return
+    }
+
+    // 3a. Check if there is a pending website registration phone verification request
+    const verifyDocRef = db.collection('phoneVerifications').doc(phone)
+    const verifySnap = await verifyDocRef.get()
+
+    if (verifySnap.exists) {
+      const vData = verifySnap.data()!
+      if (vData.status === 'pending') {
+        let uid = vData.uid || db.collection('profiles').doc().id
+        let customToken = ''
+
+        try {
+          const adminAuth = getAdminAuth()
+          customToken = await adminAuth.createCustomToken(uid)
+        } catch {
+          // Ignore if admin auth is not fully configured
+        }
+
+        const now = new Date().toISOString()
+        const batch = db.batch()
+
+        batch.set(
+          db.collection('profiles').doc(uid),
+          {
+            role: 'customer',
+            full_name: vData.full_name || message.from.first_name || 'Foydalanuvchi',
+            phone,
+            email: vData.email || null,
+            phone_verified: true,
+            created_at: now,
+          },
+          { merge: true },
+        )
+
+        batch.update(verifyDocRef, {
+          status: 'verified',
+          uid,
+          custom_token: customToken,
+          updated_at: now,
+        })
+
+        await batch.commit()
+
+        await sendTelegramApi('sendMessage', {
+          chat_id: chatId,
+          text:
+            "✅ <b>Telefon raqamingiz muvaffaqiyatli tasdiqlandi!</b>\n\n" +
+            `Ism: <b>${vData.full_name || message.from.first_name}</b>\n` +
+            `Telefon: <code>${phone}</code>\n\n` +
+            "Saytga qaytishingiz mumkin — akkauntingiz avtomatik tasdiqlandi!",
+          parse_mode: 'HTML',
+          reply_markup: { remove_keyboard: true },
+        })
+
+        await sessionRef.delete().catch(() => null)
+        return
+      }
     }
 
     const existingAuth = await db.collection('telegramAuth').doc(phone).get()
