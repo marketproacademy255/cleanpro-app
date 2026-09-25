@@ -138,4 +138,10 @@ def handle_contact(message):
 
 if __name__ == "__main__":
     logging.info("CleanPro Python Telegram Verification Bot starting...")
+    try:
+        bot.remove_webhook()
+        logging.info("Webhook removed successfully.")
+    except Exception as e:
+        logging.warning(f"Could not remove webhook: {e}")
     bot.infinity_polling()
+
