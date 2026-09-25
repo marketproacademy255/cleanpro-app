@@ -207,18 +207,18 @@ async function processUpdate(update: TelegramUpdate): Promise<void> {
       }
     }
 
-    const existingAuth = await db.collection('telegramAuth').doc(phone).get()
-    if (existingAuth.exists) {
-      await sendTelegramApi('sendMessage', {
-        chat_id: chatId,
-        text:
-          "Bu raqam allaqachon ro'yxatdan o'tgan. Saytda <b>Kirish -> Telegram</b> bo'limidan shu raqam va parolingiz bilan kiring.",
-        parse_mode: 'HTML',
-        reply_markup: { remove_keyboard: true },
-      })
-      await sessionRef.delete()
-      return
-    }
+    // 3b. If no pending website verification found, reply with clear instruction
+    await sendTelegramApi('sendMessage', {
+      chat_id: chatId,
+      text:
+        `📱 <b>Raqamingiz qabul qilindi:</b> <code>${phone}</code>\n\n` +
+        `⚠️ Lekin saytda ushbu raqam bo'yicha hali tasdiqlash so'rovi topilmadi.\n\n` +
+        `Iltimos, avval saytga (<b>https://prime-standard.uz/register</b>) o'tib, ma'lumotlaringizni kiritib <b>"Tasdiqlash"</b> tugmasini bosing, so'ngra botga qaytib raqamni yuboring.`,
+      parse_mode: 'HTML',
+      reply_markup: { remove_keyboard: true },
+    })
+    return
+  }
 
     await sessionRef.set({
       chat_id: chatId,
