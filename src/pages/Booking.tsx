@@ -17,6 +17,7 @@ import {
   FIRST_BOOKING_DISCOUNT,
   REFERRAL_REFERRED_DISCOUNT,
   TIER_MULTIPLIER,
+  DEFAULT_BOOKING_SERVICES,
 } from '@/lib/pricing'
 import { BOOKING_DRAFT_KEY } from '@/lib/config'
 import type { Addon, Booking as BookingRow, BookingFrequency, BookingTier, Cleaner, ServiceType } from '@/lib/types'
@@ -38,68 +39,7 @@ const WORKING_HOURS = [
 ]
 
 
-const DEFAULT_BOOKING_SERVICES: ServiceType[] = [
-  {
-    id: 'standard_home',
-    code: 'standard_home',
-    name_uz: 'Standart tozalash',
-    name_ru: 'Стандартная уборка',
-    name_en: 'Standard Cleaning',
-    description_uz: 'Uyni muntazam toza saqlash uchun standart tozalash xizmati.',
-    description_ru: 'Стандартная уборка для поддержания чистоты дома.',
-    property_type: 'home',
-    pricing_unit: 'per_room',
-    base_price: 150000,
-    extra_unit_price: 40000,
-    min_price: 150000,
-    multiplier: 1,
-    is_active: true,
-    sort_order: 1,
-    category: 'cleaning',
-    created_at: new Date().toISOString(),
-    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 'deep_home',
-    code: 'deep_home',
-    name_uz: 'Chuqur tozalash',
-    name_ru: 'Генеральная уборка',
-    name_en: 'Deep Cleaning',
-    description_uz: 'Har bir burchakni ehtiyotkorlik bilan tozalaydigan chuqur tozalash.',
-    description_ru: 'Генеральная уборка, очищающая каждый уголок.',
-    property_type: 'home',
-    pricing_unit: 'per_room',
-    base_price: 210000,
-    extra_unit_price: 56000,
-    min_price: 210000,
-    multiplier: 1.2,
-    is_active: true,
-    sort_order: 2,
-    category: 'cleaning',
-    created_at: new Date().toISOString(),
-    image: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    id: 'office_clean',
-    code: 'office_clean',
-    name_uz: 'Ofis tozalash',
-    name_ru: 'Уборка офисов',
-    name_en: 'Office Cleaning',
-    description_uz: 'Ish joyingizni toza va ozoda saqlash uchun professional ofis tozalash xizmati.',
-    description_ru: 'Профессиональная уборка офисов для поддержания чистоты рабочего места.',
-    property_type: 'office',
-    pricing_unit: 'per_room',
-    base_price: 180000,
-    extra_unit_price: 45000,
-    min_price: 180000,
-    multiplier: 1.1,
-    is_active: true,
-    sort_order: 3,
-    category: 'cleaning',
-    created_at: new Date().toISOString(),
-    image: 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=800&q=80',
-  },
-]
+
 
 export default function Booking() {
   const { user, profile } = useAuth()
@@ -204,11 +144,16 @@ export default function Booking() {
         setAddons(ad)
         setCleaners(clList)
 
+        const sessionDraftRaw = sessionStorage.getItem(DRAFT_KEY)
         const userDraftKey = `cleanpro_booking_draft_v2_${user?.uid || 'guest'}`
-        const draftRaw =
+        const localDraftRaw =
           localStorage.getItem(userDraftKey) ||
-          localStorage.getItem('cleanpro_booking_draft_v2') ||
-          sessionStorage.getItem(DRAFT_KEY)
+          localStorage.getItem('cleanpro_booking_draft_v2')
+
+        const draftRaw = sessionDraftRaw || localDraftRaw
+        if (sessionDraftRaw) {
+          sessionStorage.removeItem(DRAFT_KEY)
+        }
 
         if (draftRaw) {
           try {

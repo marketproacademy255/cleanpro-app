@@ -25,12 +25,10 @@ import AnimatedBackground from '@/components/AnimatedBackground'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
 import { fetchApprovedReviews } from '@/lib/publicData'
-import { formatUZS } from '@/lib/pricing'
+import { calculatePrice, formatUZS, DEFAULT_BOOKING_SERVICES } from '@/lib/pricing'
 import { BOOKING_DRAFT_KEY } from '@/lib/config'
 import { triggerHaptic } from '@/lib/haptics'
 import type { Review } from '@/lib/types'
-
-
 
 export default function Home() {
   const { t } = useTranslation()
@@ -43,18 +41,27 @@ export default function Home() {
   const [heroTier, setHeroTier] = useState<'standard' | 'premium'>('standard')
 
   const heroEstimatedPrice = useMemo(() => {
-    const base = heroTier === 'premium' ? 260000 : 180000
-    const extraRoom = heroTier === 'premium' ? 60000 : 40000
-    return base + Math.max(0, heroRooms - 1) * extraRoom
+    const serviceId = heroTier === 'premium' ? 'deep_home' : 'standard_home'
+    const service = DEFAULT_BOOKING_SERVICES.find((s) => s.id === serviceId) || DEFAULT_BOOKING_SERVICES[0]
+    const breakdown = calculatePrice({
+      service,
+      rooms: heroRooms,
+      selectedAddons: [],
+      frequency: 'once',
+      tier: 'standard',
+    })
+    return breakdown.totalAmount
   }, [heroRooms, heroTier])
 
   function handleHeroBook() {
     triggerHaptic('medium')
+    const serviceId = heroTier === 'premium' ? 'deep_home' : 'standard_home'
     sessionStorage.setItem(
       BOOKING_DRAFT_KEY,
       JSON.stringify({
+        serviceId,
         rooms: heroRooms,
-        tier: heroTier,
+        tier: 'standard',
         city: 'Toshkent',
         time: '10:00',
         frequency: 'once',
