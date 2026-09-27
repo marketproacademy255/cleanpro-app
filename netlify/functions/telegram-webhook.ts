@@ -220,24 +220,6 @@ async function processUpdate(update: TelegramUpdate): Promise<void> {
     return
   }
 
-    await sessionRef.set({
-      chat_id: chatId,
-      user_id: userId,
-      phone,
-      step: 'AWAITING_NAME',
-      updated_at: new Date().toISOString(),
-    })
-
-    const suggestedName = [message.from.first_name, message.from.last_name].filter(Boolean).join(' ')
-
-    await sendTelegramApi('sendMessage', {
-      chat_id: chatId,
-      text: `Rahmat! Endi to'liq ism-familiyangizni yozing ${suggestedName ? `(masalan: ${suggestedName})` : ''}:`,
-      reply_markup: { remove_keyboard: true },
-    })
-    return
-  }
-
   // 4. Handle text steps (Name or Password)
   if (sessionData && text) {
     if (sessionData.step === 'AWAITING_NAME') {
