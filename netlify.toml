@@ -14,6 +14,12 @@
 [functions]
   node_bundler = "esbuild"
 
+# Firebase Auth handler proxy so Google Sign-In displays prime-standard.uz
+[[redirects]]
+  from = "/__/auth/*"
+  to = "https://cleanpro-241de.firebaseapp.com/__/auth/:splat"
+  status = 200
+
 # React Router (client-side routing) - send every non-file, non-function
 # request to index.html so deep links like /kabinet/buyurtma/:id work.
 [[redirects]]
