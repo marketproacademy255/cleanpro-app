@@ -39,13 +39,10 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
   try {
     const db = getDb()
 
-    // Check if profile with this phone already exists and is verified
+    // Check if profile with this phone already exists
     const existingProfileSnap = await db.collection('profiles').where('phone', '==', phoneNorm).get()
     if (!existingProfileSnap.empty) {
-      const pData = existingProfileSnap.docs[0].data()
-      if (pData.phone_verified) {
-        return badRequest("Bu telefon raqami allaqachon ro'yxatdan o'tgan va tasdiqlangan.")
-      }
+      return badRequest("Ushbu telefon raqam allaqachon ro'yxatdan o'tgan. Iltimos, Kirish sahifasidan kiring.")
     }
 
     const now = new Date().toISOString()
