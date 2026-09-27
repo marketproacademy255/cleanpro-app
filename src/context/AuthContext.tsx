@@ -59,8 +59,12 @@ function firebaseErrorToUz(code: string): string {
       return "Brauzer Google oynasini blokladi. Pop-up xabarlarga ruxsat bering."
     case 'auth/account-exists-with-different-credential':
       return "Ushbu email bilan boshqa usul orqali ro'yxatdan o'tilingan."
+    case 'auth/unauthorized-domain':
+      return "Firebase Console -> Authentication -> Settings -> Authorized Domains ro'yxatiga 'prime-standard.uz' domeni qo'shilishi kerak."
+    case 'auth/operation-not-allowed':
+      return "Firebase Console -> Authentication -> Sign-in method bo'limida Google tizimini yoqing."
     default:
-      return "Xatolik yuz berdi. Qaytadan urinib ko'ring."
+      return code ? `${code}: Xatolik yuz berdi. Qaytadan urinib ko'ring.` : "Xatolik yuz berdi. Qaytadan urinib ko'ring."
   }
 }
 

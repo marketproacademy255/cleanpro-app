@@ -120,10 +120,21 @@ export default function Register() {
 
   async function handleVerifyClick() {
     setError(null)
-    const isFormValid = await trigger(['fullName', 'phone', 'password'])
-    if (!isFormValid) return
-
     const values = getValues()
+
+    if (!values.phone || values.phone.trim().length < 7) {
+      setError("⚠️ Iltimos, telefon raqamingizni kiriting va 'Tasdiqlash' tugmasini bosing.")
+      triggerHaptic('error')
+      return
+    }
+
+    const isFormValid = await trigger(['fullName', 'phone', 'password'])
+    if (!isFormValid) {
+      setError("⚠️ Iltimos, barcha maydonlarni to'g'ri to'ldiring.")
+      triggerHaptic('error')
+      return
+    }
+
     setVerifyState('requesting')
     setLoading(true)
     triggerHaptic('medium')
@@ -148,7 +159,7 @@ export default function Register() {
     } catch (err) {
       triggerHaptic('error')
       setVerifyState('unverified')
-      setError(err instanceof ApiError ? err.message : "Tasdiqlash so'rovida xatolik yuz berdi.")
+      setError(err instanceof ApiError ? err.message : "Tasdiqlash so'rovida xatolik yuz berdi. Qayta urinib ko'ring.")
     } finally {
       setLoading(false)
     }
@@ -171,6 +182,12 @@ export default function Register() {
 
   async function onSubmit() {
     if (verifyState !== 'verified') {
+      const values = getValues()
+      if (!values.phone || values.phone.trim().length < 7) {
+        setError("⚠️ Avval telefon raqamingizni kiriting va 'Tasdiqlash' tugmasini bosing.")
+        triggerHaptic('error')
+        return
+      }
       await handleVerifyClick()
       return
     }
