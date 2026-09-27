@@ -13,7 +13,7 @@ export const COMPANY_TAGLINE = 'Cleaning Services'
 // Username of the Telegram registration bot (without the @), e.g. "primestandard_uz_bot".
 // Set VITE_TELEGRAM_BOT_USERNAME in Netlify env vars once the bot is created
 // and its username is known (BotFather -> /mybots -> bot -> username).
-export const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? ''
+export const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'CleanVerificationBot'
 
 // Same phone number shown everywhere else in the app (Navbar, Footer,
 // Contact page) - kept here too so the WhatsApp deep link and mobile

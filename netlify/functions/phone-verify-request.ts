@@ -59,7 +59,7 @@ export const handler: Handler = async (event: HandlerEvent): Promise<HandlerResp
       updated_at: now,
     })
 
-    const botUsername = process.env.VITE_TELEGRAM_BOT_USERNAME || 'EMPIREsupport'
+    const botUsername = process.env.VITE_TELEGRAM_BOT_USERNAME || 'CleanVerificationBot'
 
     return json(200, {
       ok: true,
