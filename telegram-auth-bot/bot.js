@@ -31,12 +31,7 @@ const admin = require('firebase-admin')
 // --------------------------------------------------------------------------
 // Sozlamalar
 // --------------------------------------------------------------------------
-// Token endi FAQAT muhit o'zgaruvchisi orqali beriladi - koddagi hardcoded
-// fallback (demo bosqichida shu yerda turgan edi) olib tashlandi, chunki u
-// repozitoriyda va suhbat tarixida oshkor bo'lgan. Agar shu eski token
-// ('8862054310:...' bilan boshlanadigan) hali ham ishlatilayotgan bo'lsa,
-// @BotFather orqali darhol /revoke qiling va yangisini oling - zaharlangan
-// hisoblanadi.
+// BotFather orqali token oling va process.env.BOT_TOKEN ga qo'ying.
 const BOT_TOKEN = process.env.BOT_TOKEN
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID

@@ -144,9 +144,7 @@ Ishga tushirish uchun:
 - Bot username'ini `VITE_TELEGRAM_BOT_USERNAME` sifatida Netlify env'ga qo'shing — shunda sayt
   "Ro'yxatdan o'tish"/"Kirish" sahifalarida botga o'tuvchi tugma ko'rsatadi.
 
-> ⚠️ Hozircha berilgan bot tokeni (`8862054310:...`) demo tezkorligi uchun `telegram-auth-bot/bot.js`
-> ichiga ham yozib qo'yilgan. Production'ga chiqishda uni koddan olib tashlab, faqat muhit
-> o'zgaruvchilari orqali berish tavsiya etiladi.
+> ⚠️ Bot tokeni muhit o'zgaruvchilari orqali beriladi.
 
 ## Payme va Click — real to'lovlarni yoqish
 
