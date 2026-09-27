@@ -3,20 +3,50 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth()
+  const { user, isVerified, loading } = useAuth()
   const location = useLocation()
 
   if (loading) return <FullPageLoader />
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />
+
+  if (!isVerified) {
+    return (
+      <Navigate
+        to="/register"
+        state={{
+          message:
+            "⚠️ Buyurtma berish va shaxsiy kabinetdan foydalanish uchun avval telefon raqamingizni Telegram bot orqali tasdiqlang!",
+          from: location.pathname,
+        }}
+        replace
+      />
+    )
+  }
+
   return <>{children}</>
 }
 
 export function AdminRoute({ children }: { children: ReactNode }) {
-  const { user, isAdmin, loading } = useAuth()
+  const { user, isAdmin, isVerified, loading } = useAuth()
   const location = useLocation()
 
   if (loading) return <FullPageLoader />
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />
+
+  if (!isVerified) {
+    return (
+      <Navigate
+        to="/register"
+        state={{
+          message:
+            "⚠️ Admin panelga kirish uchun avval telefon raqamingizni Telegram bot orqali tasdiqlang!",
+          from: location.pathname,
+        }}
+        replace
+      />
+    )
+  }
+
   if (!isAdmin) return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }

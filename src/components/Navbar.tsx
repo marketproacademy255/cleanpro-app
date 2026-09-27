@@ -8,7 +8,7 @@ import { COMPANY_PHONE_DISPLAY, COMPANY_PHONE_TEL, IS_DEMO } from '@/lib/config'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 export default function Navbar() {
-  const { user, profile, isAdmin, signOut } = useAuth()
+  const { user, profile, isAdmin, isVerified, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -47,16 +47,6 @@ export default function Navbar() {
         scrolled ? 'border-gray-200 shadow-sm dark:border-gray-800' : 'border-transparent shadow-none'
       }`}
     >
-      {/*
-        Deliberately NOT using the shared `.section` (max-w-6xl) container
-        here - on wide monitors that squeezed the brand block + 5 nav links
-        + auth actions + language/theme toggles into a ~1150px-wide box in
-        the middle of the screen, forcing nav labels and the "Buyurtma
-        berish" button to wrap onto two lines. The header gets its own,
-        wider max-width plus `whitespace-nowrap` everywhere so nothing
-        wraps, with `shrink-0` on the brand/actions groups so only the nav
-        links (which have room to spare) would ever be asked to compress.
-      */}
       <div
         className={`mx-auto flex w-full max-w-[1600px] items-center justify-between gap-6 px-4 transition-[height] duration-300 sm:px-6 lg:px-10 ${
           scrolled ? 'h-16' : 'h-20'
@@ -66,8 +56,6 @@ export default function Navbar() {
           <img src="/logo-emblem.png" alt={t('brand.name')} className="h-11 w-11 shrink-0 object-contain" />
           <span className="flex min-w-0 flex-col justify-center gap-0.5">
             <span className="truncate text-lg font-extrabold leading-tight sm:text-xl">{t('brand.name')}</span>
-            {/* Tagline mayda ekranlarda joy tejash uchun yashirilsin - brend nomi
-                o'zi kifoya, "CLEANING SERVICES" faqat sm+ ekranlarda ko'rinsin. */}
             <span className="hidden truncate text-[11px] font-semibold uppercase leading-none tracking-wide text-gray-400 dark:text-gray-500 sm:block">
               {t('brand.tagline')}
             </span>
@@ -93,8 +81,6 @@ export default function Navbar() {
               {({ isActive }) => (
                 <>
                   {l.label}
-                  {/* Animated underline: expands from the center on hover,
-                      and stays fully expanded when the link is active. */}
                   <span
                     className={`pointer-events-none absolute -bottom-1 left-1/2 h-0.5 -translate-x-1/2 rounded-full bg-brand-600 transition-all duration-300 ease-out dark:bg-brand-400 ${
                       isActive ? 'w-full' : 'w-0 group-hover:w-full'
@@ -107,7 +93,7 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden shrink-0 items-center gap-3 lg:flex">
-          {user ? (
+          {user && isVerified ? (
             <>
               {isAdmin && (
                 <Link to="/admin" className="whitespace-nowrap text-sm font-medium text-gray-600 hover:text-brand-700 dark:text-gray-300 dark:hover:text-brand-400">
@@ -118,6 +104,18 @@ export default function Navbar() {
                 {profile?.full_name || t('nav.myAccount')}
               </Link>
               <button onClick={handleSignOut} className="btn-secondary whitespace-nowrap py-2">
+                {t('nav.signOut')}
+              </button>
+            </>
+          ) : user && !isVerified ? (
+            <>
+              <Link
+                to="/register"
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/60 dark:text-amber-300 animate-pulse"
+              >
+                ⚠️ Raqamni tasdiqlash
+              </Link>
+              <button onClick={handleSignOut} className="btn-secondary whitespace-nowrap py-2 text-xs">
                 {t('nav.signOut')}
               </button>
             </>
@@ -174,7 +172,7 @@ export default function Navbar() {
               {COMPANY_PHONE_DISPLAY}
             </a>
             <hr className="my-1 dark:border-gray-800" />
-            {user ? (
+            {user && isVerified ? (
               <>
                 {isAdmin && (
                   <Link
@@ -191,6 +189,19 @@ export default function Navbar() {
                   className="rounded-md px-2 py-2.5 text-sm font-medium text-gray-700 active:bg-gray-50 dark:text-gray-200 dark:active:bg-brand-900/40"
                 >
                   {t('nav.myAccount')}
+                </Link>
+                <button onClick={handleSignOut} className="btn-secondary mt-1 w-full">
+                  {t('nav.signOut')}
+                </button>
+              </>
+            ) : user && !isVerified ? (
+              <>
+                <Link
+                  to="/register"
+                  onClick={() => setOpen(false)}
+                  className="rounded-md bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+                >
+                  ⚠️ Telefon raqamni tasdiqlash
                 </Link>
                 <button onClick={handleSignOut} className="btn-secondary mt-1 w-full">
                   {t('nav.signOut')}

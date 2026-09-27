@@ -30,6 +30,7 @@ interface AuthContextValue {
   profile: Profile | null
   loading: boolean
   isAdmin: boolean
+  isVerified: boolean
   signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: string | null }>
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signInWithGoogle: () => Promise<GoogleSignInResult>
@@ -199,11 +200,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) await loadProfile()
   }
 
+  const isVerified = Boolean(user && profile && (profile.phone_verified || (profile.phone && profile.phone.length > 5)))
+
   const value: AuthContextValue = {
     user,
     profile,
     loading,
     isAdmin: profile?.role === 'admin',
+    isVerified,
     signUp,
     signIn,
     signInWithGoogle,

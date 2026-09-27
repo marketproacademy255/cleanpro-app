@@ -188,6 +188,13 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     const allowed = await checkRateLimit(`booking-create:${ip}:${req.uid}`, 10, 60 * 1000)
     if (!allowed) return tooManyRequests()
 
+    const isPhoneVerified = Boolean(
+      req.profile?.phone_verified || (req.profile?.phone && req.profile.phone.length > 5),
+    )
+    if (!isPhoneVerified) {
+      return forbidden("Buyurtma berish uchun telefon raqamingiz Telegram bot orqali tasdiqlangan bo'lishi kerak.")
+    }
+
     let body: CreateBookingBody
     try {
       body = JSON.parse(event.body ?? '{}')
