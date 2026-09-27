@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut as firebaseSignOut,
   updateProfile as updateFirebaseProfile,
   type User,
@@ -15,6 +17,14 @@ import type { Profile } from '@/lib/types'
 
 const VALID_LANGS: Lang[] = ['uz', 'en', 'ru']
 
+export interface GoogleSignInResult {
+  error: string | null
+  user?: User
+  profile?: Profile | null
+  isExistingUser?: boolean
+  needsPhoneVerification?: boolean
+}
+
 interface AuthContextValue {
   user: User | null
   profile: Profile | null
@@ -22,6 +32,7 @@ interface AuthContextValue {
   isAdmin: boolean
   signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: string | null }>
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
+  signInWithGoogle: () => Promise<GoogleSignInResult>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -42,6 +53,12 @@ function firebaseErrorToUz(code: string): string {
       return "Bu email allaqachon ro'yxatdan o'tgan."
     case 'auth/weak-password':
       return "Parol kamida 6 belgidan iborat bo'lishi kerak."
+    case 'auth/popup-closed-by-user':
+      return "Google oynasi yopildi. Qaytadan urinib ko'ring."
+    case 'auth/popup-blocked':
+      return "Brauzer Google oynasini blokladi. Pop-up xabarlarga ruxsat bering."
+    case 'auth/account-exists-with-different-credential':
+      return "Ushbu email bilan boshqa usul orqali ro'yxatdan o'tilingan."
     default:
       return "Xatolik yuz berdi. Qaytadan urinib ko'ring."
   }
@@ -135,6 +152,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function signInWithGoogle(): Promise<GoogleSignInResult> {
+    if (!auth) return { error: "Xizmat hozircha mavjud emas. Birozdan so'ng qayta urinib ko'ring." }
+    try {
+      const provider = new GoogleAuthProvider()
+      provider.setCustomParameters({ prompt: 'select_account' })
+      const result = await signInWithPopup(auth, provider)
+      const firebaseUser = result.user
+
+      let prof: Profile | null = null
+      try {
+        prof = await apiFetch<Profile>('profile')
+        setProfile(prof)
+      } catch {
+        prof = null
+      }
+
+      const hasVerifiedPhone = Boolean(prof?.phone_verified || (prof?.phone && prof.phone.length > 5))
+
+      return {
+        error: null,
+        user: firebaseUser,
+        profile: prof,
+        isExistingUser: Boolean(prof && hasVerifiedPhone),
+        needsPhoneVerification: !hasVerifiedPhone,
+      }
+    } catch (err: any) {
+      if (err?.code === 'auth/popup-closed-by-user') {
+        return { error: null }
+      }
+      const code = err?.code ?? ''
+      return { error: firebaseErrorToUz(code) }
+    }
+  }
+
   async function signOut() {
     if (!auth) return
     await firebaseSignOut(auth)
@@ -151,6 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin: profile?.role === 'admin',
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     refreshProfile,
   }

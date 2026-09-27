@@ -6,9 +6,10 @@ import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
 import { triggerHaptic } from '@/lib/haptics'
 import { loginSchema, type LoginFormValues } from '@/lib/validationSchemas'
+import GoogleIcon from '@/components/GoogleIcon'
 
 export default function Login() {
-  const { signIn } = useAuth()
+  const { signIn, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
   const { t } = useTranslation()
   const location = useLocation() as { state?: { from?: string; message?: string } }
@@ -39,6 +40,42 @@ export default function Login() {
     navigate(location.state?.from ?? '/dashboard')
   }
 
+  async function handleGoogleSignIn() {
+    setLoading(true)
+    setError(null)
+    triggerHaptic('medium')
+    const res = await signInWithGoogle()
+    setLoading(false)
+
+    if (res.error) {
+      triggerHaptic('error')
+      setError(res.error)
+      return
+    }
+
+    if (!res.user) {
+      return
+    }
+
+    if (res.isExistingUser) {
+      triggerHaptic('success')
+      navigate(location.state?.from ?? '/dashboard')
+    } else {
+      triggerHaptic('medium')
+      navigate('/register', {
+        state: {
+          googleUser: {
+            displayName: res.user.displayName,
+            email: res.user.email,
+            uid: res.user.uid,
+          },
+          message:
+            "Google hisobingiz muvaffaqiyatli ulandi! Ro'yxatdan o'tishni yakunlash uchun telefon raqamingizni kiriting va Telegram bot orqali tasdiqlang.",
+        },
+      })
+    }
+  }
+
   return (
     <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-2">
       <div className="relative hidden lg:block">
@@ -62,7 +99,28 @@ export default function Login() {
             </p>
           )}
 
-          <form onSubmit={handleEmailSubmit(onEmailSubmit)} className="mt-6 space-y-4">
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="mt-6 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white py-2.5 px-4 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 active:scale-[0.99] disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-750"
+          >
+            <GoogleIcon className="h-5 w-5" />
+            <span>Google orqali davom etish</span>
+          </button>
+
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-3 text-gray-400 dark:bg-gray-900 dark:text-gray-500 font-medium">
+                yoki email bilan
+              </span>
+            </div>
+          </div>
+
+          <form onSubmit={handleEmailSubmit(onEmailSubmit)} className="space-y-4">
             <div>
               <label className="label">{t('login.emailLabel')}</label>
               <input type="email" className="input" {...register('email')} />
