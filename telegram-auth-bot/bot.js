@@ -31,7 +31,9 @@ const admin = require('firebase-admin')
 // --------------------------------------------------------------------------
 // Sozlamalar
 // --------------------------------------------------------------------------
-// BotFather orqali token oling va process.env.BOT_TOKEN ga qo'ying.
+// Token FAQAT muhit o'zgaruvchisi orqali beriladi - kodga hech qachon
+// yozmang (bu fayl git'da). '8862054310:...' bilan boshlanadigan eski token
+// repozitoriyda oshkor bo'lgan - @BotFather orqali /revoke qiling.
 const BOT_TOKEN = process.env.BOT_TOKEN
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID
@@ -70,6 +72,72 @@ function normalizeUzPhone(raw) {
   if (digits.length === 9) return `+998${digits}`
   if (digits.length === 12 && digits.startsWith('998')) return `+${digits}`
   return null
+}
+
+// --------------------------------------------------------------------------
+// Saytdagi telefon raqamni tasdiqlash. netlify/functions/_lib/phoneVerification.ts
+// dagi protokol bilan AYNAN bir xil - o'zgartirsangiz, u yerda ham o'zgartiring.
+//   /start <nonce>  -> phoneVerifications/{uid} ga chat_id bog'lanadi
+//   o'z kontakti    -> telefon mos bo'lsa profiles/{uid}.phone_verified = true
+// --------------------------------------------------------------------------
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function isExpired(data) {
+  return new Date(data.expires_at).getTime() < Date.now()
+}
+
+async function findPendingVerification(chatId) {
+  const snap = await db.collection('phoneVerifications').where('chat_id', '==', chatId).get()
+  return snap.docs
+    .filter((d) => d.data().status === 'pending')
+    .sort((a, b) => b.data().created_at.localeCompare(a.data().created_at))[0]
+}
+
+async function bindChatToNonce(nonce, chatId) {
+  const snap = await db.collection('phoneVerifications').where('nonce', '==', nonce).limit(1).get()
+  if (snap.empty) return "⚠️ Havola yaroqsiz. Saytda qaytadan <b>\"Tasdiqlash\"</b> tugmasini bosing."
+  const data = snap.docs[0].data()
+  if (data.status === 'verified') return "✅ Bu so'rov allaqachon tasdiqlangan. Saytga qaytishingiz mumkin."
+  if (isExpired(data)) return "⌛ Havolaning muddati tugagan. Saytda qaytadan <b>\"Tasdiqlash\"</b> tugmasini bosing."
+  await snap.docs[0].ref.update({ chat_id: chatId, updated_at: new Date().toISOString() })
+  return null
+}
+
+async function verifyContact(doc, phone) {
+  const data = doc.data()
+  if (isExpired(data)) {
+    return "⌛ Tasdiqlash havolasining muddati tugagan. Saytda qaytadan <b>\"Tasdiqlash\"</b> tugmasini bosing."
+  }
+  if (data.phone !== phone) {
+    return (
+      '❌ Telegram raqamingiz saytda kiritilgan raqamga mos kelmadi.\n\n' +
+      `Saytda: <code>${escapeHtml(data.phone)}</code>\n` +
+      `Telegram: <code>${escapeHtml(phone)}</code>\n\n` +
+      "Saytda Telegram hisobingizga ulangan raqamni kiriting va qaytadan urinib ko'ring."
+    )
+  }
+  const owners = await db.collection('profiles').where('phone', '==', phone).get()
+  if (owners.docs.some((d) => d.id !== data.uid && d.data().phone_verified === true)) {
+    return "❌ Bu raqam boshqa akkauntda allaqachon tasdiqlangan. Agar bu xato bo'lsa, qo'llab-quvvatlash xizmatiga murojaat qiling."
+  }
+
+  const now = new Date().toISOString()
+  const batch = db.batch()
+  batch.set(
+    db.collection('profiles').doc(data.uid),
+    { phone, phone_verified: true, phone_verified_at: now },
+    { merge: true },
+  )
+  batch.update(doc.ref, { status: 'verified', updated_at: now })
+  await batch.commit()
+  return (
+    '✅ <b>Telefon raqamingiz tasdiqlandi!</b>\n\n' +
+    `Telefon: <code>${escapeHtml(phone)}</code>\n\n` +
+    'Saytga qayting - sahifa avtomatik yangilanadi.'
+  )
 }
 
 // --------------------------------------------------------------------------
@@ -118,56 +186,6 @@ const signupWizard = new Scenes.WizardScene(
         Markup.removeKeyboard(),
       )
       return ctx.scene.leave()
-    }
-
-    // Check website registration phone verification request
-    const verifyRef = db.collection('phoneVerifications').doc(phone)
-    const verifySnap = await verifyRef.get()
-
-    if (verifySnap.exists) {
-      const vData = verifySnap.data()
-      if (vData.status === 'pending') {
-        const uid = vData.uid || db.collection('profiles').doc().id
-        let customToken = ''
-        try {
-          customToken = await admin.auth().createCustomToken(uid)
-        } catch {
-          // ignore token error
-        }
-
-        const now = new Date().toISOString()
-        const batch = db.batch()
-        batch.set(
-          db.collection('profiles').doc(uid),
-          {
-            role: 'customer',
-            full_name: vData.full_name || ctx.from.first_name || 'Foydalanuvchi',
-            phone,
-            email: vData.email || null,
-            phone_verified: true,
-            created_at: now,
-          },
-          { merge: true },
-        )
-
-        batch.update(verifyRef, {
-          status: 'verified',
-          uid,
-          custom_token: customToken,
-          updated_at: now,
-        })
-
-        await batch.commit()
-
-        await ctx.reply(
-          `✅ <b>Telefon raqamingiz muvaffaqiyatli tasdiqlandi!</b>\n\n` +
-            `Ism: <b>${vData.full_name || ctx.from.first_name}</b>\n` +
-            `Telefon: <code>${phone}</code>\n\n` +
-            `Saytga qaytishingiz mumkin — akkauntingiz avtomatik tasdiqlandi!`,
-          { parse_mode: 'HTML', ...Markup.removeKeyboard() },
-        )
-        return ctx.scene.leave()
-      }
     }
 
     const existing = await db.collection('telegramAuth').doc(phone).get()
@@ -275,6 +293,28 @@ const bot = new Telegraf(BOT_TOKEN)
 const stage = new Scenes.Stage([signupWizard])
 
 bot.use(session())
+
+// Saytdan kelgan tasdiqlash so'rovi bo'lsa, kontakt wizard'dan OLDIN shu
+// yerda qayta ishlanadi.
+bot.on('contact', async (ctx, next) => {
+  const pending = await findPendingVerification(ctx.chat.id)
+  if (!pending) return next()
+
+  const contact = ctx.message.contact
+  if (contact.user_id !== ctx.from.id) {
+    await ctx.reply("Faqat o'zingizning raqamingizni pastdagi tugma orqali yuborishingiz mumkin.", contactKeyboard)
+    return
+  }
+  const phone = normalizeUzPhone(contact.phone_number)
+  if (!phone) {
+    await ctx.reply("Faqat O'zbekiston (+998) raqamlari qabul qilinadi.", Markup.removeKeyboard())
+    return
+  }
+  const text = await verifyContact(pending, phone)
+  if (ctx.scene && ctx.scene.current) await ctx.scene.leave()
+  await ctx.reply(text, { parse_mode: 'HTML', ...Markup.removeKeyboard() })
+})
+
 bot.use(stage.middleware())
 
 function signupKeyboard() {
@@ -282,6 +322,20 @@ function signupKeyboard() {
 }
 
 bot.start(async (ctx) => {
+  const nonce = (ctx.payload || '').trim()
+  if (nonce) {
+    const error = await bindChatToNonce(nonce, ctx.chat.id)
+    if (error) {
+      await ctx.reply(error, { parse_mode: 'HTML', ...Markup.removeKeyboard() })
+    } else {
+      await ctx.reply('Raqamingizni tasdiqlash uchun pastdagi 📱 <b>Raqamni yuborish</b> tugmasini bosing.', {
+        parse_mode: 'HTML',
+        ...contactKeyboard,
+      })
+    }
+    return
+  }
+
   await ctx.reply(
     "Assalomu alaykum! Bu CleanPro'ning rasmiy ro'yxatdan o'tish boti.\n\n" +
       "Bu yerda telefon raqamingiz va parolingiz bilan hisob yaratasiz - keyin " +

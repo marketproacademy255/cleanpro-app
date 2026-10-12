@@ -41,6 +41,11 @@ service cloud.firestore {
     match /telegramLoginCodes/{phone} {
       allow read, write: if false;
     }
+    // Telegram phone verification requests, keyed by uid (see
+    // netlify/functions/_lib/phoneVerification.ts). Admin-SDK-only.
+    match /phoneVerifications/{uid} {
+      allow read, write: if false;
+    }
     // Sliding-window rate-limit counters for the public (unauthenticated)
     // functions - see netlify/functions/_lib/rateLimit.ts. Holds only
     // request timestamps keyed by IP (+phone for the login endpoint), no

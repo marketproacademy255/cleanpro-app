@@ -17,14 +17,6 @@ import type { Profile } from '@/lib/types'
 
 const VALID_LANGS: Lang[] = ['uz', 'en', 'ru']
 
-export interface GoogleSignInResult {
-  error: string | null
-  user?: User
-  profile?: Profile | null
-  isExistingUser?: boolean
-  needsPhoneVerification?: boolean
-}
-
 interface AuthContextValue {
   user: User | null
   profile: Profile | null
@@ -33,7 +25,7 @@ interface AuthContextValue {
   isVerified: boolean
   signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: string | null }>
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
-  signInWithGoogle: () => Promise<GoogleSignInResult>
+  signInWithGoogle: () => Promise<{ error: string | null; cancelled?: boolean }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -61,11 +53,16 @@ function firebaseErrorToUz(code: string): string {
     case 'auth/account-exists-with-different-credential':
       return "Ushbu email bilan boshqa usul orqali ro'yxatdan o'tilingan."
     case 'auth/unauthorized-domain':
-      return "Firebase Console -> Authentication -> Settings -> Authorized Domains ro'yxatiga 'prime-standard.uz' domeni qo'shilishi kerak."
     case 'auth/operation-not-allowed':
-      return "Firebase Console -> Authentication -> Sign-in method bo'limida Google tizimini yoqing."
+      // Firebase project misconfiguration - nothing the user can fix, so
+      // log the code for us and show a generic message.
+      // eslint-disable-next-line no-console
+      console.error(`Firebase Auth configuration error: ${code}`)
+      return "Google orqali kirish hozircha ishlamayapti. Email bilan kiring yoki birozdan so'ng urinib ko'ring."
     default:
-      return code ? `${code}: Xatolik yuz berdi. Qaytadan urinib ko'ring.` : "Xatolik yuz berdi. Qaytadan urinib ko'ring."
+      // eslint-disable-next-line no-console
+      if (code) console.error(`Firebase Auth error: ${code}`)
+      return "Xatolik yuz berdi. Qaytadan urinib ko'ring."
   }
 }
 
@@ -113,6 +110,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Keep `loading` true until the profile is in - otherwise route guards
+      // would briefly see a signed-in user with no profile, treat them as
+      // unverified and bounce them to /verify-phone.
+      setLoading(true)
       setUser(firebaseUser)
       if (firebaseUser) {
         await loadProfile()
@@ -157,36 +158,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function signInWithGoogle(): Promise<GoogleSignInResult> {
+  async function signInWithGoogle() {
     if (!auth) return { error: "Xizmat hozircha mavjud emas. Birozdan so'ng qayta urinib ko'ring." }
     try {
       const provider = new GoogleAuthProvider()
       provider.setCustomParameters({ prompt: 'select_account' })
-      const result = await signInWithPopup(auth, provider)
-      const firebaseUser = result.user
-
-      let prof: Profile | null = null
-      try {
-        prof = await apiFetch<Profile>('profile')
-        setProfile(prof)
-      } catch {
-        prof = null
+      // The profile (auto-created server-side on first sight - see
+      // netlify/functions/_lib/auth.ts) is loaded by the onAuthStateChanged
+      // listener above; route guards then send unverified users to
+      // /verify-phone.
+      await signInWithPopup(auth, provider)
+      return { error: null }
+    } catch (err) {
+      const code = (err as { code?: string })?.code ?? ''
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        return { error: null, cancelled: true }
       }
-
-      const hasVerifiedPhone = Boolean(prof?.phone_verified || (prof?.phone && prof.phone.length > 5))
-
-      return {
-        error: null,
-        user: firebaseUser,
-        profile: prof,
-        isExistingUser: Boolean(prof && hasVerifiedPhone),
-        needsPhoneVerification: !hasVerifiedPhone,
-      }
-    } catch (err: any) {
-      if (err?.code === 'auth/popup-closed-by-user') {
-        return { error: null }
-      }
-      const code = err?.code ?? ''
       return { error: firebaseErrorToUz(code) }
     }
   }
@@ -200,13 +187,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) await loadProfile()
   }
 
-  const isVerified = Boolean(user && profile && (profile.phone_verified || (profile.phone && profile.phone.length > 5)))
+  const isAdmin = profile?.role === 'admin'
+  // Same rule as the server-side check in netlify/functions/bookings.ts.
+  // phone_verified is only ever set by the Telegram bot - a phone number
+  // merely being present on the profile proves nothing.
+  const isVerified = Boolean(user && profile && (isAdmin || profile.phone_verified === true))
 
   const value: AuthContextValue = {
     user,
     profile,
     loading,
-    isAdmin: profile?.role === 'admin',
+    isAdmin,
     isVerified,
     signUp,
     signIn,

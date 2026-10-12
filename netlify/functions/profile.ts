@@ -1,6 +1,7 @@
 import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
 import { authenticate } from './_lib/auth'
 import { getDb } from './_lib/firebaseAdmin'
+import { normalizeUzPhone } from './_lib/phone'
 import { badRequest, json, serverError, unauthorized } from './_lib/respond'
 
 /**
@@ -41,12 +42,27 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
       return badRequest("Noto'g'ri so'rov.")
     }
 
+    // Phone is stored normalized so it matches what the Telegram bot
+    // verifies. Changing it drops the verified flag - only the bot (see
+    // _lib/phoneVerification.ts) can set phone_verified back to true.
+    let phone = req.profile?.phone ?? null
+    let phoneVerified = req.profile?.phone_verified === true
+    if (body.phone !== undefined) {
+      const normalized = normalizeUzPhone(body.phone)
+      if (!normalized) return badRequest("Noto'g'ri O'zbekiston telefon raqami. Masalan: +998 90 123 45 67")
+      if (normalized !== phone) {
+        phone = normalized
+        phoneVerified = false
+      }
+    }
+
     const db = getDb()
     const ref = db.collection('profiles').doc(req.uid)
     const patch = {
       email: req.email,
       full_name: body.full_name ?? req.profile?.full_name ?? null,
-      phone: body.phone ?? req.profile?.phone ?? null,
+      phone,
+      phone_verified: phoneVerified,
       language: body.language && VALID_LANGS.includes(body.language) ? body.language : (req.profile?.language ?? null),
       role: req.profile?.role ?? 'customer',
       created_at: req.profile?.created_at ?? new Date().toISOString(),

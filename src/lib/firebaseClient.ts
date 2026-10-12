@@ -13,13 +13,23 @@ import { getAuth, type Auth } from 'firebase/auth'
  * Set these in Netlify: Site settings -> Environment variables (and in a
  * local .env file for `npm run dev`, see .env.example).
  */
+// On the production domain the Firebase Auth handler is served same-origin
+// via the /__/auth/* proxy in netlify.toml, so the Google popup shows
+// prime-standard.uz instead of *.firebaseapp.com. Everywhere else (localhost,
+// Netlify deploy previews) that proxy domain isn't an authorized redirect
+// target, so fall back to the regular Firebase auth domain.
+const PROXIED_AUTH_HOSTS = ['prime-standard.uz', 'www.prime-standard.uz']
+
+function resolveAuthDomain(): string {
+  if (typeof window !== 'undefined' && PROXIED_AUTH_HOSTS.includes(window.location.hostname)) {
+    return window.location.hostname
+  }
+  return import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'cleanpro-241de.firebaseapp.com'
+}
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:
-    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ||
-    (typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-      ? window.location.hostname
-      : 'cleanpro-241de.firebaseapp.com'),
+  authDomain: resolveAuthDomain(),
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,

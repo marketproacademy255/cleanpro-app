@@ -23,3 +23,13 @@ vite.config.js.timestamp-*.mjs
 # get swept back in by a future `git add -A`; the directory itself is left
 # on disk untouched in case it's needed for something else.
 /web-ui/
+
+# Firebase Admin service-account keys (full admin access to the project) -
+# never commit. Bots read them from env vars or a local, untracked file.
+serviceAccountKey*.json
+*-firebase-adminsdk-*.json
+
+# Python bot artifacts
+__pycache__/
+*.pyc
+.venv/

@@ -7,7 +7,7 @@ import { useTranslation } from '@/context/LanguageContext'
 // of another primary action (the booking form itself, auth forms, the
 // customer/admin dashboards). Exported so App.tsx can add matching
 // bottom-padding only on the pages where the bar actually renders.
-export const MOBILE_BAR_HIDDEN_PREFIXES = ['/booking', '/login', '/register', '/dashboard', '/admin']
+export const MOBILE_BAR_HIDDEN_PREFIXES = ['/booking', '/login', '/register', '/verify-phone', '/dashboard', '/admin']
 
 export default function MobileBookingBar() {
   const { pathname } = useLocation()

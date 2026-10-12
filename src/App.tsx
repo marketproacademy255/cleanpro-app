@@ -37,6 +37,7 @@ const Services = safeLazy(() => import('@/pages/Services'))
 const Booking = safeLazy(() => import('@/pages/Booking'))
 const Login = safeLazy(() => import('@/pages/Login'))
 const Register = safeLazy(() => import('@/pages/Register'))
+const VerifyPhone = safeLazy(() => import('@/pages/VerifyPhone'))
 const Dashboard = safeLazy(() => import('@/pages/Dashboard'))
 const BookingDetail = safeLazy(() => import('@/pages/BookingDetail'))
 const PaymentResult = safeLazy(() => import('@/pages/PaymentResult'))
@@ -82,6 +83,7 @@ export default function App() {
               />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/verify-phone" element={<VerifyPhone />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/blog" element={<Blog />} />

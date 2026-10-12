@@ -1,197 +1,75 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { signInWithCustomToken } from 'firebase/auth'
-import { CheckCircle2, Clock, ExternalLink, ShieldCheck } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslation } from '@/context/LanguageContext'
-import { auth } from '@/lib/firebaseClient'
-import { apiFetch, ApiError } from '@/lib/api'
+import { apiFetch } from '@/lib/api'
 import { triggerHaptic } from '@/lib/haptics'
 import { registerSchema, type RegisterFormValues } from '@/lib/validationSchemas'
 import GoogleIcon from '@/components/GoogleIcon'
 
+/**
+ * Step 1 of sign-up: create the account (email/password or Google).
+ * Step 2 - Telegram phone verification - happens on /verify-phone, which
+ * every protected route redirects to until the phone is verified.
+ */
 export default function Register() {
   const { signUp, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation() as {
-    state?: { googleUser?: { displayName?: string; email?: string; uid?: string }; message?: string }
-  }
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const referralCode = searchParams.get('ref')
 
   const [error, setError] = useState<string | null>(null)
-  const [googleNotice, setGoogleNotice] = useState<string | null>(location.state?.message ?? null)
   const [loading, setLoading] = useState(false)
-  const [done, setDone] = useState(false)
-
-  // Verification states
-  const [verifyState, setVerifyState] = useState<'unverified' | 'requesting' | 'waiting' | 'verified'>('unverified')
-  const [activePhone, setActivePhone] = useState<string>('')
-  const [botName, setBotName] = useState<string>('CleanVerificationBot')
-  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const {
     register,
     handleSubmit,
-    getValues,
-    setValue,
-    trigger,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
   })
 
-  // Pre-fill Google info if passed from Login or location state
-  useEffect(() => {
-    if (location.state?.googleUser) {
-      const { displayName, email, uid } = location.state.googleUser
-      if (displayName) setValue('fullName', displayName)
-      if (email) setValue('email', email)
-      if (uid) setValue('password', 'GooglePass_' + uid.slice(0, 8))
+  async function finish() {
+    if (referralCode) {
+      await apiFetch('referrals', { method: 'POST', body: JSON.stringify({ code: referralCode }) }).catch(() => {})
     }
-  }, [location.state, setValue])
-
-  // Clean up polling timer on unmount
-  useEffect(() => {
-    return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current)
-    }
-  }, [])
-
-  function startPolling(phone: string) {
-    if (pollTimerRef.current) clearInterval(pollTimerRef.current)
-
-    pollTimerRef.current = setInterval(async () => {
-      try {
-        const res = await apiFetch<{ status: string; token?: string }>(
-          `phone-verify-status?phone=${encodeURIComponent(phone)}`,
-        )
-        if (res.status === 'verified') {
-          if (pollTimerRef.current) clearInterval(pollTimerRef.current)
-          setVerifyState('verified')
-          triggerHaptic('success')
-
-          if (res.token && auth) {
-            await signInWithCustomToken(auth, res.token).catch(() => null)
-          }
-
-          await completeRegistration()
-        }
-      } catch {
-        // Ignore polling errors
-      }
-    }, 2500)
+    triggerHaptic('success')
+    // Already-verified returning (Google) users are sent straight on to the
+    // dashboard by /verify-phone itself.
+    navigate('/verify-phone', { replace: true })
   }
 
-  async function handleGoogleRegister() {
+  async function onSubmit(data: RegisterFormValues) {
+    setLoading(true)
+    setError(null)
+    triggerHaptic('medium')
+    const { error: signUpError } = await signUp(data.email, data.password, data.fullName, data.phone)
+    if (signUpError) {
+      setLoading(false)
+      triggerHaptic('error')
+      setError(signUpError)
+      return
+    }
+    await finish()
+  }
+
+  async function handleGoogle() {
     setLoading(true)
     setError(null)
     triggerHaptic('medium')
     const res = await signInWithGoogle()
-    setLoading(false)
-
-    if (res.error) {
-      triggerHaptic('error')
-      setError(res.error)
-      return
-    }
-
-    if (!res.user) return
-
-    if (res.isExistingUser) {
-      triggerHaptic('success')
-      navigate('/dashboard')
-      return
-    }
-
-    // Google authenticated, pre-fill values and require phone verification
-    if (res.user.displayName) setValue('fullName', res.user.displayName)
-    if (res.user.email) setValue('email', res.user.email)
-    setValue('password', 'GooglePass_' + res.user.uid.slice(0, 8))
-
-    setGoogleNotice(
-      `Google hisobingiz (${res.user.email}) muvaffaqiyatli ulandi! Endi telefon raqamingizni kiriting va Telegram bot orqali tasdiqlang.`,
-    )
-    triggerHaptic('success')
-  }
-
-  async function handleVerifyClick() {
-    setError(null)
-    const values = getValues()
-
-    if (!values.phone || values.phone.trim().length < 7) {
-      setError("⚠️ Iltimos, telefon raqamingizni kiriting va 'Tasdiqlash' tugmasini bosing.")
-      triggerHaptic('error')
-      return
-    }
-
-    const isFormValid = await trigger(['fullName', 'phone', 'password'])
-    if (!isFormValid) {
-      setError("⚠️ Iltimos, barcha maydonlarni to'g'ri to'ldiring.")
-      triggerHaptic('error')
-      return
-    }
-
-    setVerifyState('requesting')
-    setLoading(true)
-    triggerHaptic('medium')
-
-    try {
-      const res = await apiFetch<{ ok: boolean; phone: string; botUsername: string }>('phone-verify-request', {
-        method: 'POST',
-        body: JSON.stringify({
-          fullName: values.fullName,
-          phone: values.phone,
-          email: values.email,
-          password: values.password,
-        }),
-      })
-
-      setActivePhone(res.phone)
-      if (res.botUsername) setBotName(res.botUsername)
-
-      setVerifyState('waiting')
-      triggerHaptic('success')
-      startPolling(res.phone)
-    } catch (err) {
-      triggerHaptic('error')
-      setVerifyState('unverified')
-      setError(err instanceof ApiError ? err.message : "Tasdiqlash so'rovida xatolik yuz berdi. Qayta urinib ko'ring.")
-    } finally {
+    if (res.error || res.cancelled) {
       setLoading(false)
-    }
-  }
-
-  async function completeRegistration() {
-    const values = getValues()
-    setLoading(true)
-
-    await signUp(values.email, values.password, values.fullName, values.phone).catch(() => null)
-
-    if (referralCode) {
-      await apiFetch('referrals', { method: 'POST', body: JSON.stringify({ code: referralCode }) }).catch(() => {})
-    }
-
-    setDone(true)
-    setLoading(false)
-    setTimeout(() => navigate('/dashboard'), 1500)
-  }
-
-  async function onSubmit() {
-    if (verifyState !== 'verified') {
-      const values = getValues()
-      if (!values.phone || values.phone.trim().length < 7) {
-        setError("⚠️ Avval telefon raqamingizni kiriting va 'Tasdiqlash' tugmasini bosing.")
+      if (res.error) {
         triggerHaptic('error')
-        return
+        setError(res.error)
       }
-      await handleVerifyClick()
       return
     }
-    await completeRegistration()
+    await finish()
   }
 
   return (
@@ -211,163 +89,73 @@ export default function Register() {
       <div className="flex items-center justify-center px-4 py-14 sm:px-6">
         <div className="card w-full max-w-md">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('register.title')}</h1>
-          {done ? (
-            <div className="mt-4 space-y-2">
-              <p className="rounded-lg bg-brand-50 p-3 text-sm text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
-                ✅ Ro'yxatdan o'tish va telefon raqamingiz muvaffaqiyatli tasdiqlandi!
+
+          <button
+            type="button"
+            onClick={handleGoogle}
+            disabled={loading}
+            className="mt-6 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white py-2.5 px-4 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 active:scale-[0.99] disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-750"
+          >
+            <GoogleIcon className="h-5 w-5" />
+            <span>Google orqali davom etish</span>
+          </button>
+
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-3 text-gray-400 dark:bg-gray-900 dark:text-gray-500 font-medium">
+                yoki ma'lumotlarni kiritib
+              </span>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label className="label">{t('register.fullNameLabel')}</label>
+              <input className="input" autoComplete="name" {...register('fullName')} />
+              {errors.fullName && <p className="mt-1 text-xs text-red-500">{errors.fullName.message}</p>}
+            </div>
+
+            <div>
+              <label className="label">{t('register.phoneLabel')}</label>
+              <input
+                className="input"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="+998 90 123 45 67"
+                {...register('phone')}
+              />
+              <p className="mt-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                Keyingi qadamda shu raqam Telegram bot orqali tasdiqlanadi.
               </p>
-              {referralCode && (
-                <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                  {t('register.referralApplied')}
-                </p>
-              )}
+              {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone.message}</p>}
             </div>
-          ) : (
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={handleGoogleRegister}
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white py-2.5 px-4 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 active:scale-[0.99] disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-750"
-              >
-                <GoogleIcon className="h-5 w-5" />
-                <span>Google orqali davom etish</span>
-              </button>
 
-              <div className="relative my-5">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200 dark:border-gray-700" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-3 text-gray-400 dark:bg-gray-900 dark:text-gray-500 font-medium">
-                    yoki ma'lumotlarni kiritib
-                  </span>
-                </div>
-              </div>
-
-              {googleNotice && (
-                <div className="mb-4 rounded-xl border border-emerald-300/70 bg-emerald-50/80 p-3.5 text-xs text-emerald-900 dark:border-emerald-700/50 dark:bg-emerald-950/40 dark:text-emerald-200">
-                  {googleNotice}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div>
-                  <label className="label">{t('register.fullNameLabel')}</label>
-                  <input className="input" {...register('fullName')} />
-                  {errors.fullName && <p className="mt-1 text-xs text-red-500">{errors.fullName.message}</p>}
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label className="label">{t('register.phoneLabel')}</label>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                        * Ushbu raqamda Telegram hisobi faol bo'lishi lozim
-                      </p>
-                    </div>
-                    {verifyState === 'verified' ? (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Tasdiqlandi
-                      </span>
-                    ) : verifyState === 'waiting' ? (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-amber-500 dark:text-amber-400 animate-pulse">
-                        <Clock className="h-3.5 w-3.5" /> Kutilmoqda...
-                      </span>
-                    ) : (
-                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                        Tasdiqlanmagan
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <input
-                      className="input flex-1"
-                      placeholder="+998 90 123 45 67"
-                      disabled={verifyState === 'waiting' || verifyState === 'verified'}
-                      {...register('phone')}
-                    />
-                    {verifyState !== 'verified' && (
-                      <button
-                        type="button"
-                        onClick={handleVerifyClick}
-                        disabled={loading || verifyState === 'waiting'}
-                        className="rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-semibold text-white shadow transition hover:bg-brand-700 disabled:opacity-50 shrink-0 flex items-center gap-1.5"
-                      >
-                        <ShieldCheck className="h-4 w-4" />
-                        {verifyState === 'requesting' ? '...' : 'Tasdiqlash'}
-                      </button>
-                    )}
-                  </div>
-                  {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone.message}</p>}
-                </div>
-
-                {/* Executive Telegram Verification Box */}
-                {verifyState === 'waiting' && (
-                  <div className="rounded-2xl border border-brand-500/30 bg-brand-950/60 p-4 text-xs text-brand-100 shadow-xl backdrop-blur-md space-y-3 dark:bg-brand-950/80">
-                    <div className="flex items-start gap-3">
-                      <div className="rounded-lg bg-brand-500/20 p-2 text-brand-400 shrink-0">
-                        <ShieldCheck className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-white text-sm">
-                          Telegram orqali raqamni tasdiqlash
-                        </h4>
-                        <p className="mt-1 text-gray-300 text-xs leading-relaxed">
-                          <span className="font-semibold text-brand-300">{activePhone}</span> raqamini tasdiqlash uchun botimizga o'ting va pastdagi <b>"Raqamni yuborish"</b> tugmasini bosing.
-                        </p>
-                      </div>
-                    </div>
-
-                    <a
-                      href={`https://t.me/${botName}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 hover:bg-sky-500 py-2.5 text-xs font-semibold text-white shadow-lg transition active:scale-[0.99]"
-                    >
-                      <span>Telegram botni ochish (@{botName})</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-
-                    <p className="text-[11px] text-center text-brand-300/80 font-medium">
-                      Tasdiqlangach ushbu sahifa avtomatik yangilanadi...
-                    </p>
-                  </div>
-                )}
-
-                <div>
-                  <label className="label">{t('register.emailLabel')}</label>
-                  <input type="email" className="input" {...register('email')} />
-                  {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
-                </div>
-
-                <div>
-                  <label className="label">{t('register.passwordLabel')}</label>
-                  <input type="password" className="input" {...register('password')} />
-                  {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
-                </div>
-
-                {error && (
-                  <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-300">
-                    {error}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading || verifyState === 'waiting'}
-                  className="btn-primary w-full"
-                >
-                  {loading
-                    ? 'Kutilmoqda...'
-                    : verifyState === 'verified'
-                      ? "Ro'yxatdan o'tishni yakunlash"
-                      : 'Tasdiqlash va Ro\'yxatdan o\'tish'}
-                </button>
-              </form>
+            <div>
+              <label className="label">{t('register.emailLabel')}</label>
+              <input type="email" className="input" autoComplete="email" {...register('email')} />
+              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
             </div>
-          )}
+
+            <div>
+              <label className="label">{t('register.passwordLabel')}</label>
+              <input type="password" className="input" autoComplete="new-password" {...register('password')} />
+              {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
+            </div>
+
+            {error && (
+              <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/30 dark:text-red-300">
+                {error}
+              </p>
+            )}
+
+            <button type="submit" disabled={loading} className="btn-primary w-full">
+              {loading ? t('register.submitting') : t('register.submit')}
+            </button>
+          </form>
 
           <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
             {t('register.haveAccount')}{' '}

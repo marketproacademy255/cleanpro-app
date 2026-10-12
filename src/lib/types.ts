@@ -22,6 +22,7 @@ export interface Profile {
   full_name: string | null
   phone: string | null
   phone_verified?: boolean | null
+  phone_verified_at?: string | null
   role: UserRole
   created_at: string
   // Saved UI language ('uz' | 'en' | 'ru') so it follows the user across

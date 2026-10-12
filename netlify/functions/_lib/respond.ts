@@ -9,7 +9,7 @@ export function json(statusCode: number, body: unknown): HandlerResponse {
 }
 
 export const unauthorized = () => json(401, { error: 'Tizimga kirish talab qilinadi.' })
-export const forbidden = () => json(403, { error: "Bu amal uchun ruxsatingiz yo'q." })
+export const forbidden = (message = "Bu amal uchun ruxsatingiz yo'q.") => json(403, { error: message })
 export const notFound = () => json(404, { error: 'Topilmadi.' })
 export const badRequest = (message: string) => json(400, { error: message })
 export const serverError = (message = 'Server xatoligi.') => json(500, { error: message })

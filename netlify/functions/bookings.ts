@@ -188,10 +188,10 @@ async function route(event: HandlerEvent): Promise<HandlerResponse> {
     const allowed = await checkRateLimit(`booking-create:${ip}:${req.uid}`, 10, 60 * 1000)
     if (!allowed) return tooManyRequests()
 
-    const isPhoneVerified = Boolean(
-      req.profile?.phone_verified || (req.profile?.phone && req.profile.phone.length > 5),
-    )
-    if (!isPhoneVerified) {
+    // Same rule as src/context/AuthContext.tsx's isVerified. Only the
+    // Telegram bot (via _lib/phoneVerification.ts) ever sets phone_verified -
+    // profile.ts resets it whenever the phone changes.
+    if (req.profile?.phone_verified !== true && !isAdmin(req)) {
       return forbidden("Buyurtma berish uchun telefon raqamingiz Telegram bot orqali tasdiqlangan bo'lishi kerak.")
     }
 

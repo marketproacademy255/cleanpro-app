@@ -37,7 +37,10 @@ export const registerSchema = z.object({
   phone: z
     .string()
     .min(9, 'Telefon raqamingizni to\'liq kiriting')
-    .refine((val) => /^\+?[0-9\s-]{9,15}$/.test(val), {
+    // Same rule as normalizeUzPhone() in netlify/functions/_lib/phone.ts
+    // (the backend rejects anything else): 9 local digits, or 12 starting
+    // with the 998 country code.
+    .refine((val) => /^[0-9\s()+-]+$/.test(val) && /^(\d{9}|998\d{9})$/.test(val.replace(/\D/g, '')), {
       message: 'Telefon raqami noto\'g\'ri formatda (masalan: +998 90 123 45 67)',
     }),
   email: z.string().email('Noto\'g\'ri email formati'),

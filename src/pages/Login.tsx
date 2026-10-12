@@ -53,27 +53,12 @@ export default function Login() {
       return
     }
 
-    if (!res.user) {
-      return
-    }
+    if (res.cancelled) return
 
-    if (res.isExistingUser) {
-      triggerHaptic('success')
-      navigate(location.state?.from ?? '/dashboard')
-    } else {
-      triggerHaptic('medium')
-      navigate('/register', {
-        state: {
-          googleUser: {
-            displayName: res.user.displayName,
-            email: res.user.email,
-            uid: res.user.uid,
-          },
-          message:
-            "Google hisobingiz muvaffaqiyatli ulandi! Ro'yxatdan o'tishni yakunlash uchun telefon raqamingizni kiriting va Telegram bot orqali tasdiqlang.",
-        },
-      })
-    }
+    // Users without a verified phone (incl. brand-new Google accounts) are
+    // redirected on to /verify-phone by ProtectedRoute.
+    triggerHaptic('success')
+    navigate(location.state?.from ?? '/dashboard')
   }
 
   return (

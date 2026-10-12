@@ -1,50 +1,81 @@
+"""
+CleanPro Telegram phone-verification bot (long polling).
+
+Implements the same protocol as netlify/functions/_lib/phoneVerification.ts
+(the webhook variant) - keep the two in sync:
+
+  1. The signed-in site user presses "Tasdiqlash" -> the site creates
+     phoneVerifications/{uid} {phone, nonce, status:'pending', expires_at}
+     and gives them the link https://t.me/<bot>?start=<nonce>
+  2. "/start <nonce>" here binds this chat to that request (chat_id).
+  3. The user shares their OWN contact -> the phone must equal the
+     requested one and not be verified on another account ->
+     profiles/{uid}.phone_verified = True.
+
+No passwords or auth tokens are ever handled here.
+"""
+
+import html
+import logging
 import os
 import re
-import logging
-from dotenv import load_dotenv
+import sys
+from datetime import datetime, timezone
+
 import firebase_admin
-from firebase_admin import credentials, firestore
 import telebot
+from dotenv import load_dotenv
+from firebase_admin import credentials, firestore
 from telebot import types
 
-# Load .env file if present
 load_dotenv()
-
-# Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Load environment variables
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8862054310:AAEFj9CUYBGfAyvlL5yLGrDH8jYjWJzMMBE")
+# Token comes ONLY from the environment (.env). Never hardcode it here -
+# this file is in git.
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH", "serviceAccountKey.json")
+SITE_URL = os.getenv("SITE_URL", "https://prime-standard.uz")
 
-# Initialize Firebase Admin
-if os.path.exists(FIREBASE_CREDENTIALS_PATH):
-    cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
-    firebase_admin.initialize_app(cred)
-    logging.info(f"Firebase Admin initialized using {FIREBASE_CREDENTIALS_PATH}")
-else:
+if not BOT_TOKEN:
+    logging.error("BOT_TOKEN topilmadi. .env faylida ko'rsating (.env.example ga qarang).")
+    sys.exit(1)
+
+
+def init_firebase() -> None:
+    if os.path.exists(FIREBASE_CREDENTIALS_PATH):
+        firebase_admin.initialize_app(credentials.Certificate(FIREBASE_CREDENTIALS_PATH))
+        logging.info("Firebase Admin initialized from %s", FIREBASE_CREDENTIALS_PATH)
+        return
+
     project_id = os.getenv("FIREBASE_PROJECT_ID")
     client_email = os.getenv("FIREBASE_CLIENT_EMAIL")
     private_key = (os.getenv("FIREBASE_PRIVATE_KEY") or "").replace("\\n", "\n")
+    if not (project_id and client_email and private_key):
+        logging.error("Firebase credentials topilmadi: serviceAccountKey.json yoki FIREBASE_* env kerak.")
+        sys.exit(1)
 
-    if project_id and client_email and private_key:
-        cred_dict = {
-            "type": "service_account",
-            "project_id": project_id,
-            "private_key": private_key,
-            "client_email": client_email,
-        }
-        cred = credentials.Certificate(cred_dict)
-        firebase_admin.initialize_app(cred)
-        logging.info("Firebase Admin initialized using environment variables.")
-    else:
-        logging.error("Firebase credentials not found! Place serviceAccountKey.json or set env vars.")
+    firebase_admin.initialize_app(
+        credentials.Certificate(
+            {
+                "type": "service_account",
+                "project_id": project_id,
+                "private_key": private_key,
+                "client_email": client_email,
+                "token_uri": "https://oauth2.googleapis.com/token",
+            }
+        )
+    )
+    logging.info("Firebase Admin initialized from environment variables.")
 
+
+init_firebase()
 db = firestore.client()
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 
 
-def normalize_phone(raw: str) -> str:
+def normalize_phone(raw):
+    """Must match normalizeUzPhone() in netlify/functions/_lib/phone.ts."""
     digits = re.sub(r"\D", "", raw or "")
     if len(digits) == 9:
         return f"+998{digits}"
@@ -53,95 +84,158 @@ def normalize_phone(raw: str) -> str:
     return None
 
 
-@bot.message_handler(commands=['start', 'help'])
-def send_welcome(message):
+def now_iso() -> str:
+    # Same format as JS Date#toISOString() so string comparisons line up.
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def is_expired(data: dict) -> bool:
+    return (data.get("expires_at") or "") < now_iso()
+
+
+def contact_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    contact_btn = types.KeyboardButton("📱 Raqamni yuborish", request_contact=True)
-    markup.add(contact_btn)
+    markup.add(types.KeyboardButton("📱 Raqamni yuborish", request_contact=True))
+    return markup
 
-    text = (
-        "<b>Assalomu alaykum! CleanPro rasmiy ro'yxatdan o'tish botiga xush kelibsiz.</b>\n\n"
-        "Telefon raqamingizni tasdiqlash uchun pastdagi 📱 <b>Raqamni yuborish</b> tugmasini bosing."
+
+def other_verified_owner(phone: str, uid: str):
+    for doc in db.collection("profiles").where("phone", "==", phone).stream():
+        if doc.id != uid and doc.to_dict().get("phone_verified") is True:
+            return doc.id
+    return None
+
+
+@bot.message_handler(commands=["start"])
+def handle_start(message):
+    parts = (message.text or "").split(maxsplit=1)
+    nonce = parts[1].strip() if len(parts) > 1 else ""
+
+    if not nonce:
+        bot.send_message(
+            message.chat.id,
+            "Assalomu alaykum! Bu CleanPro'ning telefon raqamni tasdiqlash boti.\n\n"
+            f"Saytda ({html.escape(SITE_URL)}) <b>\"Tasdiqlash\"</b> tugmasini bosing va "
+            "chiqqan havola orqali shu yerga qayting.",
+            reply_markup=types.ReplyKeyboardRemove(),
+        )
+        return
+
+    docs = list(db.collection("phoneVerifications").where("nonce", "==", nonce).limit(1).stream())
+    if not docs:
+        bot.send_message(message.chat.id, "⚠️ Havola yaroqsiz. Saytda qaytadan <b>\"Tasdiqlash\"</b> tugmasini bosing.")
+        return
+
+    data = docs[0].to_dict()
+    if data.get("status") == "verified":
+        bot.send_message(message.chat.id, "✅ Bu so'rov allaqachon tasdiqlangan. Saytga qaytishingiz mumkin.")
+        return
+    if is_expired(data):
+        bot.send_message(message.chat.id, "⌛ Havolaning muddati tugagan. Saytda qaytadan <b>\"Tasdiqlash\"</b> tugmasini bosing.")
+        return
+
+    docs[0].reference.update({"chat_id": message.chat.id, "updated_at": now_iso()})
+    bot.send_message(
+        message.chat.id,
+        "Raqamingizni tasdiqlash uchun pastdagi 📱 <b>Raqamni yuborish</b> tugmasini bosing.",
+        reply_markup=contact_keyboard(),
     )
-    bot.send_message(message.chat.id, text, reply_markup=markup)
 
 
-@bot.message_handler(content_types=['contact'])
+@bot.message_handler(content_types=["contact"])
 def handle_contact(message):
-    if not message.contact:
+    contact = message.contact
+    # Only the sender's OWN contact counts - a forwarded/shared contact card
+    # of someone else has a different (or no) user_id.
+    if not contact or contact.user_id != message.from_user.id:
+        bot.send_message(
+            message.chat.id,
+            "Faqat o'zingizning raqamingizni pastdagi tugma orqali yuborishingiz mumkin.",
+            reply_markup=contact_keyboard(),
+        )
         return
 
-    raw_phone = message.contact.phone_number
-    phone = normalize_phone(raw_phone)
-
+    phone = normalize_phone(contact.phone_number)
     if not phone:
-        bot.send_message(message.chat.id, "⚠️ Telefon raqamni aniqlab bo'lmadi. Qaytadan urinib ko'ring.")
+        bot.send_message(message.chat.id, "Faqat O'zbekiston (+998) raqamlari qabul qilinadi.",
+                         reply_markup=types.ReplyKeyboardRemove())
         return
 
-    logging.info(f"Received contact: {phone} from chat_id: {message.chat.id}")
+    pending = [
+        d for d in db.collection("phoneVerifications").where("chat_id", "==", message.chat.id).stream()
+        if d.to_dict().get("status") == "pending"
+    ]
+    pending.sort(key=lambda d: d.to_dict().get("created_at") or "", reverse=True)
+    remove_kb = types.ReplyKeyboardRemove()
 
-    # Check Firestore phoneVerifications document
-    doc_ref = db.collection("phoneVerifications").document(phone)
-    doc_snap = doc_ref.get()
+    if not pending:
+        bot.send_message(
+            message.chat.id,
+            "⚠️ Bu chat uchun faol tasdiqlash so'rovi topilmadi.\n\n"
+            f"Saytga kiring ({html.escape(SITE_URL)}), <b>\"Tasdiqlash\"</b> tugmasini bosing va "
+            "chiqqan <b>\"Telegram botni ochish\"</b> havolasi orqali qayta keling.",
+            reply_markup=remove_kb,
+        )
+        return
 
-    if doc_snap.exists:
-        data = doc_snap.to_dict()
-        if data.get("status") == "pending":
-            full_name = data.get("full_name") or message.from_user.first_name or "Foydalanuvchi"
-            email = data.get("email")
+    doc = pending[0]
+    data = doc.to_dict()
+    if is_expired(data):
+        bot.send_message(message.chat.id, "⌛ Tasdiqlash havolasining muddati tugagan. Saytda qaytadan <b>\"Tasdiqlash\"</b> tugmasini bosing.",
+                         reply_markup=remove_kb)
+        return
 
-            # Update Firestore profile and phoneVerifications
-            uid = data.get("uid") or db.collection("profiles").document().id
-            now = firestore.SERVER_TIMESTAMP
+    if data.get("phone") != phone:
+        bot.send_message(
+            message.chat.id,
+            "❌ Telegram raqamingiz saytda kiritilgan raqamga mos kelmadi.\n\n"
+            f"Saytda: <code>{html.escape(str(data.get('phone')))}</code>\n"
+            f"Telegram: <code>{html.escape(phone)}</code>\n\n"
+            "Saytda Telegram hisobingizga ulangan raqamni kiriting va qaytadan urinib ko'ring.",
+            reply_markup=remove_kb,
+        )
+        return
 
-            profile_ref = db.collection("profiles").document(uid)
-            profile_ref.set({
-                "role": "customer",
-                "full_name": full_name,
-                "phone": phone,
-                "email": email,
-                "phone_verified": True,
-                "created_at": now
-            }, merge=True)
+    uid = data["uid"]
+    if other_verified_owner(phone, uid):
+        bot.send_message(
+            message.chat.id,
+            "❌ Bu raqam boshqa akkauntda allaqachon tasdiqlangan. Agar bu xato bo'lsa, "
+            "qo'llab-quvvatlash xizmatiga murojaat qiling.",
+            reply_markup=remove_kb,
+        )
+        return
 
-            doc_ref.update({
-                "status": "verified",
-                "uid": uid,
-                "updated_at": now
-            })
-
-            success_text = (
-                f"✅ <b>Telefon raqamingiz muvaffaqiyatli tasdiqlandi!</b>\n\n"
-                f"Ism: <b>{full_name}</b>\n"
-                f"Telefon: <code>{phone}</code>\n\n"
-                f"Saytga qaytishingiz mumkin — akkauntingiz tasdiqlandi!"
-            )
-            bot.send_message(message.chat.id, success_text, reply_markup=types.ReplyKeyboardRemove())
-            logging.info(f"Successfully verified phone: {phone}")
-            return
-        elif data.get("status") == "verified":
-            bot.send_message(
-                message.chat.id,
-                "✅ Ushbu telefon raqam allaqachon tasdiqlangan. Saytga kiring.",
-                reply_markup=types.ReplyKeyboardRemove(),
-            )
-            return
-
-    # If no pending verification doc found
-    no_req_text = (
-        f"📱 <b>Raqamingiz qabul qilindi:</b> <code>{phone}</code>\n\n"
-        f"⚠️ Lekin saytda ushbu raqam bo'yicha hali tasdiqlash so'rovi topilmadi.\n\n"
-        f"Iltimos, avval saytga (<b>https://prime-standard.uz/register</b>) o'tib, ma'lumotlaringizni kiritib <b>'Tasdiqlash'</b> tugmasini bosing, so'ngra botga qaytib raqamni yuboring."
+    ts = now_iso()
+    batch = db.batch()
+    batch.set(
+        db.collection("profiles").document(uid),
+        {"phone": phone, "phone_verified": True, "phone_verified_at": ts},
+        merge=True,
     )
-    bot.send_message(message.chat.id, no_req_text, reply_markup=types.ReplyKeyboardRemove())
+    batch.update(doc.reference, {"status": "verified", "updated_at": ts})
+    batch.commit()
+
+    logging.info("Verified phone %s for uid %s", phone, uid)
+    bot.send_message(
+        message.chat.id,
+        "✅ <b>Telefon raqamingiz tasdiqlandi!</b>\n\n"
+        f"Telefon: <code>{html.escape(phone)}</code>\n\n"
+        "Saytga qayting - sahifa avtomatik yangilanadi.",
+        reply_markup=remove_kb,
+    )
+
+
+@bot.message_handler(func=lambda m: True)
+def handle_other(message):
+    bot.send_message(message.chat.id, f"Raqamni tasdiqlash uchun saytda ({html.escape(SITE_URL)}) \"Tasdiqlash\" tugmasini bosing.")
 
 
 if __name__ == "__main__":
-    logging.info("CleanPro Python Telegram Verification Bot starting...")
+    logging.info("CleanPro Telegram verification bot starting...")
     try:
+        # Polling and a webhook can't both be active for the same bot.
         bot.remove_webhook()
-        logging.info("Webhook removed successfully.")
-    except Exception as e:
-        logging.warning(f"Could not remove webhook: {e}")
+    except Exception as e:  # noqa: BLE001
+        logging.warning("Could not remove webhook: %s", e)
     bot.infinity_polling()
-

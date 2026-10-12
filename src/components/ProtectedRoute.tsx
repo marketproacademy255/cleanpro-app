@@ -8,50 +8,23 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (loading) return <FullPageLoader />
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />
-
-  if (!isVerified) {
-    return (
-      <Navigate
-        to="/register"
-        state={{
-          message:
-            "⚠️ Buyurtma berish va shaxsiy kabinetdan foydalanish uchun avval telefon raqamingizni Telegram bot orqali tasdiqlang!",
-          from: location.pathname,
-        }}
-        replace
-      />
-    )
-  }
-
+  // Booking and the dashboard need a Telegram-verified phone (enforced
+  // server-side too - see netlify/functions/bookings.ts).
+  if (!isVerified) return <Navigate to="/verify-phone" state={{ from: location.pathname }} replace />
   return <>{children}</>
 }
 
 export function AdminRoute({ children }: { children: ReactNode }) {
-  const { user, isAdmin, isVerified, loading } = useAuth()
+  const { user, isAdmin, loading } = useAuth()
   const location = useLocation()
 
   if (loading) return <FullPageLoader />
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />
-
-  if (!isVerified) {
-    return (
-      <Navigate
-        to="/register"
-        state={{
-          message:
-            "⚠️ Admin panelga kirish uchun avval telefon raqamingizni Telegram bot orqali tasdiqlang!",
-          from: location.pathname,
-        }}
-        replace
-      />
-    )
-  }
-
   if (!isAdmin) return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
 
-function FullPageLoader() {
+export function FullPageLoader() {
   return (
     <div className="grid min-h-[50vh] place-items-center">
       <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-200 border-t-brand-600" />

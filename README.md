@@ -110,6 +110,7 @@ brauzer bundle'iga tushib, hamma ko'radi:**
 | `TELEGRAM_BOT_TOKEN` | @BotFather |
 | `TELEGRAM_CHAT_ID` | pastga qarang |
 | `TELEGRAM_AUTH_BOT_TOKEN` | Telegram orqali telefon+parol bilan kirish/ro'yxatdan o'tish tizimi uchun bot tokeni — `telegram-auth-bot/` papkasidagi standalone bot bilan bir xil token (yoki alohida bot yaratsangiz, o'shaning tokeni) |
+| `TELEGRAM_WEBHOOK_SECRET` | Faqat bot webhook rejimida (`telegram-webhook.ts`) ishlatilsa kerak: tasodifiy uzun satr, `setWebhook` dagi `secret_token` bilan bir xil. Bo'lmasa webhook barcha so'rovlarni rad etadi |
 
 ### Telegram bot va chat ID qanday olinadi
 
@@ -145,6 +146,29 @@ Ishga tushirish uchun:
   "Ro'yxatdan o'tish"/"Kirish" sahifalarida botga o'tuvchi tugma ko'rsatadi.
 
 > ⚠️ Bot tokeni muhit o'zgaruvchilari orqali beriladi.
+
+## Telefon raqamni Telegram orqali tasdiqlash
+
+Buyurtma berish va shaxsiy kabinet uchun telefon raqam tasdiqlangan bo'lishi shart
+(`profiles/{uid}.phone_verified === true`, faqat bot o'rnatadi). Oqim:
+
+1. Foydalanuvchi email yoki Google orqali ro'yxatdan o'tadi / kiradi.
+2. `/verify-phone` sahifasida raqamni kiritadi → `phone-verify-request` (auth talab qilinadi)
+   `phoneVerifications/{uid}` hujjatini va bir martalik `https://t.me/<bot>?start=<nonce>`
+   havolasini yaratadi (15 daqiqa amal qiladi).
+3. Botda o'z kontaktini yuboradi → raqam mos bo'lsa va boshqa akkauntda tasdiqlanmagan bo'lsa,
+   profil tasdiqlanadi. Sayt `phone-verify-status` ni so'rab turadi.
+
+Protokol `netlify/functions/_lib/phoneVerification.ts` da; uchta bot varianti (webhook,
+`telegram-auth-bot/bot.js`, `telegram-bot-python/bot.py`) bir xil ishlaydi — bittasini ishlating.
+Webhook rejimida:
+
+```bash
+curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://prime-standard.uz/.netlify/functions/telegram-webhook&secret_token=<TELEGRAM_WEBHOOK_SECRET>"
+```
+
+Eski tizimdan o'tish uchun bir marta: `node scripts/migrate-phone-verification.mjs` (dry run),
+so'ng `--apply` bilan.
 
 ## Payme va Click — real to'lovlarni yoqish
 
