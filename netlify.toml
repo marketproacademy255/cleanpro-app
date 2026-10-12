@@ -63,7 +63,8 @@
 #   - connect-src: 'self' covers every backend call (src/lib/api.ts always
 #     fetches relative /.netlify/functions/* paths, same-origin) plus
 #     *.googleapis.com/*.firebaseio.com for the Firebase Auth/Firestore
-#     client SDK, and Google Analytics' beacon endpoints. Note Telegram
+#     client SDK, Google Analytics' beacon endpoints, and the two reverse-
+#     geocoding APIs the booking map uses (Nominatim, BigDataCloud). Note Telegram
 #     (api.telegram.org) and OpenRouter are NOT called from the browser at
 #     all - those requests happen server-side inside the Netlify Functions
 #     (netlify/functions/_lib/telegram.ts, ai-chat.ts), so they don't belong
@@ -86,6 +87,10 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "geolocation=(), camera=(), microphone=()"
+    # geolocation=(self): the booking page's map picker
+    # (src/components/MapLocationPicker.tsx) needs the browser GPS API on our
+    # own origin. "geolocation=()" disabled it site-wide, so every GPS
+    # request failed instantly with "permission denied".
+    Permissions-Policy = "geolocation=(self), camera=(), microphone=()"
     Strict-Transport-Security = "max-age=63072000; includeSubDomains"
-    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://nominatim.openstreetmap.org https://api.bigdatacloud.net; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"

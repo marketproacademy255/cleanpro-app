@@ -99,12 +99,17 @@ export default function MapLocationPicker({
   const [locating, setLocating] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
   const [gpsError, setGpsError] = useState<string | null>(null)
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null)
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Only the latest reverse-geocode result may update the address - a slow
+  // response for an older marker position must not overwrite a newer one.
+  const geocodeSeqRef = useRef(0)
 
   // Helper to emit complete location details payload
   function notifyChange(address: string, lat: number, lng: number, overrides = {}) {
@@ -120,6 +125,19 @@ export default function MapLocationPicker({
       ...overrides,
     })
   }
+
+  function moveMarker(lat: number, lng: number, zoom = 16) {
+    if (mapRef.current && markerRef.current) {
+      mapRef.current.flyTo([lat, lng], zoom)
+      markerRef.current.setLatLng([lat, lng])
+    }
+  }
+
+  // Leaflet event handlers are registered once, on mount. They call through
+  // this ref so they always see the CURRENT props/state (city, apartment,
+  // floor, onLocationSelect...) instead of the values from the first render.
+  const updateLocationRef = useRef(updateLocation)
+  updateLocationRef.current = updateLocation
 
   // Initialize Leaflet map
   useEffect(() => {
@@ -151,16 +169,16 @@ export default function MapLocationPicker({
       map.invalidateSize()
     }, 300)
 
-    // Handle marker drag end
     marker.on('dragend', () => {
       const latLng = marker.getLatLng()
-      updateLocation(latLng.lat, latLng.lng, true)
+      setGpsAccuracy(null)
+      updateLocationRef.current(latLng.lat, latLng.lng)
     })
 
-    // Handle click on map
     map.on('click', (e: L.LeafletMouseEvent) => {
       marker.setLatLng(e.latlng)
-      updateLocation(e.latlng.lat, e.latlng.lng, true)
+      setGpsAccuracy(null)
+      updateLocationRef.current(e.latlng.lat, e.latlng.lng)
     })
 
     return () => {
@@ -168,23 +186,50 @@ export default function MapLocationPicker({
       mapRef.current = null
       markerRef.current = null
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Update map center when city selection changes
+  // Re-center on the new city when the user CHANGES it - but not on mount,
+  // where it would throw away a location restored from the booking draft.
+  const prevCityRef = useRef(city)
   useEffect(() => {
+    if (prevCityRef.current === city) return
+    prevCityRef.current = city
     const targetCenter = CITY_COORDS[city] || CITY_COORDS['Toshkent']
     if (mapRef.current && markerRef.current) {
       mapRef.current.setView(targetCenter, 14)
       markerRef.current.setLatLng(targetCenter)
       setCoords({ lat: targetCenter[0], lng: targetCenter[1] })
+      setConfirmed(false)
+      setGpsAccuracy(null)
     }
   }, [city])
 
+  // The booking draft is restored AFTER this component mounts, so pick up a
+  // saved location that arrives later via props.
+  useEffect(() => {
+    const lat = initialDetails?.lat
+    const lng = initialDetails?.lng
+    if (!lat || !lng) return
+    if (Math.abs(lat - coords.lat) < 1e-7 && Math.abs(lng - coords.lng) < 1e-7) return
+    setCoords({ lat, lng })
+    if (initialAddress) setAddressText(initialAddress)
+    setApartment(initialDetails.apartment || '')
+    setFloor(initialDetails.floor || '')
+    setEntrance(initialDetails.entrance || '')
+    setIntercom(initialDetails.intercom || '')
+    setLandmark(initialDetails.landmark || '')
+    setConfirmed(true)
+    moveMarker(lat, lng)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDetails?.lat, initialDetails?.lng])
+
   // Reverse geocode with Nominatim + BigDataCloud fallback
-  async function updateLocation(lat: number, lng: number, notifyParent = true) {
+  async function updateLocation(lat: number, lng: number) {
+    const seq = ++geocodeSeqRef.current
     setCoords({ lat, lng })
     setGeocoding(true)
-    setConfirmed(notifyParent)
+    setConfirmed(true)
     setGpsError(null)
 
     let formattedAddress = ''
@@ -192,7 +237,7 @@ export default function MapLocationPicker({
     // Primary: OpenStreetMap Nominatim
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=uz`,
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&accept-language=uz`,
       )
       if (res.ok) {
         const data = await res.json()
@@ -227,60 +272,15 @@ export default function MapLocationPicker({
       }
     }
 
+    if (seq !== geocodeSeqRef.current) return // a newer position superseded this one
+
     if (!formattedAddress) {
       formattedAddress = `${city}, (${lat.toFixed(5)}, ${lng.toFixed(5)})`
     }
 
     setAddressText(formattedAddress)
-    if (notifyParent) {
-      notifyChange(formattedAddress, lat, lng)
-    }
+    notifyChange(formattedAddress, lat, lng)
     setGeocoding(false)
-  }
-
-  // IP Geolocation Fallback
-  async function fallbackToIPLocation(): Promise<boolean> {
-    try {
-      const res = await fetch('https://freeipapi.com/api/json')
-      if (res.ok) {
-        const data = await res.json()
-        if (data.latitude && data.longitude) {
-          const lat = data.latitude
-          const lng = data.longitude
-          if (mapRef.current && markerRef.current) {
-            mapRef.current.flyTo([lat, lng], 15)
-            markerRef.current.setLatLng([lat, lng])
-          }
-          await updateLocation(lat, lng, true)
-          setGpsError(null)
-          return true
-        }
-      }
-    } catch {
-      // try fallback 2
-    }
-
-    try {
-      const res2 = await fetch('https://ipapi.co/json/')
-      if (res2.ok) {
-        const data2 = await res2.json()
-        if (data2.latitude && data2.longitude) {
-          const lat = data2.latitude
-          const lng = data2.longitude
-          if (mapRef.current && markerRef.current) {
-            mapRef.current.flyTo([lat, lng], 15)
-            markerRef.current.setLatLng([lat, lng])
-          }
-          await updateLocation(lat, lng, true)
-          setGpsError(null)
-          return true
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    return false
   }
 
   // Handle Search Input Change
@@ -311,7 +311,7 @@ export default function MapLocationPicker({
       } finally {
         setIsSearching(false)
       }
-    }, 350)
+    }, 500)
   }
 
   // Handle selecting a search result
@@ -319,10 +319,10 @@ export default function MapLocationPicker({
     const lat = parseFloat(item.lat)
     const lng = parseFloat(item.lon)
 
-    if (mapRef.current && markerRef.current) {
-      mapRef.current.flyTo([lat, lng], 16)
-      markerRef.current.setLatLng([lat, lng])
-    }
+    geocodeSeqRef.current++ // drop any in-flight reverse geocode
+    moveMarker(lat, lng)
+    setGeocoding(false)
+    setGpsAccuracy(null)
 
     const parts = item.display_name.split(', ')
     const formatted = parts.slice(0, 4).join(', ')
@@ -334,19 +334,31 @@ export default function MapLocationPicker({
     notifyChange(formatted, lat, lng)
   }
 
-  // Auto-request location on mount if no initial address is set
+  // Auto-locate on mount only if the user has ALREADY granted location
+  // permission - an unprompted permission popup on page load gets denied
+  // reflexively (and then stays blocked for the whole site).
   useEffect(() => {
-    if (!initialAddress) {
-      requestLocation(true)
-    }
+    if (initialAddress || initialDetails?.lat) return
+    if (!navigator.permissions?.query) return
+    navigator.permissions
+      .query({ name: 'geolocation' })
+      .then((status) => {
+        if (status.state === 'granted') requestLocation(true)
+      })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  function getPosition(options: PositionOptions) {
+    return new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, options)
+    })
+  }
 
   // Core Geolocation Request Handler
   async function requestLocation(isAutoMount = false) {
-    if (!navigator.geolocation) {
-      if (!isAutoMount) {
-        setGpsError("Qurilmangizda GPS qo'llab-quvvatlanmaydi.")
-      }
+    if (!window.isSecureContext || !navigator.geolocation) {
+      if (!isAutoMount) setGpsError("Brauzeringiz joylashuvni aniqlashni qo'llab-quvvatlamaydi. Manzilni xaritadan tanlang.")
       return
     }
 
@@ -354,36 +366,30 @@ export default function MapLocationPicker({
     setGpsError(null)
 
     try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 30000,
-          maximumAge: 0,
-        })
-      })
-
-      const lat = pos.coords.latitude
-      const lng = pos.coords.longitude
-
-      if (mapRef.current && markerRef.current) {
-        mapRef.current.flyTo([lat, lng], 16)
-        markerRef.current.setLatLng([lat, lng])
+      let pos: GeolocationPosition
+      try {
+        // Precise GPS first...
+        pos = await getPosition({ enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 })
+      } catch (err) {
+        // ...but indoors / on desktops it often times out - fall back to the
+        // faster Wi-Fi/cell-based position. A denied permission won't
+        // change on retry, so rethrow that one.
+        if ((err as GeolocationPositionError)?.code === 1) throw err
+        pos = await getPosition({ enableHighAccuracy: false, timeout: 10000, maximumAge: 120000 })
       }
-      await updateLocation(lat, lng, true)
-      setGpsError(null)
-    } catch (err: any) {
-      const ipSuccess = await fallbackToIPLocation()
-      if (!isAutoMount && !ipSuccess) {
-        if (err && err.code === 1) {
-          setGpsError(
-            "Brauzerda joylashuvga ruxsat berilmadi. Iltimos, manzilni xaritadan tanlang.",
-          )
-        } else {
-          setGpsError(
-            "GPS orqali joylashuvni aniqlab bo'lmadi. Iltimos, xaritadan belgilang.",
-          )
-        }
-      }
+
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords
+      moveMarker(lat, lng, accuracy > 500 ? 14 : 17)
+      setGpsAccuracy(Math.round(accuracy))
+      await updateLocation(lat, lng)
+    } catch (err) {
+      if (isAutoMount) return
+      const code = (err as GeolocationPositionError)?.code
+      setGpsError(
+        code === 1
+          ? "Joylashuvga ruxsat berilmagan. Brauzer manzil satridagi 🔒 belgisi orqali ruxsat bering yoki manzilni xaritadan tanlang."
+          : "Joylashuvni aniqlab bo'lmadi (GPS signali yo'q yoki o'chirilgan). Manzilni qidiring yoki xaritadan belgilang.",
+      )
     } finally {
       setLocating(false)
     }
@@ -410,6 +416,15 @@ export default function MapLocationPicker({
           <span>Joriy joylashuvim (GPS)</span>
         </button>
       </div>
+
+      {gpsAccuracy !== null && gpsAccuracy > 100 && !gpsError && (
+        <div className="flex items-start gap-2 rounded-lg bg-sky-50 p-2.5 text-xs text-sky-800 dark:bg-sky-900/20 dark:text-sky-300">
+          <AlertCircle className="h-4 w-4 shrink-0 text-sky-600 mt-0.5" />
+          <span>
+            Joylashuv taxminan ±{gpsAccuracy} m aniqlikda topildi. Iltimos, belgini uyingiz ustiga surib aniqlashtiring.
+          </span>
+        </div>
+      )}
 
       {gpsError && (
         <div className="flex items-start gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
